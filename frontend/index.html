@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tfops</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      /* tfops theme init — runs in <head> before paint to avoid FOUC */
+      (function () {
+        try {
+          var stored = localStorage.getItem('tfops-color-mode');
+          var preferred = window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+          var mode = stored || preferred;
+          document.documentElement.setAttribute('data-theme', mode === 'light' ? 'light' : 'dark');
+          if (mode === 'dim') {
+            document.documentElement.setAttribute('data-variant', 'dim');
+          }
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

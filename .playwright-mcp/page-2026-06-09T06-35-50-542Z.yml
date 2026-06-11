@@ -1,0 +1,120 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - img [ref=e6]
+      - text: tfops
+    - link "Runs" [ref=e9] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e10] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e11]:
+      - button "Toggle theme" [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+      - button "Authenticated" [ref=e2888] [cursor=pointer]:
+        - generic [ref=e18]: Authenticated
+      - generic [ref=e19] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_a691ccfdf32a745a
+  - generic [ref=e20]:
+    - navigation [ref=e21]:
+      - generic [ref=e22]:
+        - link "Overview" [ref=e23] [cursor=pointer]:
+          - /url: "#overview"
+        - link "Runs" [ref=e24] [cursor=pointer]:
+          - /url: "#runs"
+        - generic [ref=e26]: Settings
+        - link "Repositories" [ref=e27] [cursor=pointer]:
+          - /url: "#repos"
+        - link "Config YAML" [ref=e28] [cursor=pointer]:
+          - /url: "#config"
+        - link "Reports" [ref=e30] [cursor=pointer]:
+          - /url: "#reports"
+        - link "Help" [ref=e31] [cursor=pointer]:
+          - /url: "#help"
+      - button "Collapse sidebar" [ref=e32] [cursor=pointer]:
+        - img [ref=e33]
+    - main [ref=e35]:
+      - generic [ref=e36]:
+        - link "tfops" [ref=e37] [cursor=pointer]:
+          - /url: "#overview"
+        - generic [ref=e38]: /
+        - link "Reports" [ref=e39] [cursor=pointer]:
+          - /url: "#reports"
+        - generic [ref=e40]: /
+        - generic [ref=e41]: View
+      - generic [ref=e42]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - img [ref=e47]
+            - generic [ref=e51]:
+              - generic [ref=e52]:
+                - text: Terraform Apply
+                - generic [ref=e53]: apply
+              - generic [ref=e55]:
+                - generic [ref=e61]: "#tfops-apply-20260604-104812.html"
+                - generic [ref=e62]: Jun 4, 2026, 06:48 PM
+          - generic [ref=e63]:
+            - button "Back to Reports" [ref=e64] [cursor=pointer]:
+              - img [ref=e65]
+              - text: Back to Reports
+            - button "Print" [ref=e67] [cursor=pointer]:
+              - img [ref=e68]
+              - text: Print
+        - generic [ref=e72]:
+          - img [ref=e74]
+          - generic [ref=e77]:
+            - generic [ref=e78]: Apply complete across 0 environments
+            - generic [ref=e79]: 0 added, 0 changed, 0 destroyed.
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - generic [ref=e85]: To add
+              - img [ref=e87]
+            - generic [ref=e89]: "+0"
+            - generic [ref=e90]: Nothing new
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - generic [ref=e93]: To change
+              - img [ref=e95]
+            - generic [ref=e97]: ~0
+            - generic [ref=e98]: No updates
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - generic [ref=e101]: To destroy
+              - img [ref=e103]
+            - generic [ref=e104]: "-0"
+            - generic [ref=e105]: Nothing removed
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - generic [ref=e108]: Environments
+              - img [ref=e110]
+            - generic [ref=e114]: "0"
+            - generic [ref=e115]: all planned
+        - generic [ref=e116]:
+          - generic [ref=e117]:
+            - text: Summary
+            - generic [ref=e118]: 0 envs
+          - table [ref=e120]:
+            - rowgroup [ref=e121]:
+              - row "Environment Profile Add Change Destroy Distribution Status" [ref=e122]:
+                - columnheader "Environment" [ref=e123]
+                - columnheader "Profile" [ref=e124]
+                - columnheader "Add" [ref=e125]
+                - columnheader "Change" [ref=e126]
+                - columnheader "Destroy" [ref=e127]
+                - columnheader "Distribution" [ref=e128]
+                - columnheader "Status" [ref=e129]
+            - rowgroup
+        - generic [ref=e167]:
+          - generic [ref=e168]:
+            - text: Details
+            - generic [ref=e169]: 0 envs
+          - generic [ref=e170]:
+            - generic [ref=e171]:
+              - img [ref=e172]
+              - textbox "Search resources, attributes, addresses… ( / )" [ref=e175]:
+                - /placeholder: Search resources, attributes, addresses…  ( / )
+            - button "Wrap" [ref=e176] [cursor=pointer]:
+              - img [ref=e177]
+              - text: Wrap
+            - button "Expand all" [ref=e2988] [cursor=pointer]:
+              - img [ref=e181]
+              - text: Expand all

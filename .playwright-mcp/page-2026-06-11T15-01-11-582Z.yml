@@ -1,0 +1,185 @@
+- generic [ref=e2]:
+  - generic [ref=e1104]:
+    - generic [ref=e1105]:
+      - img [ref=e1107]
+      - text: tfops
+    - link "Runs" [ref=e1110] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e1111] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e1112]:
+      - button "Cycle theme" [ref=e1113] [cursor=pointer]:
+        - img [ref=e1114]
+      - button "Authenticated" [ref=e1171] [cursor=pointer]:
+        - generic [ref=e1120]: Authenticated
+      - generic [ref=e1121] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_37e04251695328e9
+  - generic [ref=e1122]:
+    - navigation [ref=e1123]:
+      - generic:
+        - link "Overview":
+          - /url: "#overview"
+        - link "Runs":
+          - /url: "#runs"
+        - generic: Settings
+        - link "Repositories":
+          - /url: "#repos"
+        - link "Config YAML":
+          - /url: "#config"
+        - link "CLI Directory Profiles":
+          - /url: "#profile-mappings"
+        - link "Reports":
+          - /url: "#reports"
+        - link "Logs":
+          - /url: "#logs"
+        - link "Help":
+          - /url: "#help"
+      - button "Expand sidebar" [active] [ref=e1172] [cursor=pointer]:
+        - img [ref=e1137]
+    - main [ref=e1139]:
+      - generic [ref=e1140]:
+        - generic [ref=e1142]:
+          - generic [ref=e1143]:
+            - generic [ref=e1144]: Runs (5)
+            - generic [ref=e1145]: Terraform runs across your repositories. Select a run to stream its output.
+          - generic [ref=e1146]:
+            - button "Refresh" [ref=e1147] [cursor=pointer]:
+              - img [ref=e1148]
+            - button "New run" [ref=e1151] [cursor=pointer]:
+              - img [ref=e1152]
+              - text: New run
+        - table [ref=e1158]:
+          - rowgroup [ref=e1159]:
+            - row "Run ID Command Repo Branch Targets Mode Started Duration Status Changes" [ref=e1160]:
+              - columnheader "Run ID" [ref=e1161]
+              - columnheader "Command" [ref=e1162]
+              - columnheader "Repo" [ref=e1163]
+              - columnheader "Branch" [ref=e1164]
+              - columnheader "Targets" [ref=e1165]
+              - columnheader "Mode" [ref=e1166]
+              - columnheader "Started" [ref=e1167]
+              - columnheader "Duration" [ref=e1168]
+              - columnheader "Status" [ref=e1169]
+              - columnheader "Changes" [ref=e1170]
+          - rowgroup [ref=e1173]:
+            - row "run-cli-20260609-070124 plan infrastructure — all Promotion Jun 9 · 03:01 PM 2s success —" [ref=e1174] [cursor=pointer]:
+              - cell "run-cli-20260609-070124" [ref=e1175]:
+                - generic [ref=e1176]: run-cli-20260609-070124
+              - cell "plan" [ref=e1177]:
+                - generic [ref=e1178]: plan
+              - cell "infrastructure" [ref=e1179]:
+                - generic "infrastructure" [ref=e1180]
+              - cell "—" [ref=e1181]:
+                - generic [ref=e1182]:
+                  - img [ref=e1183]
+                  - text: —
+              - cell "all" [ref=e1187]:
+                - generic [ref=e1189]: all
+              - cell "Promotion" [ref=e1190]:
+                - generic [ref=e1191]:
+                  - img [ref=e1192]
+                  - text: Promotion
+              - cell "Jun 9 · 03:01 PM" [ref=e1196]
+              - cell "2s" [ref=e1197]
+              - cell "success" [ref=e1198]:
+                - generic [ref=e1199]:
+                  - img [ref=e1200]
+                  - text: success
+              - cell "—" [ref=e1203]
+            - row "run-cli-20260609-070049 plan infrastructure — all Promotion Jun 9 · 03:00 PM 2s success —" [ref=e1204] [cursor=pointer]:
+              - cell "run-cli-20260609-070049" [ref=e1205]:
+                - generic [ref=e1206]: run-cli-20260609-070049
+              - cell "plan" [ref=e1207]:
+                - generic [ref=e1208]: plan
+              - cell "infrastructure" [ref=e1209]:
+                - generic "infrastructure" [ref=e1210]
+              - cell "—" [ref=e1211]:
+                - generic [ref=e1212]:
+                  - img [ref=e1213]
+                  - text: —
+              - cell "all" [ref=e1217]:
+                - generic [ref=e1219]: all
+              - cell "Promotion" [ref=e1220]:
+                - generic [ref=e1221]:
+                  - img [ref=e1222]
+                  - text: Promotion
+              - cell "Jun 9 · 03:00 PM" [ref=e1226]
+              - cell "2s" [ref=e1227]
+              - cell "success" [ref=e1228]:
+                - generic [ref=e1229]:
+                  - img [ref=e1230]
+                  - text: success
+              - cell "—" [ref=e1233]
+            - row "run-cli-20260609-070024 plan infrastructure — all Promotion Jun 9 · 03:00 PM 2s success —" [ref=e1234] [cursor=pointer]:
+              - cell "run-cli-20260609-070024" [ref=e1235]:
+                - generic [ref=e1236]: run-cli-20260609-070024
+              - cell "plan" [ref=e1237]:
+                - generic [ref=e1238]: plan
+              - cell "infrastructure" [ref=e1239]:
+                - generic "infrastructure" [ref=e1240]
+              - cell "—" [ref=e1241]:
+                - generic [ref=e1242]:
+                  - img [ref=e1243]
+                  - text: —
+              - cell "all" [ref=e1247]:
+                - generic [ref=e1249]: all
+              - cell "Promotion" [ref=e1250]:
+                - generic [ref=e1251]:
+                  - img [ref=e1252]
+                  - text: Promotion
+              - cell "Jun 9 · 03:00 PM" [ref=e1256]
+              - cell "2s" [ref=e1257]
+              - cell "success" [ref=e1258]:
+                - generic [ref=e1259]:
+                  - img [ref=e1260]
+                  - text: success
+              - cell "—" [ref=e1263]
+            - row "run-cli-20260609-065820 plan infrastructure — all Promotion Jun 9 · 02:58 PM 3s failed —" [ref=e1264] [cursor=pointer]:
+              - cell "run-cli-20260609-065820" [ref=e1265]:
+                - generic [ref=e1266]: run-cli-20260609-065820
+              - cell "plan" [ref=e1267]:
+                - generic [ref=e1268]: plan
+              - cell "infrastructure" [ref=e1269]:
+                - generic "infrastructure" [ref=e1270]
+              - cell "—" [ref=e1271]:
+                - generic [ref=e1272]:
+                  - img [ref=e1273]
+                  - text: —
+              - cell "all" [ref=e1277]:
+                - generic [ref=e1279]: all
+              - cell "Promotion" [ref=e1280]:
+                - generic [ref=e1281]:
+                  - img [ref=e1282]
+                  - text: Promotion
+              - cell "Jun 9 · 02:58 PM" [ref=e1286]
+              - cell "3s" [ref=e1287]
+              - cell "failed" [ref=e1288]:
+                - generic [ref=e1289]:
+                  - img [ref=e1290]
+                  - text: failed
+              - cell "—" [ref=e1293]
+            - row "run-0001 plan infrastructure main dev prod Promotion Jun 9 · 10:52 AM 1s failed —" [ref=e1294] [cursor=pointer]:
+              - cell "run-0001" [ref=e1295]:
+                - generic [ref=e1296]: run-0001
+              - cell "plan" [ref=e1297]:
+                - generic [ref=e1298]: plan
+              - cell "infrastructure" [ref=e1299]:
+                - generic "infrastructure" [ref=e1300]
+              - cell "main" [ref=e1301]:
+                - generic [ref=e1302]:
+                  - img [ref=e1303]
+                  - text: main
+              - cell "dev prod" [ref=e1307]:
+                - generic [ref=e1308]:
+                  - generic [ref=e1309]: dev
+                  - generic [ref=e1310]: prod
+              - cell "Promotion" [ref=e1311]:
+                - generic [ref=e1312]:
+                  - img [ref=e1313]
+                  - text: Promotion
+              - cell "Jun 9 · 10:52 AM" [ref=e1317]
+              - cell "1s" [ref=e1318]
+              - cell "failed" [ref=e1319]:
+                - generic [ref=e1320]:
+                  - img [ref=e1321]
+                  - text: failed
+              - cell "—" [ref=e1324]

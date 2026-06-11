@@ -1,0 +1,65 @@
+/* ── Base typography ─────────────────────────────────────────────── */
+
+/* Font smoothing — prevents chunky subpixel rendering on macOS/Windows */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Design tokens ───────────────────────────────────────────────── */
+
+:root {
+  /*
+   * Monospace font stack — used for code, IDs, terminal output, paths.
+   * Ordered: macOS native → Windows native → Linux/generic fallbacks.
+   */
+  --tfops-font-mono: "Monaco", "Menlo", "Consolas", "Courier New",
+    ui-monospace, monospace;
+}
+
+/* ── Global code element ─────────────────────────────────────────── */
+
+code {
+  font-family: var(--tfops-font-mono);
+  font-size: 0.875em;
+  /* Prevent code from looking bigger than surrounding text */
+  line-height: inherit;
+}
+
+/* ── Run status animations ───────────────────────────────────────── */
+
+/* Pulsing dot for in-progress runs / targets */
+@keyframes tfops-pulse {
+  0%   { opacity: 1;    transform: scale(1); }
+  50%  { opacity: 0.35; transform: scale(0.78); }
+  100% { opacity: 1;    transform: scale(1); }
+}
+
+.tfops-pulse-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: tfops-pulse 1.1s ease-in-out infinite;
+}
+
+/* Animated striped fill for a running progress segment */
+@keyframes tfops-stripe {
+  0%   { background-position: 0 0; }
+  100% { background-position: 28px 0; }
+}
+
+.tfops-progress-running {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.28) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0.28) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 28px 28px;
+  animation: tfops-stripe 0.8s linear infinite;
+}

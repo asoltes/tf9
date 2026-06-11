@@ -1,0 +1,73 @@
+- generic [ref=e2]:
+  - generic [ref=e974]:
+    - generic [ref=e975]:
+      - img [ref=e977]
+      - text: tfops
+    - link "Runs" [ref=e980] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e981] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e982]:
+      - button "Cycle theme" [ref=e983] [cursor=pointer]:
+        - img [ref=e984]
+      - button "Checking…" [ref=e988] [cursor=pointer]:
+        - generic [ref=e990]: Checking…
+      - generic [ref=e991] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_37e04251695328e9
+  - generic [ref=e992]:
+    - navigation [ref=e993]:
+      - generic [ref=e994]:
+        - link "Overview" [ref=e995] [cursor=pointer]:
+          - /url: "#overview"
+        - link "Runs" [ref=e996] [cursor=pointer]:
+          - /url: "#runs"
+        - generic [ref=e998]: Settings
+        - link "Repositories" [ref=e999] [cursor=pointer]:
+          - /url: "#repos"
+        - link "Config YAML" [ref=e1000] [cursor=pointer]:
+          - /url: "#config"
+        - link "CLI Directory Profiles" [ref=e1001] [cursor=pointer]:
+          - /url: "#profile-mappings"
+        - link "Reports" [ref=e1003] [cursor=pointer]:
+          - /url: "#reports"
+        - link "Logs" [ref=e1004] [cursor=pointer]:
+          - /url: "#logs"
+        - link "Help" [ref=e1005] [cursor=pointer]:
+          - /url: "#help"
+      - button "Collapse sidebar" [ref=e1006] [cursor=pointer]:
+        - img [ref=e1007]
+    - main [ref=e1009]:
+      - generic [ref=e1010]:
+        - link "tfops" [ref=e1011] [cursor=pointer]:
+          - /url: "#overview"
+        - generic [ref=e1012]: /
+        - generic [ref=e1013]: Reports
+      - generic [ref=e1014]:
+        - generic [ref=e1016]:
+          - generic [ref=e1017]:
+            - text: Reports
+            - generic [ref=e1018]: (0)
+          - generic [ref=e1019]: Terraform run reports — plan, apply, and destroy output across your repositories.
+        - generic [ref=e1020]:
+          - generic [ref=e1021]:
+            - button "All 0" [ref=e1022] [cursor=pointer]:
+              - text: All
+              - generic [ref=e1023]: "0"
+            - button "Plan 0" [ref=e1024] [cursor=pointer]:
+              - text: Plan
+              - generic [ref=e1025]: "0"
+            - button "Apply 0" [ref=e1026] [cursor=pointer]:
+              - text: Apply
+              - generic [ref=e1027]: "0"
+            - button "Destroy 0" [ref=e1028] [cursor=pointer]:
+              - text: Destroy
+              - generic [ref=e1029]: "0"
+          - generic [ref=e1030]:
+            - button "Cards" [ref=e1031] [cursor=pointer]:
+              - img [ref=e1032]
+              - text: Cards
+            - button "List" [ref=e1037] [cursor=pointer]:
+              - img [ref=e1038]
+              - text: List
+        - generic [ref=e1039]:
+          - img [ref=e1040]
+          - generic [ref=e1043]: Loading reports…

@@ -1,0 +1,65 @@
+/* RetryBranchModal — compact branch-check modal before retrying failed targets */
+.rbm-overlay { align-items: center }
+
+.rbm-modal {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.45);
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rbm-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--divider);
+}
+.rbm-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.2px;
+}
+.rbm-sub {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 3px;
+}
+.rbm-repo  { font-weight: 600; color: var(--text-2); }
+.rbm-count { color: var(--red); font-weight: 600; }
+
+.rbm-body {
+  padding: 18px 22px 14px;
+}
+.rbm-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+.rbm-sel { width: 100%; }
+
+.rbm-loading {
+  font-size: 13px;
+  color: var(--text-2);
+  padding: 8px 0 12px;
+}
+
+.rbm-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--divider);
+}

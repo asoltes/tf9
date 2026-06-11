@@ -1,0 +1,66 @@
+- generic [ref=e2]:
+  - generic [ref=e1325]:
+    - generic [ref=e1326]:
+      - img [ref=e1328]
+      - text: tfops
+    - link "Runs" [ref=e1331] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e1332] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e1333]:
+      - button "Cycle theme" [ref=e1334] [cursor=pointer]:
+        - img [ref=e1335]
+      - button "Checking…" [ref=e1339] [cursor=pointer]:
+        - generic [ref=e1341]: Checking…
+      - generic [ref=e1342] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_37e04251695328e9
+  - generic [ref=e1343]:
+    - navigation [ref=e1344]:
+      - generic:
+        - link "Overview":
+          - /url: "#overview"
+        - link "Runs":
+          - /url: "#runs"
+        - generic: Settings
+        - link "Repositories":
+          - /url: "#repos"
+        - link "Config YAML":
+          - /url: "#config"
+        - link "CLI Directory Profiles":
+          - /url: "#profile-mappings"
+        - link "Reports":
+          - /url: "#reports"
+        - link "Logs":
+          - /url: "#logs"
+        - link "Help":
+          - /url: "#help"
+      - button "Expand sidebar" [ref=e1345] [cursor=pointer]:
+        - img [ref=e1346]
+    - main [ref=e1348]:
+      - generic [ref=e1349]:
+        - link "tfops" [ref=e1350] [cursor=pointer]:
+          - /url: "#overview"
+        - generic [ref=e1351]: /
+        - link "Settings" [ref=e1352] [cursor=pointer]:
+          - /url: "#repos"
+        - generic [ref=e1353]: /
+        - generic [ref=e1354]: CLI Directory to Profile Mappings
+      - generic [ref=e1355]:
+        - generic [ref=e1357]:
+          - generic [ref=e1358]: CLI Directory to Profile Mappings
+          - generic [ref=e1359]:
+            - text: Map directory base names to AWS profiles. Used by
+            - code [ref=e1360]: tfops plan --recursive or tfops plan -R --skip prod-euw2
+            - text: when scanning child terraform directories from a parent folder. The directory's base name must match a key exactly (e.g.
+            - code [ref=e1361]: dev
+            - text: ","
+            - code [ref=e1362]: qa
+            - text: ","
+            - code [ref=e1363]: prod
+            - text: ). Overridden by
+            - code [ref=e1364]: "--profile"
+            - text: .
+        - generic [ref=e1365]:
+          - generic [ref=e1367]:
+            - generic [ref=e1368]: Directory to profile mappings
+            - generic [ref=e1369]: Each row maps an exact directory base name to an AWS CLI profile.
+          - generic [ref=e1370]: Loading…

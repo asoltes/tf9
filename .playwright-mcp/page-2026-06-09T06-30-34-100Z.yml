@@ -1,0 +1,2715 @@
+- generic [ref=e2]:
+  - generic [ref=e205]:
+    - generic [ref=e206]:
+      - img [ref=e208]
+      - text: tfops
+    - link "Runs" [ref=e211] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e212] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e213]:
+      - button "Toggle theme" [ref=e214] [cursor=pointer]:
+        - img [ref=e215]
+      - button "Authenticated" [ref=e269] [cursor=pointer]:
+        - generic [ref=e220]: Authenticated
+      - generic [ref=e221] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_a691ccfdf32a745a
+  - generic [ref=e222]:
+    - navigation [ref=e223]:
+      - generic [ref=e224]:
+        - link "Overview" [ref=e225] [cursor=pointer]:
+          - /url: "#overview"
+        - link "Runs" [ref=e226] [cursor=pointer]:
+          - /url: "#runs"
+        - generic [ref=e228]: Settings
+        - link "Repositories" [ref=e229] [cursor=pointer]:
+          - /url: "#repos"
+        - link "Config YAML" [ref=e230] [cursor=pointer]:
+          - /url: "#config"
+        - link "Reports" [ref=e232] [cursor=pointer]:
+          - /url: "#reports"
+        - link "Help" [ref=e233] [cursor=pointer]:
+          - /url: "#help"
+      - button "Collapse sidebar" [ref=e234] [cursor=pointer]:
+        - img [ref=e235]
+    - main [ref=e237]:
+      - generic [ref=e238]:
+        - link "tfops" [ref=e239] [cursor=pointer]:
+          - /url: "#overview"
+        - generic [ref=e240]: /
+        - link "Reports" [ref=e241] [cursor=pointer]:
+          - /url: "#reports"
+        - generic [ref=e242]: /
+        - generic [ref=e243]: View
+      - generic [ref=e244]:
+        - generic [ref=e246]:
+          - generic [ref=e247]:
+            - img [ref=e249]
+            - generic [ref=e253]:
+              - generic [ref=e254]:
+                - text: Terraform Plan
+                - generic [ref=e255]: plan
+              - generic [ref=e257]:
+                - generic [ref=e270]:
+                  - img [ref=e271]
+                  - generic [ref=e274]: ecp-infra-tf
+                - generic [ref=e258]: "#tfops-plan-20260609-060838.html"
+                - generic [ref=e275]: Jun 9, 2026, 02:08 PM
+          - generic [ref=e259]:
+            - button "Back to Reports" [ref=e260] [cursor=pointer]:
+              - img [ref=e261]
+              - text: Back to Reports
+            - button "Print" [ref=e263] [cursor=pointer]:
+              - img [ref=e264]
+              - text: Print
+        - generic [ref=e276]:
+          - img [ref=e278]
+          - generic [ref=e281]:
+            - generic [ref=e282]: Ready to apply — 26 changes planned
+            - generic [ref=e283]: 0 to add, 26 to change across 2 environments.
+        - generic [ref=e286]:
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - generic [ref=e289]: To add
+              - img [ref=e291]
+            - generic [ref=e293]: "+0"
+            - generic [ref=e294]: Nothing new
+          - generic [ref=e295]:
+            - generic [ref=e296]:
+              - generic [ref=e297]: To change
+              - img [ref=e299]
+            - generic [ref=e301]: ~26
+            - generic [ref=e302]: in-place updates
+          - generic [ref=e303]:
+            - generic [ref=e304]:
+              - generic [ref=e305]: To destroy
+              - img [ref=e307]
+            - generic [ref=e308]: "-0"
+            - generic [ref=e309]: Nothing removed
+          - generic [ref=e310]:
+            - generic [ref=e311]:
+              - generic [ref=e312]: Environments
+              - img [ref=e314]
+            - generic [ref=e318]: "2"
+            - generic [ref=e319]: all planned
+        - generic [ref=e320]:
+          - generic [ref=e321]:
+            - text: Summary
+            - generic [ref=e322]: 2 envs
+          - table [ref=e324]:
+            - rowgroup [ref=e325]:
+              - row "Environment Profile Add Change Destroy Distribution Status" [ref=e326]:
+                - columnheader "Environment" [ref=e327]
+                - columnheader "Profile" [ref=e328]
+                - columnheader "Add" [ref=e329]
+                - columnheader "Change" [ref=e330]
+                - columnheader "Destroy" [ref=e331]
+                - columnheader "Distribution" [ref=e332]
+                - columnheader "Status" [ref=e333]
+            - rowgroup [ref=e334]:
+              - row "integrations-dev-euw2 ctp-dev-euw2 +0 ~13 -0 Changes" [ref=e335] [cursor=pointer]:
+                - cell "integrations-dev-euw2" [ref=e336]:
+                  - generic [ref=e339]: integrations-dev-euw2
+                - cell "ctp-dev-euw2" [ref=e340]
+                - cell "+0" [ref=e341]:
+                  - generic [ref=e342]: "+0"
+                - cell "~13" [ref=e343]:
+                  - generic [ref=e344]: ~13
+                - cell "-0" [ref=e345]:
+                  - generic [ref=e346]: "-0"
+                - cell [ref=e347]
+                - cell "Changes" [ref=e350]:
+                  - generic [ref=e351]: Changes
+              - row "integrations-qa-euw2 ctp-qa-euw2 +0 ~13 -0 Changes" [ref=e353] [cursor=pointer]:
+                - cell "integrations-qa-euw2" [ref=e354]:
+                  - generic [ref=e357]: integrations-qa-euw2
+                - cell "ctp-qa-euw2" [ref=e358]
+                - cell "+0" [ref=e359]:
+                  - generic [ref=e360]: "+0"
+                - cell "~13" [ref=e361]:
+                  - generic [ref=e362]: ~13
+                - cell "-0" [ref=e363]:
+                  - generic [ref=e364]: "-0"
+                - cell [ref=e365]
+                - cell "Changes" [ref=e368]:
+                  - generic [ref=e369]: Changes
+        - generic [ref=e371]:
+          - generic [ref=e372]:
+            - text: Details
+            - generic [ref=e373]: 2 envs
+          - generic [ref=e374]:
+            - generic [ref=e375]:
+              - img [ref=e376]
+              - textbox "Search resources, attributes, addresses… ( / )" [ref=e379]:
+                - /placeholder: Search resources, attributes, addresses…  ( / )
+            - button "Wrap" [ref=e380] [cursor=pointer]:
+              - img [ref=e381]
+              - text: Wrap
+            - button "Collapse all" [ref=e384] [cursor=pointer]:
+              - img [ref=e385]
+              - text: Collapse all
+          - generic [ref=e388]:
+            - generic [ref=e389]:
+              - generic [ref=e390] [cursor=pointer]:
+                - generic [ref=e392]:
+                  - generic [ref=e393]: integrations-dev-euw2
+                  - generic [ref=e394]: ctp-dev-euw2
+                  - generic [ref=e395]:
+                    - generic [ref=e396]: "+0"
+                    - generic [ref=e397]: ~13
+                    - generic [ref=e398]: "-0"
+                - generic [ref=e399]: Changes
+                - img [ref=e402]
+              - generic [ref=e404]:
+                - generic [ref=e405]:
+                  - generic [ref=e410]: $ terraform plan · integrations-dev-euw2
+                  - button "Copy output" [ref=e411] [cursor=pointer]:
+                    - img [ref=e412]
+                    - text: Copy output
+                  - button "Download" [ref=e415] [cursor=pointer]:
+                    - img [ref=e416]
+                    - text: Download
+                - generic [ref=e419]:
+                  - generic [ref=e420]:
+                    - generic [ref=e421]: "1"
+                    - generic [ref=e422]: "module.context.data.aws_subnets.private[0]: Reading..."
+                  - generic [ref=e423]:
+                    - generic [ref=e424]: "2"
+                    - generic [ref=e425]: "module.context.data.aws_secretsmanager_secret.etl_db[0]: Reading..."
+                  - generic [ref=e426]:
+                    - generic [ref=e427]: "3"
+                    - generic [ref=e428]: "module.context.data.aws_subnets.public[0]: Reading..."
+                  - generic [ref=e429]:
+                    - generic [ref=e430]: "4"
+                    - generic [ref=e431]: "module.context.data.aws_vpc.this[0]: Reading..."
+                  - generic [ref=e432]:
+                    - generic [ref=e433]: "5"
+                    - generic [ref=e434]: "module.context.data.aws_availability_zones.available: Reading..."
+                  - generic [ref=e435]:
+                    - generic [ref=e436]: "6"
+                    - generic [ref=e437]: "module.core_refdata_privatelink.data.aws_iam_policy_document.lambda_assume_role[0]: Reading..."
+                  - generic [ref=e438]:
+                    - generic [ref=e439]: "7"
+                    - generic [ref=e440]: "module.context.data.aws_nat_gateway.default[0]: Reading..."
+                  - generic [ref=e441]:
+                    - generic [ref=e442]: "8"
+                    - generic [ref=e443]: "module.context.data.aws_region.current: Reading..."
+                  - generic [ref=e444]:
+                    - generic [ref=e445]: "9"
+                    - generic [ref=e446]: "module.context.data.aws_region.current: Read complete after 0s [id=eu-west-2]"
+                  - generic [ref=e447]:
+                    - generic [ref=e448]: "10"
+                    - generic [ref=e449]: "module.core_refdata_privatelink.data.aws_iam_policy_document.lambda_assume_role[0]: Read complete after 0s [id=2690255455]"
+                  - generic [ref=e450]:
+                    - generic [ref=e451]: "11"
+                    - generic [ref=e452]: "module.context.data.aws_secretsmanager_secret.etl_db[0]: Read complete after 1s [id=arn:aws:secretsmanager:eu-west-2:590183751102:secret:/rds/global-ecp-aurora-serverless-LmuQNC]"
+                  - generic [ref=e453]:
+                    - generic [ref=e454]: "12"
+                    - generic [ref=e455]: "module.context.data.aws_availability_zones.available: Read complete after 1s [id=eu-west-2]"
+                  - generic [ref=e456]:
+                    - generic [ref=e457]: "13"
+                    - generic [ref=e458]: "module.context.data.aws_nat_gateway.default[0]: Read complete after 1s [id=nat-039bc9ed48255b1f5]"
+                  - generic [ref=e459]:
+                    - generic [ref=e460]: "14"
+                    - generic [ref=e461]: "module.context.data.aws_subnets.public[0]: Read complete after 1s [id=eu-west-2]"
+                  - generic [ref=e462]:
+                    - generic [ref=e463]: "15"
+                    - generic [ref=e464]: "module.context.data.aws_subnets.private[0]: Read complete after 1s [id=eu-west-2]"
+                  - generic [ref=e465]:
+                    - generic [ref=e466]: "16"
+                    - generic [ref=e467]: "module.context.data.aws_subnet.private[\"subnet-0675459961f711f4a\"]: Reading..."
+                  - generic [ref=e468]:
+                    - generic [ref=e469]: "17"
+                    - generic [ref=e470]: "module.context.data.aws_subnet.private[\"subnet-065356d6d18e7b829\"]: Reading..."
+                  - generic [ref=e471]:
+                    - generic [ref=e472]: "18"
+                    - generic [ref=e473]: "module.context.data.aws_subnet.private[\"subnet-0b0f155ec0494f102\"]: Reading..."
+                  - generic [ref=e474]:
+                    - generic [ref=e475]: "19"
+                    - generic [ref=e476]: "module.context.data.aws_subnet.private[\"subnet-0675459961f711f4a\"]: Read complete after 0s [id=subnet-0675459961f711f4a]"
+                  - generic [ref=e477]:
+                    - generic [ref=e478]: "20"
+                    - generic [ref=e479]: "module.context.data.aws_subnet.private[\"subnet-065356d6d18e7b829\"]: Read complete after 0s [id=subnet-065356d6d18e7b829]"
+                  - generic [ref=e480]:
+                    - generic [ref=e481]: "21"
+                    - generic [ref=e482]: "module.context.data.aws_subnet.private[\"subnet-0b0f155ec0494f102\"]: Read complete after 0s [id=subnet-0b0f155ec0494f102]"
+                  - generic [ref=e483]:
+                    - generic [ref=e484]: "22"
+                    - generic [ref=e485]: "module.context.data.aws_vpc.this[0]: Read complete after 2s [id=vpc-000a28fcf19742a31]"
+                  - generic [ref=e486]:
+                    - generic [ref=e487]: "23"
+                    - generic [ref=e488]: "module.core_refdata_privatelink.aws_cloudwatch_event_rule.nlb_ip_updater[0]: Refreshing state... [id=ctp-ecp-dev-euw2-refdata-nlb-ip-updater-schedule]"
+                  - generic [ref=e489]:
+                    - generic [ref=e490]: "24"
+                    - generic [ref=e491]: "module.core_refdata_privatelink.aws_security_group.lambda[0]: Refreshing state... [id=sg-0a5e76c951e77cfe3]"
+                  - generic [ref=e492]:
+                    - generic [ref=e493]: "25"
+                    - generic [ref=e494]: "module.core_refdata_privatelink.aws_cloudwatch_log_group.lambda[0]: Refreshing state... [id=/aws/lambda/ctp-ecp-dev-euw2-refdata-nlb-ip-updater]"
+                  - generic [ref=e495]:
+                    - generic [ref=e496]: "26"
+                    - generic [ref=e497]: "module.core_refdata_privatelink.aws_iam_role.lambda[0]: Refreshing state... [id=ctp-ecp-dev-euw2-refdata-nlb-ip-updater-role]"
+                  - generic [ref=e498]:
+                    - generic [ref=e499]: "27"
+                    - generic [ref=e500]: "module.core_refdata_privatelink.aws_lb_target_group.aurora_writer[0]: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-2:590183751102:targetgroup/ctp-ecp-dev-euw2-refdata-tg/2e7dbbbf77e905fa]"
+                  - generic [ref=e501]:
+                    - generic [ref=e502]: "28"
+                    - generic [ref=e503]: "module.core_refdata_privatelink.aws_lb.aurora[0]: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-2:590183751102:loadbalancer/net/ctp-ecp-dev-euw2-refdata-nlb/1795cbe37f1a9063]"
+                  - generic [ref=e504]:
+                    - generic [ref=e505]: "29"
+                    - generic [ref=e506]: "module.core_refdata_privatelink.data.archive_file.nlb_ip_updater[0]: Reading..."
+                  - generic [ref=e507]:
+                    - generic [ref=e508]: "30"
+                    - generic [ref=e509]: "module.core_refdata_privatelink.data.archive_file.nlb_ip_updater[0]: Read complete after 0s [id=c9072a6410f6239440c5f781960040417942ee8f]"
+                  - generic [ref=e510]:
+                    - generic [ref=e511]: "31"
+                    - generic [ref=e512]: "module.core_refdata_privatelink.aws_vpc_security_group_egress_rule.lambda_all[0]: Refreshing state... [id=sgr-01c4bb9439f7c400e]"
+                  - generic [ref=e513]:
+                    - generic [ref=e514]: "32"
+                    - generic [ref=e515]: "module.core_refdata_privatelink.aws_ssm_parameter.nlb_arn[0]: Refreshing state... [id=/dev/core-refdata/nlb-arn]"
+                  - generic [ref=e516]:
+                    - generic [ref=e517]: "33"
+                    - generic [ref=e518]: "module.core_refdata_privatelink.aws_vpc_endpoint_service.aurora[0]: Refreshing state... [id=vpce-svc-09dcead16da870b3b]"
+                  - generic [ref=e519]:
+                    - generic [ref=e520]: "34"
+                    - generic [ref=e521]: "module.core_refdata_privatelink.aws_lb_listener.aurora[0]: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-2:590183751102:listener/net/ctp-ecp-dev-euw2-refdata-nlb/1795cbe37f1a9063/790fa38d14b282b0]"
+                  - generic [ref=e522]:
+                    - generic [ref=e523]: "35"
+                    - generic [ref=e524]: "module.core_refdata_privatelink.aws_vpc_endpoint_service_allowed_principal.ctp[0]: Refreshing state... [id=vpce-svc-perm-07d5a16615ac6e0a0]"
+                  - generic [ref=e525]:
+                    - generic [ref=e526]: "36"
+                    - generic [ref=e527]: "module.core_refdata_privatelink.aws_ssm_parameter.endpoint_service_name[0]: Refreshing state... [id=/dev/core-refdata/endpoint-service-name]"
+                  - generic [ref=e528]:
+                    - generic [ref=e529]: "37"
+                    - generic [ref=e530]: "module.core_refdata_privatelink.aws_iam_role_policy_attachment.lambda_vpc_execution[0]: Refreshing state... [id=ctp-ecp-dev-euw2-refdata-nlb-ip-updater-role/arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole]"
+                  - generic [ref=e531]:
+                    - generic [ref=e532]: "38"
+                    - generic [ref=e533]: "module.core_refdata_privatelink.aws_iam_role_policy_attachment.lambda_basic_execution[0]: Refreshing state... [id=ctp-ecp-dev-euw2-refdata-nlb-ip-updater-role/arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole]"
+                  - generic [ref=e534]:
+                    - generic [ref=e535]: "39"
+                    - generic [ref=e536]: "module.core_refdata_privatelink.aws_iam_role_policy.lambda[0]: Refreshing state... [id=ctp-ecp-dev-euw2-refdata-nlb-ip-updater-role:ctp-ecp-dev-euw2-refdata-nlb-ip-updater-policy]"
+                  - generic [ref=e537]:
+                    - generic [ref=e538]: "40"
+                    - generic [ref=e539]: "module.core_refdata_privatelink.aws_lambda_function.nlb_ip_updater[0]: Refreshing state... [id=ctp-ecp-dev-euw2-refdata-nlb-ip-updater]"
+                  - generic [ref=e540]:
+                    - generic [ref=e541]: "41"
+                    - generic [ref=e542]: "module.core_refdata_privatelink.aws_lambda_permission.allow_eventbridge[0]: Refreshing state... [id=AllowExecutionFromEventBridge]"
+                  - generic [ref=e543]:
+                    - generic [ref=e544]: "42"
+                    - generic [ref=e545]: "module.core_refdata_privatelink.aws_cloudwatch_event_target.nlb_ip_updater[0]: Refreshing state... [id=ctp-ecp-dev-euw2-refdata-nlb-ip-updater-schedule-nlb-ip-updater]"
+                  - generic [ref=e547]: "43"
+                  - generic [ref=e549]:
+                    - generic [ref=e550]: "44"
+                    - generic [ref=e551]: Terraform used the selected providers to generate the following execution
+                  - generic [ref=e552]:
+                    - generic [ref=e553]: "45"
+                    - generic [ref=e554]: "plan. Resource actions are indicated with the following symbols:"
+                  - generic [ref=e555]:
+                    - generic [ref=e556]: "46"
+                    - generic [ref=e557]: ~ update in-place
+                  - generic [ref=e558]:
+                    - generic [ref=e559]: "47"
+                    - generic [ref=e560]: <= read (data resources)
+                  - generic [ref=e562]: "48"
+                  - generic [ref=e564]:
+                    - generic [ref=e565]: "49"
+                    - generic [ref=e566]: "Terraform will perform the following actions:"
+                  - generic [ref=e568]: "50"
+                  - generic [ref=e570]:
+                    - generic [ref=e571]: "51"
+                    - generic [ref=e572]: "# module.core_refdata_privatelink.data.aws_iam_policy_document.lambda[0] will be read during apply"
+                  - generic [ref=e573]:
+                    - generic [ref=e574]: "52"
+                    - generic [ref=e575]: "# (depends on a resource or a module with changes pending)"
+                  - generic [ref=e576]:
+                    - generic [ref=e577]: "53"
+                    - generic [ref=e578]: "<= data \"aws_iam_policy_document\" \"lambda\" {"
+                  - generic [ref=e579]:
+                    - generic [ref=e580]: "54"
+                    - generic [ref=e581]: + id = (known after apply)
+                  - generic [ref=e582]:
+                    - generic [ref=e583]: "55"
+                    - generic [ref=e584]: + json = (known after apply)
+                  - generic [ref=e585]:
+                    - generic [ref=e586]: "56"
+                    - generic [ref=e587]: + minified_json = (known after apply)
+                  - generic [ref=e589]: "57"
+                  - generic [ref=e591]:
+                    - generic [ref=e592]: "58"
+                    - generic [ref=e593]: "+ statement {"
+                  - generic [ref=e594]:
+                    - generic [ref=e595]: "59"
+                    - generic [ref=e596]: + actions = [
+                  - generic [ref=e597]:
+                    - generic [ref=e598]: "60"
+                    - generic [ref=e599]: + "elasticloadbalancing:DescribeTargetHealth",
+                  - generic [ref=e600]:
+                    - generic [ref=e601]: "61"
+                    - generic [ref=e602]: "]"
+                  - generic [ref=e603]:
+                    - generic [ref=e604]: "62"
+                    - generic [ref=e605]: + effect = "Allow"
+                  - generic [ref=e606]:
+                    - generic [ref=e607]: "63"
+                    - generic [ref=e608]: + resources = [
+                  - generic [ref=e609]:
+                    - generic [ref=e610]: "64"
+                    - generic [ref=e611]: + "*",
+                  - generic [ref=e612]:
+                    - generic [ref=e613]: "65"
+                    - generic [ref=e614]: "]"
+                  - generic [ref=e615]:
+                    - generic [ref=e616]: "66"
+                    - generic [ref=e617]: + sid = "DescribeTargetHealth"
+                  - generic [ref=e618]:
+                    - generic [ref=e619]: "67"
+                    - generic [ref=e620]: "}"
+                  - generic [ref=e621]:
+                    - generic [ref=e622]: "68"
+                    - generic [ref=e623]: "+ statement {"
+                  - generic [ref=e624]:
+                    - generic [ref=e625]: "69"
+                    - generic [ref=e626]: + actions = [
+                  - generic [ref=e627]:
+                    - generic [ref=e628]: "70"
+                    - generic [ref=e629]: + "elasticloadbalancing:DeregisterTargets",
+                  - generic [ref=e630]:
+                    - generic [ref=e631]: "71"
+                    - generic [ref=e632]: + "elasticloadbalancing:RegisterTargets",
+                  - generic [ref=e633]:
+                    - generic [ref=e634]: "72"
+                    - generic [ref=e635]: "]"
+                  - generic [ref=e636]:
+                    - generic [ref=e637]: "73"
+                    - generic [ref=e638]: + effect = "Allow"
+                  - generic [ref=e639]:
+                    - generic [ref=e640]: "74"
+                    - generic [ref=e641]: + resources = [
+                  - generic [ref=e642]:
+                    - generic [ref=e643]: "75"
+                    - generic [ref=e644]: + "arn:aws:elasticloadbalancing:eu-west-2:590183751102:targetgroup/ctp-ecp-dev-euw2-refdata-tg/2e7dbbbf77e905fa",
+                  - generic [ref=e645]:
+                    - generic [ref=e646]: "76"
+                    - generic [ref=e647]: "]"
+                  - generic [ref=e648]:
+                    - generic [ref=e649]: "77"
+                    - generic [ref=e650]: + sid = "ManageAuroraWriterTargets"
+                  - generic [ref=e651]:
+                    - generic [ref=e652]: "78"
+                    - generic [ref=e653]: "}"
+                  - generic [ref=e654]:
+                    - generic [ref=e655]: "79"
+                    - generic [ref=e656]: "}"
+                  - generic [ref=e658]: "80"
+                  - generic [ref=e660]:
+                    - generic [ref=e661]: "81"
+                    - generic [ref=e662]: "# module.core_refdata_privatelink.aws_cloudwatch_event_rule.nlb_ip_updater[0] will be updated in-place"
+                  - generic [ref=e663]:
+                    - generic [ref=e664]: "82"
+                    - generic [ref=e665]: "~ resource \"aws_cloudwatch_event_rule\" \"nlb_ip_updater\" {"
+                  - generic [ref=e666]:
+                    - generic [ref=e667]: "83"
+                    - generic [ref=e668]: id = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater-schedule"
+                  - generic [ref=e669]:
+                    - generic [ref=e670]: "84"
+                    - generic [ref=e671]: name = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater-schedule"
+                  - generic [ref=e672]:
+                    - generic [ref=e673]: "85"
+                    - generic [ref=e674]: "~ tags = {"
+                  - generic [ref=e675]:
+                    - generic [ref=e676]: "86"
+                    - generic [ref=e677]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e678]:
+                    - generic [ref=e679]: "87"
+                    - generic [ref=e680]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e681]:
+                    - generic [ref=e682]: "88"
+                    - generic [ref=e683]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e684]:
+                    - generic [ref=e685]: "89"
+                    - generic [ref=e686]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e687]:
+                    - generic [ref=e688]: "90"
+                    - generic [ref=e689]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e690]:
+                    - generic [ref=e691]: "91"
+                    - generic [ref=e692]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e693]:
+                    - generic [ref=e694]: "92"
+                    - generic [ref=e695]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e696]:
+                    - generic [ref=e697]: "93"
+                    - generic [ref=e698]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e699]:
+                    - generic [ref=e700]: "94"
+                    - generic [ref=e701]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e702]:
+                    - generic [ref=e703]: "95"
+                    - generic [ref=e704]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e705]:
+                    - generic [ref=e706]: "96"
+                    - generic [ref=e707]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e708]:
+                    - generic [ref=e709]: "97"
+                    - generic [ref=e710]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e711]:
+                    - generic [ref=e712]: "98"
+                    - generic [ref=e713]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e714]:
+                    - generic [ref=e715]: "99"
+                    - generic [ref=e716]: "}"
+                  - generic [ref=e717]:
+                    - generic [ref=e718]: "100"
+                    - generic [ref=e719]: "~ tags_all = {"
+                  - generic [ref=e720]:
+                    - generic [ref=e721]: "101"
+                    - generic [ref=e722]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e723]:
+                    - generic [ref=e724]: "102"
+                    - generic [ref=e725]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e726]:
+                    - generic [ref=e727]: "103"
+                    - generic [ref=e728]: "}"
+                  - generic [ref=e729]:
+                    - generic [ref=e730]: "104"
+                    - generic [ref=e731]: "# (10 unchanged attributes hidden)"
+                  - generic [ref=e732]:
+                    - generic [ref=e733]: "105"
+                    - generic [ref=e734]: "}"
+                  - generic [ref=e736]: "106"
+                  - generic [ref=e738]:
+                    - generic [ref=e739]: "107"
+                    - generic [ref=e740]: "# module.core_refdata_privatelink.aws_cloudwatch_log_group.lambda[0] will be updated in-place"
+                  - generic [ref=e741]:
+                    - generic [ref=e742]: "108"
+                    - generic [ref=e743]: "~ resource \"aws_cloudwatch_log_group\" \"lambda\" {"
+                  - generic [ref=e744]:
+                    - generic [ref=e745]: "109"
+                    - generic [ref=e746]: id = "/aws/lambda/ctp-ecp-dev-euw2-refdata-nlb-ip-updater"
+                  - generic [ref=e747]:
+                    - generic [ref=e748]: "110"
+                    - generic [ref=e749]: name = "/aws/lambda/ctp-ecp-dev-euw2-refdata-nlb-ip-updater"
+                  - generic [ref=e750]:
+                    - generic [ref=e751]: "111"
+                    - generic [ref=e752]: "~ tags = {"
+                  - generic [ref=e753]:
+                    - generic [ref=e754]: "112"
+                    - generic [ref=e755]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e756]:
+                    - generic [ref=e757]: "113"
+                    - generic [ref=e758]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e759]:
+                    - generic [ref=e760]: "114"
+                    - generic [ref=e761]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e762]:
+                    - generic [ref=e763]: "115"
+                    - generic [ref=e764]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e765]:
+                    - generic [ref=e766]: "116"
+                    - generic [ref=e767]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e768]:
+                    - generic [ref=e769]: "117"
+                    - generic [ref=e770]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e771]:
+                    - generic [ref=e772]: "118"
+                    - generic [ref=e773]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e774]:
+                    - generic [ref=e775]: "119"
+                    - generic [ref=e776]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e777]:
+                    - generic [ref=e778]: "120"
+                    - generic [ref=e779]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e780]:
+                    - generic [ref=e781]: "121"
+                    - generic [ref=e782]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e783]:
+                    - generic [ref=e784]: "122"
+                    - generic [ref=e785]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e786]:
+                    - generic [ref=e787]: "123"
+                    - generic [ref=e788]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e789]:
+                    - generic [ref=e790]: "124"
+                    - generic [ref=e791]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e792]:
+                    - generic [ref=e793]: "125"
+                    - generic [ref=e794]: "}"
+                  - generic [ref=e795]:
+                    - generic [ref=e796]: "126"
+                    - generic [ref=e797]: "~ tags_all = {"
+                  - generic [ref=e798]:
+                    - generic [ref=e799]: "127"
+                    - generic [ref=e800]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e801]:
+                    - generic [ref=e802]: "128"
+                    - generic [ref=e803]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e804]:
+                    - generic [ref=e805]: "129"
+                    - generic [ref=e806]: "}"
+                  - generic [ref=e807]:
+                    - generic [ref=e808]: "130"
+                    - generic [ref=e809]: "# (8 unchanged attributes hidden)"
+                  - generic [ref=e810]:
+                    - generic [ref=e811]: "131"
+                    - generic [ref=e812]: "}"
+                  - generic [ref=e814]: "132"
+                  - generic [ref=e816]:
+                    - generic [ref=e817]: "133"
+                    - generic [ref=e818]: "# module.core_refdata_privatelink.aws_iam_role.lambda[0] will be updated in-place"
+                  - generic [ref=e819]:
+                    - generic [ref=e820]: "134"
+                    - generic [ref=e821]: "~ resource \"aws_iam_role\" \"lambda\" {"
+                  - generic [ref=e822]:
+                    - generic [ref=e823]: "135"
+                    - generic [ref=e824]: id = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater-role"
+                  - generic [ref=e825]:
+                    - generic [ref=e826]: "136"
+                    - generic [ref=e827]: name = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater-role"
+                  - generic [ref=e828]:
+                    - generic [ref=e829]: "137"
+                    - generic [ref=e830]: "~ tags = {"
+                  - generic [ref=e831]:
+                    - generic [ref=e832]: "138"
+                    - generic [ref=e833]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e834]:
+                    - generic [ref=e835]: "139"
+                    - generic [ref=e836]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e837]:
+                    - generic [ref=e838]: "140"
+                    - generic [ref=e839]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e840]:
+                    - generic [ref=e841]: "141"
+                    - generic [ref=e842]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e843]:
+                    - generic [ref=e844]: "142"
+                    - generic [ref=e845]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e846]:
+                    - generic [ref=e847]: "143"
+                    - generic [ref=e848]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e849]:
+                    - generic [ref=e850]: "144"
+                    - generic [ref=e851]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e852]:
+                    - generic [ref=e853]: "145"
+                    - generic [ref=e854]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e855]:
+                    - generic [ref=e856]: "146"
+                    - generic [ref=e857]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e858]:
+                    - generic [ref=e859]: "147"
+                    - generic [ref=e860]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e861]:
+                    - generic [ref=e862]: "148"
+                    - generic [ref=e863]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e864]:
+                    - generic [ref=e865]: "149"
+                    - generic [ref=e866]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e867]:
+                    - generic [ref=e868]: "150"
+                    - generic [ref=e869]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e870]:
+                    - generic [ref=e871]: "151"
+                    - generic [ref=e872]: "}"
+                  - generic [ref=e873]:
+                    - generic [ref=e874]: "152"
+                    - generic [ref=e875]: "~ tags_all = {"
+                  - generic [ref=e876]:
+                    - generic [ref=e877]: "153"
+                    - generic [ref=e878]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e879]:
+                    - generic [ref=e880]: "154"
+                    - generic [ref=e881]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e882]:
+                    - generic [ref=e883]: "155"
+                    - generic [ref=e884]: "}"
+                  - generic [ref=e885]:
+                    - generic [ref=e886]: "156"
+                    - generic [ref=e887]: "# (11 unchanged attributes hidden)"
+                  - generic [ref=e889]: "157"
+                  - generic [ref=e891]:
+                    - generic [ref=e892]: "158"
+                    - generic [ref=e893]: "# (1 unchanged block hidden)"
+                  - generic [ref=e894]:
+                    - generic [ref=e895]: "159"
+                    - generic [ref=e896]: "}"
+                  - generic [ref=e898]: "160"
+                  - generic [ref=e900]:
+                    - generic [ref=e901]: "161"
+                    - generic [ref=e902]: "# module.core_refdata_privatelink.aws_iam_role_policy.lambda[0] will be updated in-place"
+                  - generic [ref=e903]:
+                    - generic [ref=e904]: "162"
+                    - generic [ref=e905]: "~ resource \"aws_iam_role_policy\" \"lambda\" {"
+                  - generic [ref=e906]:
+                    - generic [ref=e907]: "163"
+                    - generic [ref=e908]: id = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater-role:ctp-ecp-dev-euw2-refdata-nlb-ip-updater-policy"
+                  - generic [ref=e909]:
+                    - generic [ref=e910]: "164"
+                    - generic [ref=e911]: name = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater-policy"
+                  - generic [ref=e912]:
+                    - generic [ref=e913]: "165"
+                    - generic [ref=e914]: ~ policy = jsonencode(
+                  - generic [ref=e915]:
+                    - generic [ref=e916]: "166"
+                    - generic [ref=e917]: "{"
+                  - generic [ref=e918]:
+                    - generic [ref=e919]: "167"
+                    - generic [ref=e920]: "- Statement = ["
+                  - generic [ref=e921]:
+                    - generic [ref=e922]: "168"
+                    - generic [ref=e923]: "- {"
+                  - generic [ref=e924]:
+                    - generic [ref=e925]: "169"
+                    - generic [ref=e926]: "- Action = \"elasticloadbalancing:DescribeTargetHealth\""
+                  - generic [ref=e927]:
+                    - generic [ref=e928]: "170"
+                    - generic [ref=e929]: "- Effect = \"Allow\""
+                  - generic [ref=e930]:
+                    - generic [ref=e931]: "171"
+                    - generic [ref=e932]: "- Resource = \"*\""
+                  - generic [ref=e933]:
+                    - generic [ref=e934]: "172"
+                    - generic [ref=e935]: "- Sid = \"DescribeTargetHealth\""
+                  - generic [ref=e936]:
+                    - generic [ref=e937]: "173"
+                    - generic [ref=e938]: "},"
+                  - generic [ref=e939]:
+                    - generic [ref=e940]: "174"
+                    - generic [ref=e941]: "- {"
+                  - generic [ref=e942]:
+                    - generic [ref=e943]: "175"
+                    - generic [ref=e944]: "- Action = ["
+                  - generic [ref=e945]:
+                    - generic [ref=e946]: "176"
+                    - generic [ref=e947]: "- \"elasticloadbalancing:RegisterTargets\","
+                  - generic [ref=e948]:
+                    - generic [ref=e949]: "177"
+                    - generic [ref=e950]: "- \"elasticloadbalancing:DeregisterTargets\","
+                  - generic [ref=e951]:
+                    - generic [ref=e952]: "178"
+                    - generic [ref=e953]: "]"
+                  - generic [ref=e954]:
+                    - generic [ref=e955]: "179"
+                    - generic [ref=e956]: "- Effect = \"Allow\""
+                  - generic [ref=e957]:
+                    - generic [ref=e958]: "180"
+                    - generic [ref=e959]: "- Resource = \"arn:aws:elasticloadbalancing:eu-west-2:590183751102:targetgroup/ctp-ecp-dev-euw2-refdata-tg/2e7dbbbf77e905fa\""
+                  - generic [ref=e960]:
+                    - generic [ref=e961]: "181"
+                    - generic [ref=e962]: "- Sid = \"ManageAuroraWriterTargets\""
+                  - generic [ref=e963]:
+                    - generic [ref=e964]: "182"
+                    - generic [ref=e965]: "},"
+                  - generic [ref=e966]:
+                    - generic [ref=e967]: "183"
+                    - generic [ref=e968]: "]"
+                  - generic [ref=e969]:
+                    - generic [ref=e970]: "184"
+                    - generic [ref=e971]: "- Version = \"2012-10-17\""
+                  - generic [ref=e972]:
+                    - generic [ref=e973]: "185"
+                    - generic [ref=e974]: "}"
+                  - generic [ref=e975]:
+                    - generic [ref=e976]: "186"
+                    - generic [ref=e977]: ) -> (known after apply)
+                  - generic [ref=e978]:
+                    - generic [ref=e979]: "187"
+                    - generic [ref=e980]: "# (2 unchanged attributes hidden)"
+                  - generic [ref=e981]:
+                    - generic [ref=e982]: "188"
+                    - generic [ref=e983]: "}"
+                  - generic [ref=e985]: "189"
+                  - generic [ref=e987]:
+                    - generic [ref=e988]: "190"
+                    - generic [ref=e989]: "# module.core_refdata_privatelink.aws_lambda_function.nlb_ip_updater[0] will be updated in-place"
+                  - generic [ref=e990]:
+                    - generic [ref=e991]: "191"
+                    - generic [ref=e992]: "~ resource \"aws_lambda_function\" \"nlb_ip_updater\" {"
+                  - generic [ref=e993]:
+                    - generic [ref=e994]: "192"
+                    - generic [ref=e995]: id = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater"
+                  - generic [ref=e996]:
+                    - generic [ref=e997]: "193"
+                    - generic [ref=e998]: "~ tags = {"
+                  - generic [ref=e999]:
+                    - generic [ref=e1000]: "194"
+                    - generic [ref=e1001]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1002]:
+                    - generic [ref=e1003]: "195"
+                    - generic [ref=e1004]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1005]:
+                    - generic [ref=e1006]: "196"
+                    - generic [ref=e1007]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1008]:
+                    - generic [ref=e1009]: "197"
+                    - generic [ref=e1010]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1011]:
+                    - generic [ref=e1012]: "198"
+                    - generic [ref=e1013]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1014]:
+                    - generic [ref=e1015]: "199"
+                    - generic [ref=e1016]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1017]:
+                    - generic [ref=e1018]: "200"
+                    - generic [ref=e1019]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1020]:
+                    - generic [ref=e1021]: "201"
+                    - generic [ref=e1022]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1023]:
+                    - generic [ref=e1024]: "202"
+                    - generic [ref=e1025]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1026]:
+                    - generic [ref=e1027]: "203"
+                    - generic [ref=e1028]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1029]:
+                    - generic [ref=e1030]: "204"
+                    - generic [ref=e1031]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1032]:
+                    - generic [ref=e1033]: "205"
+                    - generic [ref=e1034]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1035]:
+                    - generic [ref=e1036]: "206"
+                    - generic [ref=e1037]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1038]:
+                    - generic [ref=e1039]: "207"
+                    - generic [ref=e1040]: "}"
+                  - generic [ref=e1041]:
+                    - generic [ref=e1042]: "208"
+                    - generic [ref=e1043]: "~ tags_all = {"
+                  - generic [ref=e1044]:
+                    - generic [ref=e1045]: "209"
+                    - generic [ref=e1046]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1047]:
+                    - generic [ref=e1048]: "210"
+                    - generic [ref=e1049]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1050]:
+                    - generic [ref=e1051]: "211"
+                    - generic [ref=e1052]: "}"
+                  - generic [ref=e1053]:
+                    - generic [ref=e1054]: "212"
+                    - generic [ref=e1055]: "# (31 unchanged attributes hidden)"
+                  - generic [ref=e1057]: "213"
+                  - generic [ref=e1059]:
+                    - generic [ref=e1060]: "214"
+                    - generic [ref=e1061]: "# (5 unchanged blocks hidden)"
+                  - generic [ref=e1062]:
+                    - generic [ref=e1063]: "215"
+                    - generic [ref=e1064]: "}"
+                  - generic [ref=e1066]: "216"
+                  - generic [ref=e1068]:
+                    - generic [ref=e1069]: "217"
+                    - generic [ref=e1070]: "# module.core_refdata_privatelink.aws_lb.aurora[0] will be updated in-place"
+                  - generic [ref=e1071]:
+                    - generic [ref=e1072]: "218"
+                    - generic [ref=e1073]: "~ resource \"aws_lb\" \"aurora\" {"
+                  - generic [ref=e1074]:
+                    - generic [ref=e1075]: "219"
+                    - generic [ref=e1076]: id = "arn:aws:elasticloadbalancing:eu-west-2:590183751102:loadbalancer/net/ctp-ecp-dev-euw2-refdata-nlb/1795cbe37f1a9063"
+                  - generic [ref=e1077]:
+                    - generic [ref=e1078]: "220"
+                    - generic [ref=e1079]: name = "ctp-ecp-dev-euw2-refdata-nlb"
+                  - generic [ref=e1080]:
+                    - generic [ref=e1081]: "221"
+                    - generic [ref=e1082]: "~ tags = {"
+                  - generic [ref=e1083]:
+                    - generic [ref=e1084]: "222"
+                    - generic [ref=e1085]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1086]:
+                    - generic [ref=e1087]: "223"
+                    - generic [ref=e1088]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1089]:
+                    - generic [ref=e1090]: "224"
+                    - generic [ref=e1091]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1092]:
+                    - generic [ref=e1093]: "225"
+                    - generic [ref=e1094]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1095]:
+                    - generic [ref=e1096]: "226"
+                    - generic [ref=e1097]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1098]:
+                    - generic [ref=e1099]: "227"
+                    - generic [ref=e1100]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1101]:
+                    - generic [ref=e1102]: "228"
+                    - generic [ref=e1103]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1104]:
+                    - generic [ref=e1105]: "229"
+                    - generic [ref=e1106]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1107]:
+                    - generic [ref=e1108]: "230"
+                    - generic [ref=e1109]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1110]:
+                    - generic [ref=e1111]: "231"
+                    - generic [ref=e1112]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1113]:
+                    - generic [ref=e1114]: "232"
+                    - generic [ref=e1115]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1116]:
+                    - generic [ref=e1117]: "233"
+                    - generic [ref=e1118]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1119]:
+                    - generic [ref=e1120]: "234"
+                    - generic [ref=e1121]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1122]:
+                    - generic [ref=e1123]: "235"
+                    - generic [ref=e1124]: "}"
+                  - generic [ref=e1125]:
+                    - generic [ref=e1126]: "236"
+                    - generic [ref=e1127]: "~ tags_all = {"
+                  - generic [ref=e1128]:
+                    - generic [ref=e1129]: "237"
+                    - generic [ref=e1130]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1131]:
+                    - generic [ref=e1132]: "238"
+                    - generic [ref=e1133]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1134]:
+                    - generic [ref=e1135]: "239"
+                    - generic [ref=e1136]: "}"
+                  - generic [ref=e1137]:
+                    - generic [ref=e1138]: "240"
+                    - generic [ref=e1139]: "# (19 unchanged attributes hidden)"
+                  - generic [ref=e1141]: "241"
+                  - generic [ref=e1143]:
+                    - generic [ref=e1144]: "242"
+                    - generic [ref=e1145]: "# (4 unchanged blocks hidden)"
+                  - generic [ref=e1146]:
+                    - generic [ref=e1147]: "243"
+                    - generic [ref=e1148]: "}"
+                  - generic [ref=e1150]: "244"
+                  - generic [ref=e1152]:
+                    - generic [ref=e1153]: "245"
+                    - generic [ref=e1154]: "# module.core_refdata_privatelink.aws_lb_listener.aurora[0] will be updated in-place"
+                  - generic [ref=e1155]:
+                    - generic [ref=e1156]: "246"
+                    - generic [ref=e1157]: "~ resource \"aws_lb_listener\" \"aurora\" {"
+                  - generic [ref=e1158]:
+                    - generic [ref=e1159]: "247"
+                    - generic [ref=e1160]: id = "arn:aws:elasticloadbalancing:eu-west-2:590183751102:listener/net/ctp-ecp-dev-euw2-refdata-nlb/1795cbe37f1a9063/790fa38d14b282b0"
+                  - generic [ref=e1161]:
+                    - generic [ref=e1162]: "248"
+                    - generic [ref=e1163]: "~ tags = {"
+                  - generic [ref=e1164]:
+                    - generic [ref=e1165]: "249"
+                    - generic [ref=e1166]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1167]:
+                    - generic [ref=e1168]: "250"
+                    - generic [ref=e1169]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1170]:
+                    - generic [ref=e1171]: "251"
+                    - generic [ref=e1172]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1173]:
+                    - generic [ref=e1174]: "252"
+                    - generic [ref=e1175]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1176]:
+                    - generic [ref=e1177]: "253"
+                    - generic [ref=e1178]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1179]:
+                    - generic [ref=e1180]: "254"
+                    - generic [ref=e1181]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1182]:
+                    - generic [ref=e1183]: "255"
+                    - generic [ref=e1184]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1185]:
+                    - generic [ref=e1186]: "256"
+                    - generic [ref=e1187]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1188]:
+                    - generic [ref=e1189]: "257"
+                    - generic [ref=e1190]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1191]:
+                    - generic [ref=e1192]: "258"
+                    - generic [ref=e1193]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1194]:
+                    - generic [ref=e1195]: "259"
+                    - generic [ref=e1196]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1197]:
+                    - generic [ref=e1198]: "260"
+                    - generic [ref=e1199]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1200]:
+                    - generic [ref=e1201]: "261"
+                    - generic [ref=e1202]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1203]:
+                    - generic [ref=e1204]: "262"
+                    - generic [ref=e1205]: "}"
+                  - generic [ref=e1206]:
+                    - generic [ref=e1207]: "263"
+                    - generic [ref=e1208]: "~ tags_all = {"
+                  - generic [ref=e1209]:
+                    - generic [ref=e1210]: "264"
+                    - generic [ref=e1211]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1212]:
+                    - generic [ref=e1213]: "265"
+                    - generic [ref=e1214]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1215]:
+                    - generic [ref=e1216]: "266"
+                    - generic [ref=e1217]: "}"
+                  - generic [ref=e1218]:
+                    - generic [ref=e1219]: "267"
+                    - generic [ref=e1220]: "# (7 unchanged attributes hidden)"
+                  - generic [ref=e1222]: "268"
+                  - generic [ref=e1224]:
+                    - generic [ref=e1225]: "269"
+                    - generic [ref=e1226]: "# (1 unchanged block hidden)"
+                  - generic [ref=e1227]:
+                    - generic [ref=e1228]: "270"
+                    - generic [ref=e1229]: "}"
+                  - generic [ref=e1231]: "271"
+                  - generic [ref=e1233]:
+                    - generic [ref=e1234]: "272"
+                    - generic [ref=e1235]: "# module.core_refdata_privatelink.aws_lb_target_group.aurora_writer[0] will be updated in-place"
+                  - generic [ref=e1236]:
+                    - generic [ref=e1237]: "273"
+                    - generic [ref=e1238]: "~ resource \"aws_lb_target_group\" \"aurora_writer\" {"
+                  - generic [ref=e1239]:
+                    - generic [ref=e1240]: "274"
+                    - generic [ref=e1241]: id = "arn:aws:elasticloadbalancing:eu-west-2:590183751102:targetgroup/ctp-ecp-dev-euw2-refdata-tg/2e7dbbbf77e905fa"
+                  - generic [ref=e1242]:
+                    - generic [ref=e1243]: "275"
+                    - generic [ref=e1244]: name = "ctp-ecp-dev-euw2-refdata-tg"
+                  - generic [ref=e1245]:
+                    - generic [ref=e1246]: "276"
+                    - generic [ref=e1247]: "~ tags = {"
+                  - generic [ref=e1248]:
+                    - generic [ref=e1249]: "277"
+                    - generic [ref=e1250]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1251]:
+                    - generic [ref=e1252]: "278"
+                    - generic [ref=e1253]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1254]:
+                    - generic [ref=e1255]: "279"
+                    - generic [ref=e1256]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1257]:
+                    - generic [ref=e1258]: "280"
+                    - generic [ref=e1259]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1260]:
+                    - generic [ref=e1261]: "281"
+                    - generic [ref=e1262]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1263]:
+                    - generic [ref=e1264]: "282"
+                    - generic [ref=e1265]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1266]:
+                    - generic [ref=e1267]: "283"
+                    - generic [ref=e1268]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1269]:
+                    - generic [ref=e1270]: "284"
+                    - generic [ref=e1271]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1272]:
+                    - generic [ref=e1273]: "285"
+                    - generic [ref=e1274]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1275]:
+                    - generic [ref=e1276]: "286"
+                    - generic [ref=e1277]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1278]:
+                    - generic [ref=e1279]: "287"
+                    - generic [ref=e1280]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1281]:
+                    - generic [ref=e1282]: "288"
+                    - generic [ref=e1283]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1284]:
+                    - generic [ref=e1285]: "289"
+                    - generic [ref=e1286]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1287]:
+                    - generic [ref=e1288]: "290"
+                    - generic [ref=e1289]: "}"
+                  - generic [ref=e1290]:
+                    - generic [ref=e1291]: "291"
+                    - generic [ref=e1292]: "~ tags_all = {"
+                  - generic [ref=e1293]:
+                    - generic [ref=e1294]: "292"
+                    - generic [ref=e1295]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1296]:
+                    - generic [ref=e1297]: "293"
+                    - generic [ref=e1298]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1299]:
+                    - generic [ref=e1300]: "294"
+                    - generic [ref=e1301]: "}"
+                  - generic [ref=e1302]:
+                    - generic [ref=e1303]: "295"
+                    - generic [ref=e1304]: "# (18 unchanged attributes hidden)"
+                  - generic [ref=e1306]: "296"
+                  - generic [ref=e1308]:
+                    - generic [ref=e1309]: "297"
+                    - generic [ref=e1310]: "# (5 unchanged blocks hidden)"
+                  - generic [ref=e1311]:
+                    - generic [ref=e1312]: "298"
+                    - generic [ref=e1313]: "}"
+                  - generic [ref=e1315]: "299"
+                  - generic [ref=e1317]:
+                    - generic [ref=e1318]: "300"
+                    - generic [ref=e1319]: "# module.core_refdata_privatelink.aws_security_group.lambda[0] will be updated in-place"
+                  - generic [ref=e1320]:
+                    - generic [ref=e1321]: "301"
+                    - generic [ref=e1322]: "~ resource \"aws_security_group\" \"lambda\" {"
+                  - generic [ref=e1323]:
+                    - generic [ref=e1324]: "302"
+                    - generic [ref=e1325]: id = "sg-0a5e76c951e77cfe3"
+                  - generic [ref=e1326]:
+                    - generic [ref=e1327]: "303"
+                    - generic [ref=e1328]: name = "ctp-ecp-dev-euw2-refdata-nlb-ip-updater-sg"
+                  - generic [ref=e1329]:
+                    - generic [ref=e1330]: "304"
+                    - generic [ref=e1331]: "~ tags = {"
+                  - generic [ref=e1332]:
+                    - generic [ref=e1333]: "305"
+                    - generic [ref=e1334]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1335]:
+                    - generic [ref=e1336]: "306"
+                    - generic [ref=e1337]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1338]:
+                    - generic [ref=e1339]: "307"
+                    - generic [ref=e1340]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1341]:
+                    - generic [ref=e1342]: "308"
+                    - generic [ref=e1343]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1344]:
+                    - generic [ref=e1345]: "309"
+                    - generic [ref=e1346]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1347]:
+                    - generic [ref=e1348]: "310"
+                    - generic [ref=e1349]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1350]:
+                    - generic [ref=e1351]: "311"
+                    - generic [ref=e1352]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1353]:
+                    - generic [ref=e1354]: "312"
+                    - generic [ref=e1355]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1356]:
+                    - generic [ref=e1357]: "313"
+                    - generic [ref=e1358]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1359]:
+                    - generic [ref=e1360]: "314"
+                    - generic [ref=e1361]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1362]:
+                    - generic [ref=e1363]: "315"
+                    - generic [ref=e1364]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1365]:
+                    - generic [ref=e1366]: "316"
+                    - generic [ref=e1367]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1368]:
+                    - generic [ref=e1369]: "317"
+                    - generic [ref=e1370]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1371]:
+                    - generic [ref=e1372]: "318"
+                    - generic [ref=e1373]: "}"
+                  - generic [ref=e1374]:
+                    - generic [ref=e1375]: "319"
+                    - generic [ref=e1376]: "~ tags_all = {"
+                  - generic [ref=e1377]:
+                    - generic [ref=e1378]: "320"
+                    - generic [ref=e1379]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1380]:
+                    - generic [ref=e1381]: "321"
+                    - generic [ref=e1382]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1383]:
+                    - generic [ref=e1384]: "322"
+                    - generic [ref=e1385]: "}"
+                  - generic [ref=e1386]:
+                    - generic [ref=e1387]: "323"
+                    - generic [ref=e1388]: "# (9 unchanged attributes hidden)"
+                  - generic [ref=e1389]:
+                    - generic [ref=e1390]: "324"
+                    - generic [ref=e1391]: "}"
+                  - generic [ref=e1393]: "325"
+                  - generic [ref=e1395]:
+                    - generic [ref=e1396]: "326"
+                    - generic [ref=e1397]: "# module.core_refdata_privatelink.aws_ssm_parameter.endpoint_service_name[0] will be updated in-place"
+                  - generic [ref=e1398]:
+                    - generic [ref=e1399]: "327"
+                    - generic [ref=e1400]: "~ resource \"aws_ssm_parameter\" \"endpoint_service_name\" {"
+                  - generic [ref=e1401]:
+                    - generic [ref=e1402]: "328"
+                    - generic [ref=e1403]: id = "/dev/core-refdata/endpoint-service-name"
+                  - generic [ref=e1404]:
+                    - generic [ref=e1405]: "329"
+                    - generic [ref=e1406]: name = "/dev/core-refdata/endpoint-service-name"
+                  - generic [ref=e1407]:
+                    - generic [ref=e1408]: "330"
+                    - generic [ref=e1409]: "~ tags = {"
+                  - generic [ref=e1410]:
+                    - generic [ref=e1411]: "331"
+                    - generic [ref=e1412]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1413]:
+                    - generic [ref=e1414]: "332"
+                    - generic [ref=e1415]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1416]:
+                    - generic [ref=e1417]: "333"
+                    - generic [ref=e1418]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1419]:
+                    - generic [ref=e1420]: "334"
+                    - generic [ref=e1421]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1422]:
+                    - generic [ref=e1423]: "335"
+                    - generic [ref=e1424]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1425]:
+                    - generic [ref=e1426]: "336"
+                    - generic [ref=e1427]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1428]:
+                    - generic [ref=e1429]: "337"
+                    - generic [ref=e1430]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1431]:
+                    - generic [ref=e1432]: "338"
+                    - generic [ref=e1433]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1434]:
+                    - generic [ref=e1435]: "339"
+                    - generic [ref=e1436]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1437]:
+                    - generic [ref=e1438]: "340"
+                    - generic [ref=e1439]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1440]:
+                    - generic [ref=e1441]: "341"
+                    - generic [ref=e1442]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1443]:
+                    - generic [ref=e1444]: "342"
+                    - generic [ref=e1445]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1446]:
+                    - generic [ref=e1447]: "343"
+                    - generic [ref=e1448]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1449]:
+                    - generic [ref=e1450]: "344"
+                    - generic [ref=e1451]: "}"
+                  - generic [ref=e1452]:
+                    - generic [ref=e1453]: "345"
+                    - generic [ref=e1454]: "~ tags_all = {"
+                  - generic [ref=e1455]:
+                    - generic [ref=e1456]: "346"
+                    - generic [ref=e1457]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1458]:
+                    - generic [ref=e1459]: "347"
+                    - generic [ref=e1460]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1461]:
+                    - generic [ref=e1462]: "348"
+                    - generic [ref=e1463]: "}"
+                  - generic [ref=e1464]:
+                    - generic [ref=e1465]: "349"
+                    - generic [ref=e1466]: "# (12 unchanged attributes hidden)"
+                  - generic [ref=e1467]:
+                    - generic [ref=e1468]: "350"
+                    - generic [ref=e1469]: "}"
+                  - generic [ref=e1471]: "351"
+                  - generic [ref=e1473]:
+                    - generic [ref=e1474]: "352"
+                    - generic [ref=e1475]: "# module.core_refdata_privatelink.aws_ssm_parameter.nlb_arn[0] will be updated in-place"
+                  - generic [ref=e1476]:
+                    - generic [ref=e1477]: "353"
+                    - generic [ref=e1478]: "~ resource \"aws_ssm_parameter\" \"nlb_arn\" {"
+                  - generic [ref=e1479]:
+                    - generic [ref=e1480]: "354"
+                    - generic [ref=e1481]: id = "/dev/core-refdata/nlb-arn"
+                  - generic [ref=e1482]:
+                    - generic [ref=e1483]: "355"
+                    - generic [ref=e1484]: name = "/dev/core-refdata/nlb-arn"
+                  - generic [ref=e1485]:
+                    - generic [ref=e1486]: "356"
+                    - generic [ref=e1487]: "~ tags = {"
+                  - generic [ref=e1488]:
+                    - generic [ref=e1489]: "357"
+                    - generic [ref=e1490]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1491]:
+                    - generic [ref=e1492]: "358"
+                    - generic [ref=e1493]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1494]:
+                    - generic [ref=e1495]: "359"
+                    - generic [ref=e1496]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1497]:
+                    - generic [ref=e1498]: "360"
+                    - generic [ref=e1499]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1500]:
+                    - generic [ref=e1501]: "361"
+                    - generic [ref=e1502]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1503]:
+                    - generic [ref=e1504]: "362"
+                    - generic [ref=e1505]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1506]:
+                    - generic [ref=e1507]: "363"
+                    - generic [ref=e1508]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1509]:
+                    - generic [ref=e1510]: "364"
+                    - generic [ref=e1511]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1512]:
+                    - generic [ref=e1513]: "365"
+                    - generic [ref=e1514]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1515]:
+                    - generic [ref=e1516]: "366"
+                    - generic [ref=e1517]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1518]:
+                    - generic [ref=e1519]: "367"
+                    - generic [ref=e1520]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1521]:
+                    - generic [ref=e1522]: "368"
+                    - generic [ref=e1523]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1524]:
+                    - generic [ref=e1525]: "369"
+                    - generic [ref=e1526]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1527]:
+                    - generic [ref=e1528]: "370"
+                    - generic [ref=e1529]: "}"
+                  - generic [ref=e1530]:
+                    - generic [ref=e1531]: "371"
+                    - generic [ref=e1532]: "~ tags_all = {"
+                  - generic [ref=e1533]:
+                    - generic [ref=e1534]: "372"
+                    - generic [ref=e1535]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1536]:
+                    - generic [ref=e1537]: "373"
+                    - generic [ref=e1538]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1539]:
+                    - generic [ref=e1540]: "374"
+                    - generic [ref=e1541]: "}"
+                  - generic [ref=e1542]:
+                    - generic [ref=e1543]: "375"
+                    - generic [ref=e1544]: "# (12 unchanged attributes hidden)"
+                  - generic [ref=e1545]:
+                    - generic [ref=e1546]: "376"
+                    - generic [ref=e1547]: "}"
+                  - generic [ref=e1549]: "377"
+                  - generic [ref=e1551]:
+                    - generic [ref=e1552]: "378"
+                    - generic [ref=e1553]: "# module.core_refdata_privatelink.aws_vpc_endpoint_service.aurora[0] will be updated in-place"
+                  - generic [ref=e1554]:
+                    - generic [ref=e1555]: "379"
+                    - generic [ref=e1556]: "~ resource \"aws_vpc_endpoint_service\" \"aurora\" {"
+                  - generic [ref=e1557]:
+                    - generic [ref=e1558]: "380"
+                    - generic [ref=e1559]: id = "vpce-svc-09dcead16da870b3b"
+                  - generic [ref=e1560]:
+                    - generic [ref=e1561]: "381"
+                    - generic [ref=e1562]: "~ tags = {"
+                  - generic [ref=e1563]:
+                    - generic [ref=e1564]: "382"
+                    - generic [ref=e1565]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1566]:
+                    - generic [ref=e1567]: "383"
+                    - generic [ref=e1568]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1569]:
+                    - generic [ref=e1570]: "384"
+                    - generic [ref=e1571]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1572]:
+                    - generic [ref=e1573]: "385"
+                    - generic [ref=e1574]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1575]:
+                    - generic [ref=e1576]: "386"
+                    - generic [ref=e1577]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1578]:
+                    - generic [ref=e1579]: "387"
+                    - generic [ref=e1580]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1581]:
+                    - generic [ref=e1582]: "388"
+                    - generic [ref=e1583]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1584]:
+                    - generic [ref=e1585]: "389"
+                    - generic [ref=e1586]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1587]:
+                    - generic [ref=e1588]: "390"
+                    - generic [ref=e1589]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1590]:
+                    - generic [ref=e1591]: "391"
+                    - generic [ref=e1592]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1593]:
+                    - generic [ref=e1594]: "392"
+                    - generic [ref=e1595]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1596]:
+                    - generic [ref=e1597]: "393"
+                    - generic [ref=e1598]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1599]:
+                    - generic [ref=e1600]: "394"
+                    - generic [ref=e1601]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1602]:
+                    - generic [ref=e1603]: "395"
+                    - generic [ref=e1604]: "}"
+                  - generic [ref=e1605]:
+                    - generic [ref=e1606]: "396"
+                    - generic [ref=e1607]: "~ tags_all = {"
+                  - generic [ref=e1608]:
+                    - generic [ref=e1609]: "397"
+                    - generic [ref=e1610]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1611]:
+                    - generic [ref=e1612]: "398"
+                    - generic [ref=e1613]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1614]:
+                    - generic [ref=e1615]: "399"
+                    - generic [ref=e1616]: "}"
+                  - generic [ref=e1617]:
+                    - generic [ref=e1618]: "400"
+                    - generic [ref=e1619]: "# (16 unchanged attributes hidden)"
+                  - generic [ref=e1620]:
+                    - generic [ref=e1621]: "401"
+                    - generic [ref=e1622]: "}"
+                  - generic [ref=e1624]: "402"
+                  - generic [ref=e1626]:
+                    - generic [ref=e1627]: "403"
+                    - generic [ref=e1628]: "# module.core_refdata_privatelink.aws_vpc_security_group_egress_rule.lambda_all[0] will be updated in-place"
+                  - generic [ref=e1629]:
+                    - generic [ref=e1630]: "404"
+                    - generic [ref=e1631]: "~ resource \"aws_vpc_security_group_egress_rule\" \"lambda_all\" {"
+                  - generic [ref=e1632]:
+                    - generic [ref=e1633]: "405"
+                    - generic [ref=e1634]: id = "sgr-01c4bb9439f7c400e"
+                  - generic [ref=e1635]:
+                    - generic [ref=e1636]: "406"
+                    - generic [ref=e1637]: "~ tags = {"
+                  - generic [ref=e1638]:
+                    - generic [ref=e1639]: "407"
+                    - generic [ref=e1640]: "\"app:environment\" = \"dev\""
+                  - generic [ref=e1641]:
+                    - generic [ref=e1642]: "408"
+                    - generic [ref=e1643]: "\"cost:center\" = \"ECP-Development\""
+                  - generic [ref=e1644]:
+                    - generic [ref=e1645]: "409"
+                    - generic [ref=e1646]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e1647]:
+                    - generic [ref=e1648]: "410"
+                    - generic [ref=e1649]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e1650]:
+                    - generic [ref=e1651]: "411"
+                    - generic [ref=e1652]: "\"platform:env\" = \"dev-euw2\""
+                  - generic [ref=e1653]:
+                    - generic [ref=e1654]: "412"
+                    - generic [ref=e1655]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e1656]:
+                    - generic [ref=e1657]: "413"
+                    - generic [ref=e1658]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e1659]:
+                    - generic [ref=e1660]: "414"
+                    - generic [ref=e1661]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e1662]:
+                    - generic [ref=e1663]: "415"
+                    - generic [ref=e1664]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1665]:
+                    - generic [ref=e1666]: "416"
+                    - generic [ref=e1667]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e1668]:
+                    - generic [ref=e1669]: "417"
+                    - generic [ref=e1670]: "\"user:owner\" = \"Development\""
+                  - generic [ref=e1671]:
+                    - generic [ref=e1672]: "418"
+                    - generic [ref=e1673]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e1674]:
+                    - generic [ref=e1675]: "419"
+                    - generic [ref=e1676]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e1677]:
+                    - generic [ref=e1678]: "420"
+                    - generic [ref=e1679]: "}"
+                  - generic [ref=e1680]:
+                    - generic [ref=e1681]: "421"
+                    - generic [ref=e1682]: "~ tags_all = {"
+                  - generic [ref=e1683]:
+                    - generic [ref=e1684]: "422"
+                    - generic [ref=e1685]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e1686]:
+                    - generic [ref=e1687]: "423"
+                    - generic [ref=e1688]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e1689]:
+                    - generic [ref=e1690]: "424"
+                    - generic [ref=e1691]: "}"
+                  - generic [ref=e1692]:
+                    - generic [ref=e1693]: "425"
+                    - generic [ref=e1694]: "# (7 unchanged attributes hidden)"
+                  - generic [ref=e1695]:
+                    - generic [ref=e1696]: "426"
+                    - generic [ref=e1697]: "}"
+                  - generic [ref=e1699]: "427"
+                  - generic [ref=e1701]:
+                    - generic [ref=e1702]: "428"
+                    - generic [ref=e1703]: "Plan: 0 to add, 13 to change, 0 to destroy."
+                  - generic [ref=e1705]: "429"
+                  - generic [ref=e1707]:
+                    - generic [ref=e1708]: "430"
+                    - generic [ref=e1709]: "Changes to Outputs:"
+                  - generic [ref=e1710]:
+                    - generic [ref=e1711]: "431"
+                    - generic [ref=e1712]: ~ context = (sensitive value)
+                  - generic [ref=e1714]: "432"
+                  - generic [ref=e1716]:
+                    - generic [ref=e1717]: "433"
+                    - generic [ref=e1718]: ─────────────────────────────────────────────────────────────────────────────
+                  - generic [ref=e1720]: "434"
+                  - generic [ref=e1722]:
+                    - generic [ref=e1723]: "435"
+                    - generic [ref=e1724]: "Note: You didn't use the -out option to save this plan, so Terraform can't"
+                  - generic [ref=e1725]:
+                    - generic [ref=e1726]: "436"
+                    - generic [ref=e1727]: guarantee to take exactly these actions if you run "terraform apply" now.
+                  - generic [ref=e1728]:
+                    - generic [ref=e1729]: "437"
+                    - generic [ref=e1730]: Releasing state lock. This may take a few moments...
+                  - generic [ref=e1732]: "438"
+            - generic [ref=e1734]:
+              - generic [ref=e1735] [cursor=pointer]:
+                - generic [ref=e1737]:
+                  - generic [ref=e1738]: integrations-qa-euw2
+                  - generic [ref=e1739]: ctp-qa-euw2
+                  - generic [ref=e1740]:
+                    - generic [ref=e1741]: "+0"
+                    - generic [ref=e1742]: ~13
+                    - generic [ref=e1743]: "-0"
+                - generic [ref=e1744]: Changes
+                - img [ref=e1747]
+              - generic [ref=e1749]:
+                - generic [ref=e1750]:
+                  - generic [ref=e1755]: $ terraform plan · integrations-qa-euw2
+                  - button "Copy output" [ref=e1756] [cursor=pointer]:
+                    - img [ref=e1757]
+                    - text: Copy output
+                  - button "Download" [ref=e1760] [cursor=pointer]:
+                    - img [ref=e1761]
+                    - text: Download
+                - generic [ref=e1764]:
+                  - generic [ref=e1765]:
+                    - generic [ref=e1766]: "1"
+                    - generic [ref=e1767]: "module.context.data.aws_region.current: Reading..."
+                  - generic [ref=e1768]:
+                    - generic [ref=e1769]: "2"
+                    - generic [ref=e1770]: "module.context.data.aws_availability_zones.available: Reading..."
+                  - generic [ref=e1771]:
+                    - generic [ref=e1772]: "3"
+                    - generic [ref=e1773]: "module.context.data.aws_secretsmanager_secret.etl_db[0]: Reading..."
+                  - generic [ref=e1774]:
+                    - generic [ref=e1775]: "4"
+                    - generic [ref=e1776]: "module.core_refdata_privatelink.data.aws_iam_policy_document.lambda_assume_role[0]: Reading..."
+                  - generic [ref=e1777]:
+                    - generic [ref=e1778]: "5"
+                    - generic [ref=e1779]: "module.context.data.aws_vpc.this[0]: Reading..."
+                  - generic [ref=e1780]:
+                    - generic [ref=e1781]: "6"
+                    - generic [ref=e1782]: "module.context.data.aws_subnets.public[0]: Reading..."
+                  - generic [ref=e1783]:
+                    - generic [ref=e1784]: "7"
+                    - generic [ref=e1785]: "module.context.data.aws_nat_gateway.default[0]: Reading..."
+                  - generic [ref=e1786]:
+                    - generic [ref=e1787]: "8"
+                    - generic [ref=e1788]: "module.context.data.aws_subnets.private[0]: Reading..."
+                  - generic [ref=e1789]:
+                    - generic [ref=e1790]: "9"
+                    - generic [ref=e1791]: "module.context.data.aws_region.current: Read complete after 0s [id=eu-west-2]"
+                  - generic [ref=e1792]:
+                    - generic [ref=e1793]: "10"
+                    - generic [ref=e1794]: "module.core_refdata_privatelink.data.aws_iam_policy_document.lambda_assume_role[0]: Read complete after 0s [id=2690255455]"
+                  - generic [ref=e1795]:
+                    - generic [ref=e1796]: "11"
+                    - generic [ref=e1797]: "module.context.data.aws_secretsmanager_secret.etl_db[0]: Read complete after 1s [id=arn:aws:secretsmanager:eu-west-2:730335223442:secret:/rds/global-ecp-aurora-serverless-fLy2ny]"
+                  - generic [ref=e1798]:
+                    - generic [ref=e1799]: "12"
+                    - generic [ref=e1800]: "module.context.data.aws_nat_gateway.default[0]: Read complete after 1s [id=nat-05a432ede78fc103a]"
+                  - generic [ref=e1801]:
+                    - generic [ref=e1802]: "13"
+                    - generic [ref=e1803]: "module.context.data.aws_availability_zones.available: Read complete after 1s [id=eu-west-2]"
+                  - generic [ref=e1804]:
+                    - generic [ref=e1805]: "14"
+                    - generic [ref=e1806]: "module.context.data.aws_subnets.public[0]: Read complete after 1s [id=eu-west-2]"
+                  - generic [ref=e1807]:
+                    - generic [ref=e1808]: "15"
+                    - generic [ref=e1809]: "module.context.data.aws_subnets.private[0]: Read complete after 1s [id=eu-west-2]"
+                  - generic [ref=e1810]:
+                    - generic [ref=e1811]: "16"
+                    - generic [ref=e1812]: "module.context.data.aws_subnet.private[\"subnet-0ed8a30fd034b1161\"]: Reading..."
+                  - generic [ref=e1813]:
+                    - generic [ref=e1814]: "17"
+                    - generic [ref=e1815]: "module.context.data.aws_subnet.private[\"subnet-092a9115b3043ddf7\"]: Reading..."
+                  - generic [ref=e1816]:
+                    - generic [ref=e1817]: "18"
+                    - generic [ref=e1818]: "module.context.data.aws_subnet.private[\"subnet-0524259276fa9f645\"]: Reading..."
+                  - generic [ref=e1819]:
+                    - generic [ref=e1820]: "19"
+                    - generic [ref=e1821]: "module.context.data.aws_subnet.private[\"subnet-092a9115b3043ddf7\"]: Read complete after 0s [id=subnet-092a9115b3043ddf7]"
+                  - generic [ref=e1822]:
+                    - generic [ref=e1823]: "20"
+                    - generic [ref=e1824]: "module.context.data.aws_subnet.private[\"subnet-0ed8a30fd034b1161\"]: Read complete after 0s [id=subnet-0ed8a30fd034b1161]"
+                  - generic [ref=e1825]:
+                    - generic [ref=e1826]: "21"
+                    - generic [ref=e1827]: "module.context.data.aws_subnet.private[\"subnet-0524259276fa9f645\"]: Read complete after 0s [id=subnet-0524259276fa9f645]"
+                  - generic [ref=e1828]:
+                    - generic [ref=e1829]: "22"
+                    - generic [ref=e1830]: "module.context.data.aws_vpc.this[0]: Read complete after 2s [id=vpc-0dbea677c978fd114]"
+                  - generic [ref=e1831]:
+                    - generic [ref=e1832]: "23"
+                    - generic [ref=e1833]: "module.core_refdata_privatelink.data.archive_file.nlb_ip_updater[0]: Reading..."
+                  - generic [ref=e1834]:
+                    - generic [ref=e1835]: "24"
+                    - generic [ref=e1836]: "module.core_refdata_privatelink.aws_cloudwatch_log_group.lambda[0]: Refreshing state... [id=/aws/lambda/ctp-ecp-qa-euw2-refdata-nlb-ip-updater]"
+                  - generic [ref=e1837]:
+                    - generic [ref=e1838]: "25"
+                    - generic [ref=e1839]: "module.core_refdata_privatelink.aws_cloudwatch_event_rule.nlb_ip_updater[0]: Refreshing state... [id=ctp-ecp-qa-euw2-refdata-nlb-ip-updater-schedule]"
+                  - generic [ref=e1840]:
+                    - generic [ref=e1841]: "26"
+                    - generic [ref=e1842]: "module.core_refdata_privatelink.aws_security_group.lambda[0]: Refreshing state... [id=sg-0e69383f0ba13aa58]"
+                  - generic [ref=e1843]:
+                    - generic [ref=e1844]: "27"
+                    - generic [ref=e1845]: "module.core_refdata_privatelink.aws_iam_role.lambda[0]: Refreshing state... [id=ctp-ecp-qa-euw2-refdata-nlb-ip-updater-role]"
+                  - generic [ref=e1846]:
+                    - generic [ref=e1847]: "28"
+                    - generic [ref=e1848]: "module.core_refdata_privatelink.aws_lb_target_group.aurora_writer[0]: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-2:730335223442:targetgroup/ctp-ecp-qa-euw2-refdata-tg/891a1bff03f8f351]"
+                  - generic [ref=e1849]:
+                    - generic [ref=e1850]: "29"
+                    - generic [ref=e1851]: "module.core_refdata_privatelink.aws_lb.aurora[0]: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-2:730335223442:loadbalancer/net/ctp-ecp-qa-euw2-refdata-nlb/292fc0ae6e16b9bc]"
+                  - generic [ref=e1852]:
+                    - generic [ref=e1853]: "30"
+                    - generic [ref=e1854]: "module.core_refdata_privatelink.data.archive_file.nlb_ip_updater[0]: Read complete after 0s [id=c9072a6410f6239440c5f781960040417942ee8f]"
+                  - generic [ref=e1855]:
+                    - generic [ref=e1856]: "31"
+                    - generic [ref=e1857]: "module.core_refdata_privatelink.aws_vpc_security_group_egress_rule.lambda_all[0]: Refreshing state... [id=sgr-04ab384b07be990d1]"
+                  - generic [ref=e1858]:
+                    - generic [ref=e1859]: "32"
+                    - generic [ref=e1860]: "module.core_refdata_privatelink.aws_ssm_parameter.nlb_arn[0]: Refreshing state... [id=/qa/core-refdata/nlb-arn]"
+                  - generic [ref=e1861]:
+                    - generic [ref=e1862]: "33"
+                    - generic [ref=e1863]: "module.core_refdata_privatelink.aws_vpc_endpoint_service.aurora[0]: Refreshing state... [id=vpce-svc-06c99b32ab4af2fc8]"
+                  - generic [ref=e1864]:
+                    - generic [ref=e1865]: "34"
+                    - generic [ref=e1866]: "module.core_refdata_privatelink.aws_lb_listener.aurora[0]: Refreshing state... [id=arn:aws:elasticloadbalancing:eu-west-2:730335223442:listener/net/ctp-ecp-qa-euw2-refdata-nlb/292fc0ae6e16b9bc/a9b414e0e5238815]"
+                  - generic [ref=e1867]:
+                    - generic [ref=e1868]: "35"
+                    - generic [ref=e1869]: "module.core_refdata_privatelink.aws_vpc_endpoint_service_allowed_principal.ctp[0]: Refreshing state... [id=vpce-svc-perm-050dd96509a921e37]"
+                  - generic [ref=e1870]:
+                    - generic [ref=e1871]: "36"
+                    - generic [ref=e1872]: "module.core_refdata_privatelink.aws_vpc_endpoint_service_allowed_principal.additional_ctp[\"943881661746\"]: Refreshing state... [id=vpce-svc-perm-0be7a31776fc78c55]"
+                  - generic [ref=e1873]:
+                    - generic [ref=e1874]: "37"
+                    - generic [ref=e1875]: "module.core_refdata_privatelink.aws_ssm_parameter.endpoint_service_name[0]: Refreshing state... [id=/qa/core-refdata/endpoint-service-name]"
+                  - generic [ref=e1876]:
+                    - generic [ref=e1877]: "38"
+                    - generic [ref=e1878]: "module.core_refdata_privatelink.aws_iam_role_policy_attachment.lambda_vpc_execution[0]: Refreshing state... [id=ctp-ecp-qa-euw2-refdata-nlb-ip-updater-role/arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole]"
+                  - generic [ref=e1879]:
+                    - generic [ref=e1880]: "39"
+                    - generic [ref=e1881]: "module.core_refdata_privatelink.aws_iam_role_policy.lambda[0]: Refreshing state... [id=ctp-ecp-qa-euw2-refdata-nlb-ip-updater-role:ctp-ecp-qa-euw2-refdata-nlb-ip-updater-policy]"
+                  - generic [ref=e1882]:
+                    - generic [ref=e1883]: "40"
+                    - generic [ref=e1884]: "module.core_refdata_privatelink.aws_iam_role_policy_attachment.lambda_basic_execution[0]: Refreshing state... [id=ctp-ecp-qa-euw2-refdata-nlb-ip-updater-role/arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole]"
+                  - generic [ref=e1885]:
+                    - generic [ref=e1886]: "41"
+                    - generic [ref=e1887]: "module.core_refdata_privatelink.aws_lambda_function.nlb_ip_updater[0]: Refreshing state... [id=ctp-ecp-qa-euw2-refdata-nlb-ip-updater]"
+                  - generic [ref=e1888]:
+                    - generic [ref=e1889]: "42"
+                    - generic [ref=e1890]: "module.core_refdata_privatelink.aws_lambda_permission.allow_eventbridge[0]: Refreshing state... [id=AllowExecutionFromEventBridge]"
+                  - generic [ref=e1891]:
+                    - generic [ref=e1892]: "43"
+                    - generic [ref=e1893]: "module.core_refdata_privatelink.aws_cloudwatch_event_target.nlb_ip_updater[0]: Refreshing state... [id=ctp-ecp-qa-euw2-refdata-nlb-ip-updater-schedule-nlb-ip-updater]"
+                  - generic [ref=e1895]: "44"
+                  - generic [ref=e1897]:
+                    - generic [ref=e1898]: "45"
+                    - generic [ref=e1899]: Terraform used the selected providers to generate the following execution
+                  - generic [ref=e1900]:
+                    - generic [ref=e1901]: "46"
+                    - generic [ref=e1902]: "plan. Resource actions are indicated with the following symbols:"
+                  - generic [ref=e1903]:
+                    - generic [ref=e1904]: "47"
+                    - generic [ref=e1905]: ~ update in-place
+                  - generic [ref=e1906]:
+                    - generic [ref=e1907]: "48"
+                    - generic [ref=e1908]: <= read (data resources)
+                  - generic [ref=e1910]: "49"
+                  - generic [ref=e1912]:
+                    - generic [ref=e1913]: "50"
+                    - generic [ref=e1914]: "Terraform will perform the following actions:"
+                  - generic [ref=e1916]: "51"
+                  - generic [ref=e1918]:
+                    - generic [ref=e1919]: "52"
+                    - generic [ref=e1920]: "# module.core_refdata_privatelink.data.aws_iam_policy_document.lambda[0] will be read during apply"
+                  - generic [ref=e1921]:
+                    - generic [ref=e1922]: "53"
+                    - generic [ref=e1923]: "# (depends on a resource or a module with changes pending)"
+                  - generic [ref=e1924]:
+                    - generic [ref=e1925]: "54"
+                    - generic [ref=e1926]: "<= data \"aws_iam_policy_document\" \"lambda\" {"
+                  - generic [ref=e1927]:
+                    - generic [ref=e1928]: "55"
+                    - generic [ref=e1929]: + id = (known after apply)
+                  - generic [ref=e1930]:
+                    - generic [ref=e1931]: "56"
+                    - generic [ref=e1932]: + json = (known after apply)
+                  - generic [ref=e1933]:
+                    - generic [ref=e1934]: "57"
+                    - generic [ref=e1935]: + minified_json = (known after apply)
+                  - generic [ref=e1937]: "58"
+                  - generic [ref=e1939]:
+                    - generic [ref=e1940]: "59"
+                    - generic [ref=e1941]: "+ statement {"
+                  - generic [ref=e1942]:
+                    - generic [ref=e1943]: "60"
+                    - generic [ref=e1944]: + actions = [
+                  - generic [ref=e1945]:
+                    - generic [ref=e1946]: "61"
+                    - generic [ref=e1947]: + "elasticloadbalancing:DescribeTargetHealth",
+                  - generic [ref=e1948]:
+                    - generic [ref=e1949]: "62"
+                    - generic [ref=e1950]: "]"
+                  - generic [ref=e1951]:
+                    - generic [ref=e1952]: "63"
+                    - generic [ref=e1953]: + effect = "Allow"
+                  - generic [ref=e1954]:
+                    - generic [ref=e1955]: "64"
+                    - generic [ref=e1956]: + resources = [
+                  - generic [ref=e1957]:
+                    - generic [ref=e1958]: "65"
+                    - generic [ref=e1959]: + "*",
+                  - generic [ref=e1960]:
+                    - generic [ref=e1961]: "66"
+                    - generic [ref=e1962]: "]"
+                  - generic [ref=e1963]:
+                    - generic [ref=e1964]: "67"
+                    - generic [ref=e1965]: + sid = "DescribeTargetHealth"
+                  - generic [ref=e1966]:
+                    - generic [ref=e1967]: "68"
+                    - generic [ref=e1968]: "}"
+                  - generic [ref=e1969]:
+                    - generic [ref=e1970]: "69"
+                    - generic [ref=e1971]: "+ statement {"
+                  - generic [ref=e1972]:
+                    - generic [ref=e1973]: "70"
+                    - generic [ref=e1974]: + actions = [
+                  - generic [ref=e1975]:
+                    - generic [ref=e1976]: "71"
+                    - generic [ref=e1977]: + "elasticloadbalancing:DeregisterTargets",
+                  - generic [ref=e1978]:
+                    - generic [ref=e1979]: "72"
+                    - generic [ref=e1980]: + "elasticloadbalancing:RegisterTargets",
+                  - generic [ref=e1981]:
+                    - generic [ref=e1982]: "73"
+                    - generic [ref=e1983]: "]"
+                  - generic [ref=e1984]:
+                    - generic [ref=e1985]: "74"
+                    - generic [ref=e1986]: + effect = "Allow"
+                  - generic [ref=e1987]:
+                    - generic [ref=e1988]: "75"
+                    - generic [ref=e1989]: + resources = [
+                  - generic [ref=e1990]:
+                    - generic [ref=e1991]: "76"
+                    - generic [ref=e1992]: + "arn:aws:elasticloadbalancing:eu-west-2:730335223442:targetgroup/ctp-ecp-qa-euw2-refdata-tg/891a1bff03f8f351",
+                  - generic [ref=e1993]:
+                    - generic [ref=e1994]: "77"
+                    - generic [ref=e1995]: "]"
+                  - generic [ref=e1996]:
+                    - generic [ref=e1997]: "78"
+                    - generic [ref=e1998]: + sid = "ManageAuroraWriterTargets"
+                  - generic [ref=e1999]:
+                    - generic [ref=e2000]: "79"
+                    - generic [ref=e2001]: "}"
+                  - generic [ref=e2002]:
+                    - generic [ref=e2003]: "80"
+                    - generic [ref=e2004]: "}"
+                  - generic [ref=e2006]: "81"
+                  - generic [ref=e2008]:
+                    - generic [ref=e2009]: "82"
+                    - generic [ref=e2010]: "# module.core_refdata_privatelink.aws_cloudwatch_event_rule.nlb_ip_updater[0] will be updated in-place"
+                  - generic [ref=e2011]:
+                    - generic [ref=e2012]: "83"
+                    - generic [ref=e2013]: "~ resource \"aws_cloudwatch_event_rule\" \"nlb_ip_updater\" {"
+                  - generic [ref=e2014]:
+                    - generic [ref=e2015]: "84"
+                    - generic [ref=e2016]: id = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater-schedule"
+                  - generic [ref=e2017]:
+                    - generic [ref=e2018]: "85"
+                    - generic [ref=e2019]: name = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater-schedule"
+                  - generic [ref=e2020]:
+                    - generic [ref=e2021]: "86"
+                    - generic [ref=e2022]: "~ tags = {"
+                  - generic [ref=e2023]:
+                    - generic [ref=e2024]: "87"
+                    - generic [ref=e2025]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2026]:
+                    - generic [ref=e2027]: "88"
+                    - generic [ref=e2028]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2029]:
+                    - generic [ref=e2030]: "89"
+                    - generic [ref=e2031]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2032]:
+                    - generic [ref=e2033]: "90"
+                    - generic [ref=e2034]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2035]:
+                    - generic [ref=e2036]: "91"
+                    - generic [ref=e2037]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2038]:
+                    - generic [ref=e2039]: "92"
+                    - generic [ref=e2040]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2041]:
+                    - generic [ref=e2042]: "93"
+                    - generic [ref=e2043]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2044]:
+                    - generic [ref=e2045]: "94"
+                    - generic [ref=e2046]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2047]:
+                    - generic [ref=e2048]: "95"
+                    - generic [ref=e2049]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2050]:
+                    - generic [ref=e2051]: "96"
+                    - generic [ref=e2052]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2053]:
+                    - generic [ref=e2054]: "97"
+                    - generic [ref=e2055]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2056]:
+                    - generic [ref=e2057]: "98"
+                    - generic [ref=e2058]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2059]:
+                    - generic [ref=e2060]: "99"
+                    - generic [ref=e2061]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2062]:
+                    - generic [ref=e2063]: "100"
+                    - generic [ref=e2064]: "}"
+                  - generic [ref=e2065]:
+                    - generic [ref=e2066]: "101"
+                    - generic [ref=e2067]: "~ tags_all = {"
+                  - generic [ref=e2068]:
+                    - generic [ref=e2069]: "102"
+                    - generic [ref=e2070]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2071]:
+                    - generic [ref=e2072]: "103"
+                    - generic [ref=e2073]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2074]:
+                    - generic [ref=e2075]: "104"
+                    - generic [ref=e2076]: "}"
+                  - generic [ref=e2077]:
+                    - generic [ref=e2078]: "105"
+                    - generic [ref=e2079]: "# (10 unchanged attributes hidden)"
+                  - generic [ref=e2080]:
+                    - generic [ref=e2081]: "106"
+                    - generic [ref=e2082]: "}"
+                  - generic [ref=e2084]: "107"
+                  - generic [ref=e2086]:
+                    - generic [ref=e2087]: "108"
+                    - generic [ref=e2088]: "# module.core_refdata_privatelink.aws_cloudwatch_log_group.lambda[0] will be updated in-place"
+                  - generic [ref=e2089]:
+                    - generic [ref=e2090]: "109"
+                    - generic [ref=e2091]: "~ resource \"aws_cloudwatch_log_group\" \"lambda\" {"
+                  - generic [ref=e2092]:
+                    - generic [ref=e2093]: "110"
+                    - generic [ref=e2094]: id = "/aws/lambda/ctp-ecp-qa-euw2-refdata-nlb-ip-updater"
+                  - generic [ref=e2095]:
+                    - generic [ref=e2096]: "111"
+                    - generic [ref=e2097]: name = "/aws/lambda/ctp-ecp-qa-euw2-refdata-nlb-ip-updater"
+                  - generic [ref=e2098]:
+                    - generic [ref=e2099]: "112"
+                    - generic [ref=e2100]: "~ tags = {"
+                  - generic [ref=e2101]:
+                    - generic [ref=e2102]: "113"
+                    - generic [ref=e2103]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2104]:
+                    - generic [ref=e2105]: "114"
+                    - generic [ref=e2106]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2107]:
+                    - generic [ref=e2108]: "115"
+                    - generic [ref=e2109]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2110]:
+                    - generic [ref=e2111]: "116"
+                    - generic [ref=e2112]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2113]:
+                    - generic [ref=e2114]: "117"
+                    - generic [ref=e2115]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2116]:
+                    - generic [ref=e2117]: "118"
+                    - generic [ref=e2118]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2119]:
+                    - generic [ref=e2120]: "119"
+                    - generic [ref=e2121]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2122]:
+                    - generic [ref=e2123]: "120"
+                    - generic [ref=e2124]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2125]:
+                    - generic [ref=e2126]: "121"
+                    - generic [ref=e2127]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2128]:
+                    - generic [ref=e2129]: "122"
+                    - generic [ref=e2130]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2131]:
+                    - generic [ref=e2132]: "123"
+                    - generic [ref=e2133]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2134]:
+                    - generic [ref=e2135]: "124"
+                    - generic [ref=e2136]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2137]:
+                    - generic [ref=e2138]: "125"
+                    - generic [ref=e2139]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2140]:
+                    - generic [ref=e2141]: "126"
+                    - generic [ref=e2142]: "}"
+                  - generic [ref=e2143]:
+                    - generic [ref=e2144]: "127"
+                    - generic [ref=e2145]: "~ tags_all = {"
+                  - generic [ref=e2146]:
+                    - generic [ref=e2147]: "128"
+                    - generic [ref=e2148]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2149]:
+                    - generic [ref=e2150]: "129"
+                    - generic [ref=e2151]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2152]:
+                    - generic [ref=e2153]: "130"
+                    - generic [ref=e2154]: "}"
+                  - generic [ref=e2155]:
+                    - generic [ref=e2156]: "131"
+                    - generic [ref=e2157]: "# (8 unchanged attributes hidden)"
+                  - generic [ref=e2158]:
+                    - generic [ref=e2159]: "132"
+                    - generic [ref=e2160]: "}"
+                  - generic [ref=e2162]: "133"
+                  - generic [ref=e2164]:
+                    - generic [ref=e2165]: "134"
+                    - generic [ref=e2166]: "# module.core_refdata_privatelink.aws_iam_role.lambda[0] will be updated in-place"
+                  - generic [ref=e2167]:
+                    - generic [ref=e2168]: "135"
+                    - generic [ref=e2169]: "~ resource \"aws_iam_role\" \"lambda\" {"
+                  - generic [ref=e2170]:
+                    - generic [ref=e2171]: "136"
+                    - generic [ref=e2172]: id = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater-role"
+                  - generic [ref=e2173]:
+                    - generic [ref=e2174]: "137"
+                    - generic [ref=e2175]: name = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater-role"
+                  - generic [ref=e2176]:
+                    - generic [ref=e2177]: "138"
+                    - generic [ref=e2178]: "~ tags = {"
+                  - generic [ref=e2179]:
+                    - generic [ref=e2180]: "139"
+                    - generic [ref=e2181]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2182]:
+                    - generic [ref=e2183]: "140"
+                    - generic [ref=e2184]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2185]:
+                    - generic [ref=e2186]: "141"
+                    - generic [ref=e2187]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2188]:
+                    - generic [ref=e2189]: "142"
+                    - generic [ref=e2190]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2191]:
+                    - generic [ref=e2192]: "143"
+                    - generic [ref=e2193]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2194]:
+                    - generic [ref=e2195]: "144"
+                    - generic [ref=e2196]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2197]:
+                    - generic [ref=e2198]: "145"
+                    - generic [ref=e2199]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2200]:
+                    - generic [ref=e2201]: "146"
+                    - generic [ref=e2202]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2203]:
+                    - generic [ref=e2204]: "147"
+                    - generic [ref=e2205]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2206]:
+                    - generic [ref=e2207]: "148"
+                    - generic [ref=e2208]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2209]:
+                    - generic [ref=e2210]: "149"
+                    - generic [ref=e2211]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2212]:
+                    - generic [ref=e2213]: "150"
+                    - generic [ref=e2214]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2215]:
+                    - generic [ref=e2216]: "151"
+                    - generic [ref=e2217]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2218]:
+                    - generic [ref=e2219]: "152"
+                    - generic [ref=e2220]: "}"
+                  - generic [ref=e2221]:
+                    - generic [ref=e2222]: "153"
+                    - generic [ref=e2223]: "~ tags_all = {"
+                  - generic [ref=e2224]:
+                    - generic [ref=e2225]: "154"
+                    - generic [ref=e2226]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2227]:
+                    - generic [ref=e2228]: "155"
+                    - generic [ref=e2229]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2230]:
+                    - generic [ref=e2231]: "156"
+                    - generic [ref=e2232]: "}"
+                  - generic [ref=e2233]:
+                    - generic [ref=e2234]: "157"
+                    - generic [ref=e2235]: "# (11 unchanged attributes hidden)"
+                  - generic [ref=e2237]: "158"
+                  - generic [ref=e2239]:
+                    - generic [ref=e2240]: "159"
+                    - generic [ref=e2241]: "# (1 unchanged block hidden)"
+                  - generic [ref=e2242]:
+                    - generic [ref=e2243]: "160"
+                    - generic [ref=e2244]: "}"
+                  - generic [ref=e2246]: "161"
+                  - generic [ref=e2248]:
+                    - generic [ref=e2249]: "162"
+                    - generic [ref=e2250]: "# module.core_refdata_privatelink.aws_iam_role_policy.lambda[0] will be updated in-place"
+                  - generic [ref=e2251]:
+                    - generic [ref=e2252]: "163"
+                    - generic [ref=e2253]: "~ resource \"aws_iam_role_policy\" \"lambda\" {"
+                  - generic [ref=e2254]:
+                    - generic [ref=e2255]: "164"
+                    - generic [ref=e2256]: id = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater-role:ctp-ecp-qa-euw2-refdata-nlb-ip-updater-policy"
+                  - generic [ref=e2257]:
+                    - generic [ref=e2258]: "165"
+                    - generic [ref=e2259]: name = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater-policy"
+                  - generic [ref=e2260]:
+                    - generic [ref=e2261]: "166"
+                    - generic [ref=e2262]: ~ policy = jsonencode(
+                  - generic [ref=e2263]:
+                    - generic [ref=e2264]: "167"
+                    - generic [ref=e2265]: "{"
+                  - generic [ref=e2266]:
+                    - generic [ref=e2267]: "168"
+                    - generic [ref=e2268]: "- Statement = ["
+                  - generic [ref=e2269]:
+                    - generic [ref=e2270]: "169"
+                    - generic [ref=e2271]: "- {"
+                  - generic [ref=e2272]:
+                    - generic [ref=e2273]: "170"
+                    - generic [ref=e2274]: "- Action = \"elasticloadbalancing:DescribeTargetHealth\""
+                  - generic [ref=e2275]:
+                    - generic [ref=e2276]: "171"
+                    - generic [ref=e2277]: "- Effect = \"Allow\""
+                  - generic [ref=e2278]:
+                    - generic [ref=e2279]: "172"
+                    - generic [ref=e2280]: "- Resource = \"*\""
+                  - generic [ref=e2281]:
+                    - generic [ref=e2282]: "173"
+                    - generic [ref=e2283]: "- Sid = \"DescribeTargetHealth\""
+                  - generic [ref=e2284]:
+                    - generic [ref=e2285]: "174"
+                    - generic [ref=e2286]: "},"
+                  - generic [ref=e2287]:
+                    - generic [ref=e2288]: "175"
+                    - generic [ref=e2289]: "- {"
+                  - generic [ref=e2290]:
+                    - generic [ref=e2291]: "176"
+                    - generic [ref=e2292]: "- Action = ["
+                  - generic [ref=e2293]:
+                    - generic [ref=e2294]: "177"
+                    - generic [ref=e2295]: "- \"elasticloadbalancing:RegisterTargets\","
+                  - generic [ref=e2296]:
+                    - generic [ref=e2297]: "178"
+                    - generic [ref=e2298]: "- \"elasticloadbalancing:DeregisterTargets\","
+                  - generic [ref=e2299]:
+                    - generic [ref=e2300]: "179"
+                    - generic [ref=e2301]: "]"
+                  - generic [ref=e2302]:
+                    - generic [ref=e2303]: "180"
+                    - generic [ref=e2304]: "- Effect = \"Allow\""
+                  - generic [ref=e2305]:
+                    - generic [ref=e2306]: "181"
+                    - generic [ref=e2307]: "- Resource = \"arn:aws:elasticloadbalancing:eu-west-2:730335223442:targetgroup/ctp-ecp-qa-euw2-refdata-tg/891a1bff03f8f351\""
+                  - generic [ref=e2308]:
+                    - generic [ref=e2309]: "182"
+                    - generic [ref=e2310]: "- Sid = \"ManageAuroraWriterTargets\""
+                  - generic [ref=e2311]:
+                    - generic [ref=e2312]: "183"
+                    - generic [ref=e2313]: "},"
+                  - generic [ref=e2314]:
+                    - generic [ref=e2315]: "184"
+                    - generic [ref=e2316]: "]"
+                  - generic [ref=e2317]:
+                    - generic [ref=e2318]: "185"
+                    - generic [ref=e2319]: "- Version = \"2012-10-17\""
+                  - generic [ref=e2320]:
+                    - generic [ref=e2321]: "186"
+                    - generic [ref=e2322]: "}"
+                  - generic [ref=e2323]:
+                    - generic [ref=e2324]: "187"
+                    - generic [ref=e2325]: ) -> (known after apply)
+                  - generic [ref=e2326]:
+                    - generic [ref=e2327]: "188"
+                    - generic [ref=e2328]: "# (2 unchanged attributes hidden)"
+                  - generic [ref=e2329]:
+                    - generic [ref=e2330]: "189"
+                    - generic [ref=e2331]: "}"
+                  - generic [ref=e2333]: "190"
+                  - generic [ref=e2335]:
+                    - generic [ref=e2336]: "191"
+                    - generic [ref=e2337]: "# module.core_refdata_privatelink.aws_lambda_function.nlb_ip_updater[0] will be updated in-place"
+                  - generic [ref=e2338]:
+                    - generic [ref=e2339]: "192"
+                    - generic [ref=e2340]: "~ resource \"aws_lambda_function\" \"nlb_ip_updater\" {"
+                  - generic [ref=e2341]:
+                    - generic [ref=e2342]: "193"
+                    - generic [ref=e2343]: id = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater"
+                  - generic [ref=e2344]:
+                    - generic [ref=e2345]: "194"
+                    - generic [ref=e2346]: "~ tags = {"
+                  - generic [ref=e2347]:
+                    - generic [ref=e2348]: "195"
+                    - generic [ref=e2349]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2350]:
+                    - generic [ref=e2351]: "196"
+                    - generic [ref=e2352]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2353]:
+                    - generic [ref=e2354]: "197"
+                    - generic [ref=e2355]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2356]:
+                    - generic [ref=e2357]: "198"
+                    - generic [ref=e2358]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2359]:
+                    - generic [ref=e2360]: "199"
+                    - generic [ref=e2361]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2362]:
+                    - generic [ref=e2363]: "200"
+                    - generic [ref=e2364]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2365]:
+                    - generic [ref=e2366]: "201"
+                    - generic [ref=e2367]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2368]:
+                    - generic [ref=e2369]: "202"
+                    - generic [ref=e2370]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2371]:
+                    - generic [ref=e2372]: "203"
+                    - generic [ref=e2373]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2374]:
+                    - generic [ref=e2375]: "204"
+                    - generic [ref=e2376]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2377]:
+                    - generic [ref=e2378]: "205"
+                    - generic [ref=e2379]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2380]:
+                    - generic [ref=e2381]: "206"
+                    - generic [ref=e2382]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2383]:
+                    - generic [ref=e2384]: "207"
+                    - generic [ref=e2385]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2386]:
+                    - generic [ref=e2387]: "208"
+                    - generic [ref=e2388]: "}"
+                  - generic [ref=e2389]:
+                    - generic [ref=e2390]: "209"
+                    - generic [ref=e2391]: "~ tags_all = {"
+                  - generic [ref=e2392]:
+                    - generic [ref=e2393]: "210"
+                    - generic [ref=e2394]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2395]:
+                    - generic [ref=e2396]: "211"
+                    - generic [ref=e2397]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2398]:
+                    - generic [ref=e2399]: "212"
+                    - generic [ref=e2400]: "}"
+                  - generic [ref=e2401]:
+                    - generic [ref=e2402]: "213"
+                    - generic [ref=e2403]: "# (31 unchanged attributes hidden)"
+                  - generic [ref=e2405]: "214"
+                  - generic [ref=e2407]:
+                    - generic [ref=e2408]: "215"
+                    - generic [ref=e2409]: "# (5 unchanged blocks hidden)"
+                  - generic [ref=e2410]:
+                    - generic [ref=e2411]: "216"
+                    - generic [ref=e2412]: "}"
+                  - generic [ref=e2414]: "217"
+                  - generic [ref=e2416]:
+                    - generic [ref=e2417]: "218"
+                    - generic [ref=e2418]: "# module.core_refdata_privatelink.aws_lb.aurora[0] will be updated in-place"
+                  - generic [ref=e2419]:
+                    - generic [ref=e2420]: "219"
+                    - generic [ref=e2421]: "~ resource \"aws_lb\" \"aurora\" {"
+                  - generic [ref=e2422]:
+                    - generic [ref=e2423]: "220"
+                    - generic [ref=e2424]: id = "arn:aws:elasticloadbalancing:eu-west-2:730335223442:loadbalancer/net/ctp-ecp-qa-euw2-refdata-nlb/292fc0ae6e16b9bc"
+                  - generic [ref=e2425]:
+                    - generic [ref=e2426]: "221"
+                    - generic [ref=e2427]: name = "ctp-ecp-qa-euw2-refdata-nlb"
+                  - generic [ref=e2428]:
+                    - generic [ref=e2429]: "222"
+                    - generic [ref=e2430]: "~ tags = {"
+                  - generic [ref=e2431]:
+                    - generic [ref=e2432]: "223"
+                    - generic [ref=e2433]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2434]:
+                    - generic [ref=e2435]: "224"
+                    - generic [ref=e2436]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2437]:
+                    - generic [ref=e2438]: "225"
+                    - generic [ref=e2439]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2440]:
+                    - generic [ref=e2441]: "226"
+                    - generic [ref=e2442]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2443]:
+                    - generic [ref=e2444]: "227"
+                    - generic [ref=e2445]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2446]:
+                    - generic [ref=e2447]: "228"
+                    - generic [ref=e2448]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2449]:
+                    - generic [ref=e2450]: "229"
+                    - generic [ref=e2451]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2452]:
+                    - generic [ref=e2453]: "230"
+                    - generic [ref=e2454]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2455]:
+                    - generic [ref=e2456]: "231"
+                    - generic [ref=e2457]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2458]:
+                    - generic [ref=e2459]: "232"
+                    - generic [ref=e2460]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2461]:
+                    - generic [ref=e2462]: "233"
+                    - generic [ref=e2463]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2464]:
+                    - generic [ref=e2465]: "234"
+                    - generic [ref=e2466]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2467]:
+                    - generic [ref=e2468]: "235"
+                    - generic [ref=e2469]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2470]:
+                    - generic [ref=e2471]: "236"
+                    - generic [ref=e2472]: "}"
+                  - generic [ref=e2473]:
+                    - generic [ref=e2474]: "237"
+                    - generic [ref=e2475]: "~ tags_all = {"
+                  - generic [ref=e2476]:
+                    - generic [ref=e2477]: "238"
+                    - generic [ref=e2478]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2479]:
+                    - generic [ref=e2480]: "239"
+                    - generic [ref=e2481]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2482]:
+                    - generic [ref=e2483]: "240"
+                    - generic [ref=e2484]: "}"
+                  - generic [ref=e2485]:
+                    - generic [ref=e2486]: "241"
+                    - generic [ref=e2487]: "# (19 unchanged attributes hidden)"
+                  - generic [ref=e2489]: "242"
+                  - generic [ref=e2491]:
+                    - generic [ref=e2492]: "243"
+                    - generic [ref=e2493]: "# (4 unchanged blocks hidden)"
+                  - generic [ref=e2494]:
+                    - generic [ref=e2495]: "244"
+                    - generic [ref=e2496]: "}"
+                  - generic [ref=e2498]: "245"
+                  - generic [ref=e2500]:
+                    - generic [ref=e2501]: "246"
+                    - generic [ref=e2502]: "# module.core_refdata_privatelink.aws_lb_listener.aurora[0] will be updated in-place"
+                  - generic [ref=e2503]:
+                    - generic [ref=e2504]: "247"
+                    - generic [ref=e2505]: "~ resource \"aws_lb_listener\" \"aurora\" {"
+                  - generic [ref=e2506]:
+                    - generic [ref=e2507]: "248"
+                    - generic [ref=e2508]: id = "arn:aws:elasticloadbalancing:eu-west-2:730335223442:listener/net/ctp-ecp-qa-euw2-refdata-nlb/292fc0ae6e16b9bc/a9b414e0e5238815"
+                  - generic [ref=e2509]:
+                    - generic [ref=e2510]: "249"
+                    - generic [ref=e2511]: "~ tags = {"
+                  - generic [ref=e2512]:
+                    - generic [ref=e2513]: "250"
+                    - generic [ref=e2514]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2515]:
+                    - generic [ref=e2516]: "251"
+                    - generic [ref=e2517]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2518]:
+                    - generic [ref=e2519]: "252"
+                    - generic [ref=e2520]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2521]:
+                    - generic [ref=e2522]: "253"
+                    - generic [ref=e2523]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2524]:
+                    - generic [ref=e2525]: "254"
+                    - generic [ref=e2526]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2527]:
+                    - generic [ref=e2528]: "255"
+                    - generic [ref=e2529]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2530]:
+                    - generic [ref=e2531]: "256"
+                    - generic [ref=e2532]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2533]:
+                    - generic [ref=e2534]: "257"
+                    - generic [ref=e2535]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2536]:
+                    - generic [ref=e2537]: "258"
+                    - generic [ref=e2538]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2539]:
+                    - generic [ref=e2540]: "259"
+                    - generic [ref=e2541]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2542]:
+                    - generic [ref=e2543]: "260"
+                    - generic [ref=e2544]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2545]:
+                    - generic [ref=e2546]: "261"
+                    - generic [ref=e2547]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2548]:
+                    - generic [ref=e2549]: "262"
+                    - generic [ref=e2550]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2551]:
+                    - generic [ref=e2552]: "263"
+                    - generic [ref=e2553]: "}"
+                  - generic [ref=e2554]:
+                    - generic [ref=e2555]: "264"
+                    - generic [ref=e2556]: "~ tags_all = {"
+                  - generic [ref=e2557]:
+                    - generic [ref=e2558]: "265"
+                    - generic [ref=e2559]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2560]:
+                    - generic [ref=e2561]: "266"
+                    - generic [ref=e2562]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2563]:
+                    - generic [ref=e2564]: "267"
+                    - generic [ref=e2565]: "}"
+                  - generic [ref=e2566]:
+                    - generic [ref=e2567]: "268"
+                    - generic [ref=e2568]: "# (7 unchanged attributes hidden)"
+                  - generic [ref=e2570]: "269"
+                  - generic [ref=e2572]:
+                    - generic [ref=e2573]: "270"
+                    - generic [ref=e2574]: "# (1 unchanged block hidden)"
+                  - generic [ref=e2575]:
+                    - generic [ref=e2576]: "271"
+                    - generic [ref=e2577]: "}"
+                  - generic [ref=e2579]: "272"
+                  - generic [ref=e2581]:
+                    - generic [ref=e2582]: "273"
+                    - generic [ref=e2583]: "# module.core_refdata_privatelink.aws_lb_target_group.aurora_writer[0] will be updated in-place"
+                  - generic [ref=e2584]:
+                    - generic [ref=e2585]: "274"
+                    - generic [ref=e2586]: "~ resource \"aws_lb_target_group\" \"aurora_writer\" {"
+                  - generic [ref=e2587]:
+                    - generic [ref=e2588]: "275"
+                    - generic [ref=e2589]: id = "arn:aws:elasticloadbalancing:eu-west-2:730335223442:targetgroup/ctp-ecp-qa-euw2-refdata-tg/891a1bff03f8f351"
+                  - generic [ref=e2590]:
+                    - generic [ref=e2591]: "276"
+                    - generic [ref=e2592]: name = "ctp-ecp-qa-euw2-refdata-tg"
+                  - generic [ref=e2593]:
+                    - generic [ref=e2594]: "277"
+                    - generic [ref=e2595]: "~ tags = {"
+                  - generic [ref=e2596]:
+                    - generic [ref=e2597]: "278"
+                    - generic [ref=e2598]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2599]:
+                    - generic [ref=e2600]: "279"
+                    - generic [ref=e2601]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2602]:
+                    - generic [ref=e2603]: "280"
+                    - generic [ref=e2604]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2605]:
+                    - generic [ref=e2606]: "281"
+                    - generic [ref=e2607]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2608]:
+                    - generic [ref=e2609]: "282"
+                    - generic [ref=e2610]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2611]:
+                    - generic [ref=e2612]: "283"
+                    - generic [ref=e2613]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2614]:
+                    - generic [ref=e2615]: "284"
+                    - generic [ref=e2616]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2617]:
+                    - generic [ref=e2618]: "285"
+                    - generic [ref=e2619]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2620]:
+                    - generic [ref=e2621]: "286"
+                    - generic [ref=e2622]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2623]:
+                    - generic [ref=e2624]: "287"
+                    - generic [ref=e2625]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2626]:
+                    - generic [ref=e2627]: "288"
+                    - generic [ref=e2628]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2629]:
+                    - generic [ref=e2630]: "289"
+                    - generic [ref=e2631]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2632]:
+                    - generic [ref=e2633]: "290"
+                    - generic [ref=e2634]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2635]:
+                    - generic [ref=e2636]: "291"
+                    - generic [ref=e2637]: "}"
+                  - generic [ref=e2638]:
+                    - generic [ref=e2639]: "292"
+                    - generic [ref=e2640]: "~ tags_all = {"
+                  - generic [ref=e2641]:
+                    - generic [ref=e2642]: "293"
+                    - generic [ref=e2643]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2644]:
+                    - generic [ref=e2645]: "294"
+                    - generic [ref=e2646]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2647]:
+                    - generic [ref=e2648]: "295"
+                    - generic [ref=e2649]: "}"
+                  - generic [ref=e2650]:
+                    - generic [ref=e2651]: "296"
+                    - generic [ref=e2652]: "# (18 unchanged attributes hidden)"
+                  - generic [ref=e2654]: "297"
+                  - generic [ref=e2656]:
+                    - generic [ref=e2657]: "298"
+                    - generic [ref=e2658]: "# (5 unchanged blocks hidden)"
+                  - generic [ref=e2659]:
+                    - generic [ref=e2660]: "299"
+                    - generic [ref=e2661]: "}"
+                  - generic [ref=e2663]: "300"
+                  - generic [ref=e2665]:
+                    - generic [ref=e2666]: "301"
+                    - generic [ref=e2667]: "# module.core_refdata_privatelink.aws_security_group.lambda[0] will be updated in-place"
+                  - generic [ref=e2668]:
+                    - generic [ref=e2669]: "302"
+                    - generic [ref=e2670]: "~ resource \"aws_security_group\" \"lambda\" {"
+                  - generic [ref=e2671]:
+                    - generic [ref=e2672]: "303"
+                    - generic [ref=e2673]: id = "sg-0e69383f0ba13aa58"
+                  - generic [ref=e2674]:
+                    - generic [ref=e2675]: "304"
+                    - generic [ref=e2676]: name = "ctp-ecp-qa-euw2-refdata-nlb-ip-updater-sg"
+                  - generic [ref=e2677]:
+                    - generic [ref=e2678]: "305"
+                    - generic [ref=e2679]: "~ tags = {"
+                  - generic [ref=e2680]:
+                    - generic [ref=e2681]: "306"
+                    - generic [ref=e2682]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2683]:
+                    - generic [ref=e2684]: "307"
+                    - generic [ref=e2685]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2686]:
+                    - generic [ref=e2687]: "308"
+                    - generic [ref=e2688]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2689]:
+                    - generic [ref=e2690]: "309"
+                    - generic [ref=e2691]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2692]:
+                    - generic [ref=e2693]: "310"
+                    - generic [ref=e2694]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2695]:
+                    - generic [ref=e2696]: "311"
+                    - generic [ref=e2697]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2698]:
+                    - generic [ref=e2699]: "312"
+                    - generic [ref=e2700]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2701]:
+                    - generic [ref=e2702]: "313"
+                    - generic [ref=e2703]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2704]:
+                    - generic [ref=e2705]: "314"
+                    - generic [ref=e2706]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2707]:
+                    - generic [ref=e2708]: "315"
+                    - generic [ref=e2709]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2710]:
+                    - generic [ref=e2711]: "316"
+                    - generic [ref=e2712]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2713]:
+                    - generic [ref=e2714]: "317"
+                    - generic [ref=e2715]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2716]:
+                    - generic [ref=e2717]: "318"
+                    - generic [ref=e2718]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2719]:
+                    - generic [ref=e2720]: "319"
+                    - generic [ref=e2721]: "}"
+                  - generic [ref=e2722]:
+                    - generic [ref=e2723]: "320"
+                    - generic [ref=e2724]: "~ tags_all = {"
+                  - generic [ref=e2725]:
+                    - generic [ref=e2726]: "321"
+                    - generic [ref=e2727]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2728]:
+                    - generic [ref=e2729]: "322"
+                    - generic [ref=e2730]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2731]:
+                    - generic [ref=e2732]: "323"
+                    - generic [ref=e2733]: "}"
+                  - generic [ref=e2734]:
+                    - generic [ref=e2735]: "324"
+                    - generic [ref=e2736]: "# (9 unchanged attributes hidden)"
+                  - generic [ref=e2737]:
+                    - generic [ref=e2738]: "325"
+                    - generic [ref=e2739]: "}"
+                  - generic [ref=e2741]: "326"
+                  - generic [ref=e2743]:
+                    - generic [ref=e2744]: "327"
+                    - generic [ref=e2745]: "# module.core_refdata_privatelink.aws_ssm_parameter.endpoint_service_name[0] will be updated in-place"
+                  - generic [ref=e2746]:
+                    - generic [ref=e2747]: "328"
+                    - generic [ref=e2748]: "~ resource \"aws_ssm_parameter\" \"endpoint_service_name\" {"
+                  - generic [ref=e2749]:
+                    - generic [ref=e2750]: "329"
+                    - generic [ref=e2751]: id = "/qa/core-refdata/endpoint-service-name"
+                  - generic [ref=e2752]:
+                    - generic [ref=e2753]: "330"
+                    - generic [ref=e2754]: name = "/qa/core-refdata/endpoint-service-name"
+                  - generic [ref=e2755]:
+                    - generic [ref=e2756]: "331"
+                    - generic [ref=e2757]: "~ tags = {"
+                  - generic [ref=e2758]:
+                    - generic [ref=e2759]: "332"
+                    - generic [ref=e2760]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2761]:
+                    - generic [ref=e2762]: "333"
+                    - generic [ref=e2763]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2764]:
+                    - generic [ref=e2765]: "334"
+                    - generic [ref=e2766]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2767]:
+                    - generic [ref=e2768]: "335"
+                    - generic [ref=e2769]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2770]:
+                    - generic [ref=e2771]: "336"
+                    - generic [ref=e2772]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2773]:
+                    - generic [ref=e2774]: "337"
+                    - generic [ref=e2775]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2776]:
+                    - generic [ref=e2777]: "338"
+                    - generic [ref=e2778]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2779]:
+                    - generic [ref=e2780]: "339"
+                    - generic [ref=e2781]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2782]:
+                    - generic [ref=e2783]: "340"
+                    - generic [ref=e2784]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2785]:
+                    - generic [ref=e2786]: "341"
+                    - generic [ref=e2787]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2788]:
+                    - generic [ref=e2789]: "342"
+                    - generic [ref=e2790]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2791]:
+                    - generic [ref=e2792]: "343"
+                    - generic [ref=e2793]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2794]:
+                    - generic [ref=e2795]: "344"
+                    - generic [ref=e2796]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2797]:
+                    - generic [ref=e2798]: "345"
+                    - generic [ref=e2799]: "}"
+                  - generic [ref=e2800]:
+                    - generic [ref=e2801]: "346"
+                    - generic [ref=e2802]: "~ tags_all = {"
+                  - generic [ref=e2803]:
+                    - generic [ref=e2804]: "347"
+                    - generic [ref=e2805]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2806]:
+                    - generic [ref=e2807]: "348"
+                    - generic [ref=e2808]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2809]:
+                    - generic [ref=e2810]: "349"
+                    - generic [ref=e2811]: "}"
+                  - generic [ref=e2812]:
+                    - generic [ref=e2813]: "350"
+                    - generic [ref=e2814]: "# (12 unchanged attributes hidden)"
+                  - generic [ref=e2815]:
+                    - generic [ref=e2816]: "351"
+                    - generic [ref=e2817]: "}"
+                  - generic [ref=e2819]: "352"
+                  - generic [ref=e2821]:
+                    - generic [ref=e2822]: "353"
+                    - generic [ref=e2823]: "# module.core_refdata_privatelink.aws_ssm_parameter.nlb_arn[0] will be updated in-place"
+                  - generic [ref=e2824]:
+                    - generic [ref=e2825]: "354"
+                    - generic [ref=e2826]: "~ resource \"aws_ssm_parameter\" \"nlb_arn\" {"
+                  - generic [ref=e2827]:
+                    - generic [ref=e2828]: "355"
+                    - generic [ref=e2829]: id = "/qa/core-refdata/nlb-arn"
+                  - generic [ref=e2830]:
+                    - generic [ref=e2831]: "356"
+                    - generic [ref=e2832]: name = "/qa/core-refdata/nlb-arn"
+                  - generic [ref=e2833]:
+                    - generic [ref=e2834]: "357"
+                    - generic [ref=e2835]: "~ tags = {"
+                  - generic [ref=e2836]:
+                    - generic [ref=e2837]: "358"
+                    - generic [ref=e2838]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2839]:
+                    - generic [ref=e2840]: "359"
+                    - generic [ref=e2841]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2842]:
+                    - generic [ref=e2843]: "360"
+                    - generic [ref=e2844]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2845]:
+                    - generic [ref=e2846]: "361"
+                    - generic [ref=e2847]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2848]:
+                    - generic [ref=e2849]: "362"
+                    - generic [ref=e2850]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2851]:
+                    - generic [ref=e2852]: "363"
+                    - generic [ref=e2853]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2854]:
+                    - generic [ref=e2855]: "364"
+                    - generic [ref=e2856]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2857]:
+                    - generic [ref=e2858]: "365"
+                    - generic [ref=e2859]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2860]:
+                    - generic [ref=e2861]: "366"
+                    - generic [ref=e2862]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2863]:
+                    - generic [ref=e2864]: "367"
+                    - generic [ref=e2865]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2866]:
+                    - generic [ref=e2867]: "368"
+                    - generic [ref=e2868]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2869]:
+                    - generic [ref=e2870]: "369"
+                    - generic [ref=e2871]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2872]:
+                    - generic [ref=e2873]: "370"
+                    - generic [ref=e2874]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2875]:
+                    - generic [ref=e2876]: "371"
+                    - generic [ref=e2877]: "}"
+                  - generic [ref=e2878]:
+                    - generic [ref=e2879]: "372"
+                    - generic [ref=e2880]: "~ tags_all = {"
+                  - generic [ref=e2881]:
+                    - generic [ref=e2882]: "373"
+                    - generic [ref=e2883]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2884]:
+                    - generic [ref=e2885]: "374"
+                    - generic [ref=e2886]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2887]:
+                    - generic [ref=e2888]: "375"
+                    - generic [ref=e2889]: "}"
+                  - generic [ref=e2890]:
+                    - generic [ref=e2891]: "376"
+                    - generic [ref=e2892]: "# (12 unchanged attributes hidden)"
+                  - generic [ref=e2893]:
+                    - generic [ref=e2894]: "377"
+                    - generic [ref=e2895]: "}"
+                  - generic [ref=e2897]: "378"
+                  - generic [ref=e2899]:
+                    - generic [ref=e2900]: "379"
+                    - generic [ref=e2901]: "# module.core_refdata_privatelink.aws_vpc_endpoint_service.aurora[0] will be updated in-place"
+                  - generic [ref=e2902]:
+                    - generic [ref=e2903]: "380"
+                    - generic [ref=e2904]: "~ resource \"aws_vpc_endpoint_service\" \"aurora\" {"
+                  - generic [ref=e2905]:
+                    - generic [ref=e2906]: "381"
+                    - generic [ref=e2907]: id = "vpce-svc-06c99b32ab4af2fc8"
+                  - generic [ref=e2908]:
+                    - generic [ref=e2909]: "382"
+                    - generic [ref=e2910]: "~ tags = {"
+                  - generic [ref=e2911]:
+                    - generic [ref=e2912]: "383"
+                    - generic [ref=e2913]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2914]:
+                    - generic [ref=e2915]: "384"
+                    - generic [ref=e2916]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2917]:
+                    - generic [ref=e2918]: "385"
+                    - generic [ref=e2919]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2920]:
+                    - generic [ref=e2921]: "386"
+                    - generic [ref=e2922]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2923]:
+                    - generic [ref=e2924]: "387"
+                    - generic [ref=e2925]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e2926]:
+                    - generic [ref=e2927]: "388"
+                    - generic [ref=e2928]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e2929]:
+                    - generic [ref=e2930]: "389"
+                    - generic [ref=e2931]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e2932]:
+                    - generic [ref=e2933]: "390"
+                    - generic [ref=e2934]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e2935]:
+                    - generic [ref=e2936]: "391"
+                    - generic [ref=e2937]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2938]:
+                    - generic [ref=e2939]: "392"
+                    - generic [ref=e2940]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e2941]:
+                    - generic [ref=e2942]: "393"
+                    - generic [ref=e2943]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e2944]:
+                    - generic [ref=e2945]: "394"
+                    - generic [ref=e2946]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e2947]:
+                    - generic [ref=e2948]: "395"
+                    - generic [ref=e2949]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e2950]:
+                    - generic [ref=e2951]: "396"
+                    - generic [ref=e2952]: "}"
+                  - generic [ref=e2953]:
+                    - generic [ref=e2954]: "397"
+                    - generic [ref=e2955]: "~ tags_all = {"
+                  - generic [ref=e2956]:
+                    - generic [ref=e2957]: "398"
+                    - generic [ref=e2958]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e2959]:
+                    - generic [ref=e2960]: "399"
+                    - generic [ref=e2961]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e2962]:
+                    - generic [ref=e2963]: "400"
+                    - generic [ref=e2964]: "}"
+                  - generic [ref=e2965]:
+                    - generic [ref=e2966]: "401"
+                    - generic [ref=e2967]: "# (16 unchanged attributes hidden)"
+                  - generic [ref=e2968]:
+                    - generic [ref=e2969]: "402"
+                    - generic [ref=e2970]: "}"
+                  - generic [ref=e2972]: "403"
+                  - generic [ref=e2974]:
+                    - generic [ref=e2975]: "404"
+                    - generic [ref=e2976]: "# module.core_refdata_privatelink.aws_vpc_security_group_egress_rule.lambda_all[0] will be updated in-place"
+                  - generic [ref=e2977]:
+                    - generic [ref=e2978]: "405"
+                    - generic [ref=e2979]: "~ resource \"aws_vpc_security_group_egress_rule\" \"lambda_all\" {"
+                  - generic [ref=e2980]:
+                    - generic [ref=e2981]: "406"
+                    - generic [ref=e2982]: id = "sgr-04ab384b07be990d1"
+                  - generic [ref=e2983]:
+                    - generic [ref=e2984]: "407"
+                    - generic [ref=e2985]: "~ tags = {"
+                  - generic [ref=e2986]:
+                    - generic [ref=e2987]: "408"
+                    - generic [ref=e2988]: "\"app:environment\" = \"qa\""
+                  - generic [ref=e2989]:
+                    - generic [ref=e2990]: "409"
+                    - generic [ref=e2991]: "\"cost:center\" = \"ECP-QA\""
+                  - generic [ref=e2992]:
+                    - generic [ref=e2993]: "410"
+                    - generic [ref=e2994]: "\"infra:terraform-module\" = \"ctp-core-refdata-privatelink\""
+                  - generic [ref=e2995]:
+                    - generic [ref=e2996]: "411"
+                    - generic [ref=e2997]: "\"map-migrated\" = \"mig2D4KMU6QW4\""
+                  - generic [ref=e2998]:
+                    - generic [ref=e2999]: "412"
+                    - generic [ref=e3000]: "\"platform:env\" = \"qa-euw2\""
+                  - generic [ref=e3001]:
+                    - generic [ref=e3002]: "413"
+                    - generic [ref=e3003]: "\"platform:managed-by\" = \"Platform Engineering\""
+                  - generic [ref=e3004]:
+                    - generic [ref=e3005]: "414"
+                    - generic [ref=e3006]: "\"platform:region\" = \"euw2\""
+                  - generic [ref=e3007]:
+                    - generic [ref=e3008]: "415"
+                    - generic [ref=e3009]: "\"platform:terraform\" = \"true\""
+                  - generic [ref=e3010]:
+                    - generic [ref=e3011]: "416"
+                    - generic [ref=e3012]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e3013]:
+                    - generic [ref=e3014]: "417"
+                    - generic [ref=e3015]: "\"user:organization\" = \"ctp\""
+                  - generic [ref=e3016]:
+                    - generic [ref=e3017]: "418"
+                    - generic [ref=e3018]: "\"user:owner\" = \"QA\""
+                  - generic [ref=e3019]:
+                    - generic [ref=e3020]: "419"
+                    - generic [ref=e3021]: "\"user:project\" = \"ecp\""
+                  - generic [ref=e3022]:
+                    - generic [ref=e3023]: "420"
+                    - generic [ref=e3024]: "\"user:system\" = \"ecp\""
+                  - generic [ref=e3025]:
+                    - generic [ref=e3026]: "421"
+                    - generic [ref=e3027]: "}"
+                  - generic [ref=e3028]:
+                    - generic [ref=e3029]: "422"
+                    - generic [ref=e3030]: "~ tags_all = {"
+                  - generic [ref=e3031]:
+                    - generic [ref=e3032]: "423"
+                    - generic [ref=e3033]: ~ "platform:terraform-repo" = "ctp-ecp-fix-infra-terraform" -> "ctp-ecp-terraform"
+                  - generic [ref=e3034]:
+                    - generic [ref=e3035]: "424"
+                    - generic [ref=e3036]: "# (12 unchanged elements hidden)"
+                  - generic [ref=e3037]:
+                    - generic [ref=e3038]: "425"
+                    - generic [ref=e3039]: "}"
+                  - generic [ref=e3040]:
+                    - generic [ref=e3041]: "426"
+                    - generic [ref=e3042]: "# (7 unchanged attributes hidden)"
+                  - generic [ref=e3043]:
+                    - generic [ref=e3044]: "427"
+                    - generic [ref=e3045]: "}"
+                  - generic [ref=e3047]: "428"
+                  - generic [ref=e3049]:
+                    - generic [ref=e3050]: "429"
+                    - generic [ref=e3051]: "Plan: 0 to add, 13 to change, 0 to destroy."
+                  - generic [ref=e3053]: "430"
+                  - generic [ref=e3055]:
+                    - generic [ref=e3056]: "431"
+                    - generic [ref=e3057]: "Changes to Outputs:"
+                  - generic [ref=e3058]:
+                    - generic [ref=e3059]: "432"
+                    - generic [ref=e3060]: ~ context = (sensitive value)
+                  - generic [ref=e3062]: "433"
+                  - generic [ref=e3064]:
+                    - generic [ref=e3065]: "434"
+                    - generic [ref=e3066]: ─────────────────────────────────────────────────────────────────────────────
+                  - generic [ref=e3068]: "435"
+                  - generic [ref=e3070]:
+                    - generic [ref=e3071]: "436"
+                    - generic [ref=e3072]: "Note: You didn't use the -out option to save this plan, so Terraform can't"
+                  - generic [ref=e3073]:
+                    - generic [ref=e3074]: "437"
+                    - generic [ref=e3075]: guarantee to take exactly these actions if you run "terraform apply" now.
+                  - generic [ref=e3076]:
+                    - generic [ref=e3077]: "438"
+                    - generic [ref=e3078]: Releasing state lock. This may take a few moments...
+                  - generic [ref=e3080]: "439"

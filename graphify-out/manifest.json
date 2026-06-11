@@ -1,0 +1,757 @@
+{
+  "/home/andres/tf-companion/.claude/settings.json": {
+    "mtime": 1781091817.9804974,
+    "ast_hash": "c0801575d0823021e5f72a81aa9ea5a5",
+    "semantic_hash": "c0801575d0823021e5f72a81aa9ea5a5"
+  },
+  "/home/andres/tf-companion/.claude/settings.local.json": {
+    "mtime": 1781009510.9216514,
+    "ast_hash": "01a2f78113cecc917a3d02b922eb6c6e",
+    "semantic_hash": "01a2f78113cecc917a3d02b922eb6c6e"
+  },
+  "/home/andres/tf-companion/cmd/tfops/main.go": {
+    "mtime": 1781011414.477755,
+    "ast_hash": "6933257344cf8783454ae6b214e888a7",
+    "semantic_hash": "6933257344cf8783454ae6b214e888a7"
+  },
+  "/home/andres/tf-companion/cmd/tfops/main_test.go": {
+    "mtime": 1780889920.2355337,
+    "ast_hash": "c6db38af9626fb16580d5791b0da31b3",
+    "semantic_hash": "c6db38af9626fb16580d5791b0da31b3"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/config/editor.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "bb147332c1201f51cf88fcdd5f4594b9",
+    "semantic_hash": "bb147332c1201f51cf88fcdd5f4594b9"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/config/theme.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c",
+    "semantic_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/help/theme.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c",
+    "semantic_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/data-apply.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "b546c2180db92ce2e229d02d48326dd9",
+    "semantic_hash": "b546c2180db92ce2e229d02d48326dd9"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/data-destroy.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "528c7b9816205973ad795016a858f4a5",
+    "semantic_hash": "528c7b9816205973ad795016a858f4a5"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/data-plan.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "11fc7cf284bd92a665ce424cda12d45c",
+    "semantic_hash": "11fc7cf284bd92a665ce424cda12d45c"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/report.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "7913548d2dd0a0d2b7a6739e2926e634",
+    "semantic_hash": "7913548d2dd0a0d2b7a6739e2926e634"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/reports-history.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "1a6b5d3ca7ec5ea8f0ea70a7d210cb38",
+    "semantic_hash": "1a6b5d3ca7ec5ea8f0ea70a7d210cb38"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/repos/app.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "07ff06faafc44a255d35f5b82cb34e43",
+    "semantic_hash": "07ff06faafc44a255d35f5b82cb34e43"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/repos/theme.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c",
+    "semantic_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/runs/run.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "71fe1336c13ae20df0f62a2e3debe02b",
+    "semantic_hash": "71fe1336c13ae20df0f62a2e3debe02b"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/runs/runs-history.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "0539a445516c00d66b0e9517d035de64",
+    "semantic_hash": "0539a445516c00d66b0e9517d035de64"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/runs/theme.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c",
+    "semantic_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/sts.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "a47b5c273e0f54c48e0329f97aa5c5b3",
+    "semantic_hash": "a47b5c273e0f54c48e0329f97aa5c5b3"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/theme.js": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c",
+    "semantic_hash": "1b1a38af8a659c6edcd0cdec3ec21d0c"
+  },
+  "/home/andres/tf-companion/docs/demo.sh": {
+    "mtime": 1780988410.641271,
+    "ast_hash": "841dc252e3d876164a64915caf27855a",
+    "semantic_hash": "841dc252e3d876164a64915caf27855a"
+  },
+  "/home/andres/tf-companion/examples/infrastructure/environments/dev/main.tf": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "d6235b310bbfe4b6f18fe8bb4a4f55e4",
+    "semantic_hash": "d6235b310bbfe4b6f18fe8bb4a4f55e4"
+  },
+  "/home/andres/tf-companion/examples/infrastructure/environments/prod/main.tf": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "2a821bc726d464e0a5cc585785479d0e",
+    "semantic_hash": "2a821bc726d464e0a5cc585785479d0e"
+  },
+  "/home/andres/tf-companion/examples/reports/tfops-plan-20260609-070026.json": {
+    "mtime": 1780988426.537285,
+    "ast_hash": "f9d7d8e0637d61e03afc122b06d60153",
+    "semantic_hash": "f9d7d8e0637d61e03afc122b06d60153"
+  },
+  "/home/andres/tf-companion/examples/reports/tfops-plan-20260609-070051.json": {
+    "mtime": 1780988451.885252,
+    "ast_hash": "b1208082c9446c500be908f984a17ed2",
+    "semantic_hash": "b1208082c9446c500be908f984a17ed2"
+  },
+  "/home/andres/tf-companion/examples/reports/tfops-plan-20260609-070126.json": {
+    "mtime": 1780988486.5052705,
+    "ast_hash": "48c18cadf7782d026a0a6e0df6a17de8",
+    "semantic_hash": "48c18cadf7782d026a0a6e0df6a17de8"
+  },
+  "/home/andres/tf-companion/examples/runs.json": {
+    "mtime": 1780988486.5052705,
+    "ast_hash": "f3a8c753cbf0e18432ff96cf9410ed5e",
+    "semantic_hash": "f3a8c753cbf0e18432ff96cf9410ed5e"
+  },
+  "/home/andres/tf-companion/frontend/package.json": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "eec7177d753305f0ef1a992d1e149960",
+    "semantic_hash": "eec7177d753305f0ef1a992d1e149960"
+  },
+  "/home/andres/tf-companion/frontend/src/App.tsx": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "fa2e570fc30239582a6a1d72b4f8307a",
+    "semantic_hash": "fa2e570fc30239582a6a1d72b4f8307a"
+  },
+  "/home/andres/tf-companion/frontend/src/Shell.tsx": {
+    "mtime": 1780929425.9580648,
+    "ast_hash": "fb297bbbcec622ad4f7ddc31955c4080",
+    "semantic_hash": "fb297bbbcec622ad4f7ddc31955c4080"
+  },
+  "/home/andres/tf-companion/frontend/src/api.ts": {
+    "mtime": 1780998967.7739117,
+    "ast_hash": "2f9404adfdf2165e5e92dcd6d9c5af52",
+    "semantic_hash": "2f9404adfdf2165e5e92dcd6d9c5af52"
+  },
+  "/home/andres/tf-companion/frontend/src/components/ConfirmModal.tsx": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "9351206cfd81e726997170674bea8645",
+    "semantic_hash": "9351206cfd81e726997170674bea8645"
+  },
+  "/home/andres/tf-companion/frontend/src/components/NewRunModal.hooks.test.tsx": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "a4a7c46899616146620150e13bec671c",
+    "semantic_hash": "a4a7c46899616146620150e13bec671c"
+  },
+  "/home/andres/tf-companion/frontend/src/components/NewRunModal.tsx": {
+    "mtime": 1780998967.7739117,
+    "ast_hash": "c9f917c7d9a91394d8d7463f7aa7d061",
+    "semantic_hash": "c9f917c7d9a91394d8d7463f7aa7d061"
+  },
+  "/home/andres/tf-companion/frontend/src/components/RetryBranchModal.tsx": {
+    "mtime": 1780934652.0571797,
+    "ast_hash": "82d6af0943ef38ec4ca8ec5f48e32a28",
+    "semantic_hash": "82d6af0943ef38ec4ca8ec5f48e32a28"
+  },
+  "/home/andres/tf-companion/frontend/src/components/RunSplitPanel.tsx": {
+    "mtime": 1781011789.920381,
+    "ast_hash": "e6b62c3a0cffd7218021304396ac3c6d",
+    "semantic_hash": "e6b62c3a0cffd7218021304396ac3c6d"
+  },
+  "/home/andres/tf-companion/frontend/src/components/StsBadge.tsx": {
+    "mtime": 1780998967.7739117,
+    "ast_hash": "1992cf9b4a79a3d484b645d3d0357549",
+    "semantic_hash": "1992cf9b4a79a3d484b645d3d0357549"
+  },
+  "/home/andres/tf-companion/frontend/src/components/Terminal.tsx": {
+    "mtime": 1780933591.2788112,
+    "ast_hash": "cf0f3c79e0cca5752b09dbbe66692592",
+    "semantic_hash": "cf0f3c79e0cca5752b09dbbe66692592"
+  },
+  "/home/andres/tf-companion/frontend/src/components/ToastProvider.tsx": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "3b0bc5cd36ce40b16ee2ddf8621ce6ba",
+    "semantic_hash": "3b0bc5cd36ce40b16ee2ddf8621ce6ba"
+  },
+  "/home/andres/tf-companion/frontend/src/components/repos/EditStageModal.tsx": {
+    "mtime": 1780980672.9404614,
+    "ast_hash": "a0dfd749003c7e9c6669be54c275a5b6",
+    "semantic_hash": "a0dfd749003c7e9c6669be54c275a5b6"
+  },
+  "/home/andres/tf-companion/frontend/src/components/repos/icons.tsx": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "5b5af3016315f372aea9217ffdeada16",
+    "semantic_hash": "5b5af3016315f372aea9217ffdeada16"
+  },
+  "/home/andres/tf-companion/frontend/src/components/repos/repoModel.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "b28ca859d57efac023b4f2e376d5878d",
+    "semantic_hash": "b28ca859d57efac023b4f2e376d5878d"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/colors.test.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "81b2c4dba97c6c824ed34e122396f1ee",
+    "semantic_hash": "81b2c4dba97c6c824ed34e122396f1ee"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/colors.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "f6a71d59a6649a61bea381fcfcb5d730",
+    "semantic_hash": "f6a71d59a6649a61bea381fcfcb5d730"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/identity.test.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "450190d4c32ff68ac60c61a2dbbab43b",
+    "semantic_hash": "450190d4c32ff68ac60c61a2dbbab43b"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/identity.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "b59626a3c3b715868a93fc1b8706ab97",
+    "semantic_hash": "b59626a3c3b715868a93fc1b8706ab97"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/planChanges.ts": {
+    "mtime": 1780979432.0209088,
+    "ast_hash": "05325ac75f53ce1736ba11d58c57ba0d",
+    "semantic_hash": "05325ac75f53ce1736ba11d58c57ba0d"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/relativeTime.test.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "ccce726119f1e8c9232d0b5650e426bf",
+    "semantic_hash": "ccce726119f1e8c9232d0b5650e426bf"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/relativeTime.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "52835e6eaab45a7b771013513de6067d",
+    "semantic_hash": "52835e6eaab45a7b771013513de6067d"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/repoPreview.test.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "f50337eb81b339df8e17ae8d2f23c511",
+    "semantic_hash": "f50337eb81b339df8e17ae8d2f23c511"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/repoPreview.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "905df4662be8631d3dbe3da57c580ce7",
+    "semantic_hash": "905df4662be8631d3dbe3da57c580ce7"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/reportHelpers.test.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "d050be736148782108d350d56853e510",
+    "semantic_hash": "d050be736148782108d350d56853e510"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/reportHelpers.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "6bcccef6ed1cd0b6860eade94c5d68ec",
+    "semantic_hash": "6bcccef6ed1cd0b6860eade94c5d68ec"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/runPreview.test.ts": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "22227c5917195792273a350e494c49b6",
+    "semantic_hash": "22227c5917195792273a350e494c49b6"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/runPreview.ts": {
+    "mtime": 1780998967.7739117,
+    "ast_hash": "04f39b27f8a1eea1f8d5396f56794473",
+    "semantic_hash": "04f39b27f8a1eea1f8d5396f56794473"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/runStatus.test.ts": {
+    "mtime": 1781011382.4968274,
+    "ast_hash": "e9ada45937586a61a0b3a6a64d0064c4",
+    "semantic_hash": "e9ada45937586a61a0b3a6a64d0064c4"
+  },
+  "/home/andres/tf-companion/frontend/src/lib/runStatus.ts": {
+    "mtime": 1781011748.621783,
+    "ast_hash": "3cd681038bff04cffa9446499292c4bf",
+    "semantic_hash": "3cd681038bff04cffa9446499292c4bf"
+  },
+  "/home/andres/tf-companion/frontend/src/main.tsx": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "10e5b86300b24b8f551dbb4e69458513",
+    "semantic_hash": "10e5b86300b24b8f551dbb4e69458513"
+  },
+  "/home/andres/tf-companion/frontend/src/nav.tsx": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "92e699b42e50bafb0bbe73300d4821f0",
+    "semantic_hash": "92e699b42e50bafb0bbe73300d4821f0"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/ConfigYaml.tsx": {
+    "mtime": 1780923913.6008527,
+    "ast_hash": "110910f8172a0c7f6529d9a42beed4aa",
+    "semantic_hash": "110910f8172a0c7f6529d9a42beed4aa"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/Help.tsx": {
+    "mtime": 1780987927.3493059,
+    "ast_hash": "4806ff6f6d7721b9c1e7f37d718fc4bd",
+    "semantic_hash": "4806ff6f6d7721b9c1e7f37d718fc4bd"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/Overview.tsx": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "191d13ea32c919a3664a91fe593e4dfc",
+    "semantic_hash": "191d13ea32c919a3664a91fe593e4dfc"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/ReportViewer.tsx": {
+    "mtime": 1780998967.7778757,
+    "ast_hash": "25ae77b14feab1892911a64be2ce6eea",
+    "semantic_hash": "25ae77b14feab1892911a64be2ce6eea"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/Reports.tsx": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "fcfcc67b97bb19e2a9c738049ba24478",
+    "semantic_hash": "fcfcc67b97bb19e2a9c738049ba24478"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/Repos.tsx": {
+    "mtime": 1780998967.7778757,
+    "ast_hash": "135754769c3d368f53e52fb4c5503a56",
+    "semantic_hash": "135754769c3d368f53e52fb4c5503a56"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/Runs.tsx": {
+    "mtime": 1780982518.5858028,
+    "ast_hash": "fafacdf6086e6caaf36e378f0ff62cea",
+    "semantic_hash": "fafacdf6086e6caaf36e378f0ff62cea"
+  },
+  "/home/andres/tf-companion/frontend/src/pages/newRunRouting.test.tsx": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "1a731b805fe7923970916fdc0b3ce2b1",
+    "semantic_hash": "1a731b805fe7923970916fdc0b3ce2b1"
+  },
+  "/home/andres/tf-companion/frontend/src/types.ts": {
+    "mtime": 1780936782.4088616,
+    "ast_hash": "460f9b52dc7fee8735109783cb336371",
+    "semantic_hash": "460f9b52dc7fee8735109783cb336371"
+  },
+  "/home/andres/tf-companion/frontend/tsconfig.json": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "604b408fe551807a494077c57f74c681",
+    "semantic_hash": "604b408fe551807a494077c57f74c681"
+  },
+  "/home/andres/tf-companion/frontend/vite.config.ts": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "ad030a8cedaa79ff128226b84e1dc04f",
+    "semantic_hash": "ad030a8cedaa79ff128226b84e1dc04f"
+  },
+  "/home/andres/tf-companion/internal/api/handlers.go": {
+    "mtime": 1780998967.7778757,
+    "ast_hash": "7e2fe02ed40d85c73a126ab080a50c4b",
+    "semantic_hash": "7e2fe02ed40d85c73a126ab080a50c4b"
+  },
+  "/home/andres/tf-companion/internal/api/handlers_test.go": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "11781dae310ff72e3c5cc9063ce110e2",
+    "semantic_hash": "11781dae310ff72e3c5cc9063ce110e2"
+  },
+  "/home/andres/tf-companion/internal/api/manager.go": {
+    "mtime": 1780999502.178955,
+    "ast_hash": "53c67d5a96245758e4b16eb500342838",
+    "semantic_hash": "53c67d5a96245758e4b16eb500342838"
+  },
+  "/home/andres/tf-companion/internal/aws/sso.go": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "675e9674573781184cd194babc93f78b",
+    "semantic_hash": "675e9674573781184cd194babc93f78b"
+  },
+  "/home/andres/tf-companion/internal/aws/sso_test.go": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "af163cfee6b8710982cd661fc59ec74a",
+    "semantic_hash": "af163cfee6b8710982cd661fc59ec74a"
+  },
+  "/home/andres/tf-companion/internal/config/config.go": {
+    "mtime": 1780921703.6139705,
+    "ast_hash": "50f73549edca7228cc27527233c8a96b",
+    "semantic_hash": "50f73549edca7228cc27527233c8a96b"
+  },
+  "/home/andres/tf-companion/internal/config/config_test.go": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "992f4d961e8c0357bf300fefa6143a5a",
+    "semantic_hash": "992f4d961e8c0357bf300fefa6143a5a"
+  },
+  "/home/andres/tf-companion/internal/git/git.go": {
+    "mtime": 1780931045.4670393,
+    "ast_hash": "b2494d987202774d447680d76facc011",
+    "semantic_hash": "b2494d987202774d447680d76facc011"
+  },
+  "/home/andres/tf-companion/internal/report/report.go": {
+    "mtime": 1780889920.2487335,
+    "ast_hash": "ee994fe37dc058b54df44533ac94c3e9",
+    "semantic_hash": "ee994fe37dc058b54df44533ac94c3e9"
+  },
+  "/home/andres/tf-companion/internal/runner/runner.go": {
+    "mtime": 1781011975.227667,
+    "ast_hash": "1e2bc179f13660531934414dbfeb5611",
+    "semantic_hash": "1e2bc179f13660531934414dbfeb5611"
+  },
+  "/home/andres/tf-companion/internal/runner/runner_test.go": {
+    "mtime": 1781011543.7259035,
+    "ast_hash": "e4fa02e73b4dad7ce900bdf6b13f671e",
+    "semantic_hash": "e4fa02e73b4dad7ce900bdf6b13f671e"
+  },
+  "/home/andres/tf-companion/internal/server/server.go": {
+    "mtime": 1780889920.2531335,
+    "ast_hash": "7758edbe1fd61e51df78dde791ab76ff",
+    "semantic_hash": "7758edbe1fd61e51df78dde791ab76ff"
+  },
+  "/home/andres/tf-companion/internal/web/webapp.go": {
+    "mtime": 1780889920.2531335,
+    "ast_hash": "6969a84c8a5bde3955173495eedd4b06",
+    "semantic_hash": "6969a84c8a5bde3955173495eedd4b06"
+  },
+  "/home/andres/tf-companion/scripts/screenshot.mjs": {
+    "mtime": 1780930140.3472471,
+    "ast_hash": "1ebd954430d28bae59b8415a5f5c109b",
+    "semantic_hash": "1ebd954430d28bae59b8415a5f5c109b"
+  },
+  "/home/andres/tf-companion/scripts/screenshot.py": {
+    "mtime": 1780930229.5393097,
+    "ast_hash": "9a7c9d512b37f5cb1223ef54da0e2da6",
+    "semantic_hash": "9a7c9d512b37f5cb1223ef54da0e2da6"
+  },
+  "/home/andres/tf-companion/.claude/CLAUDE.md": {
+    "mtime": 1781091817.9778225,
+    "ast_hash": "db73b0edd7ffbc61ceac177130730865",
+    "semantic_hash": "db73b0edd7ffbc61ceac177130730865"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/SKILL.md": {
+    "mtime": 1781091817.9774673,
+    "ast_hash": "41f700d6535cc2f2b6b6d0a9eecc7525",
+    "semantic_hash": "41f700d6535cc2f2b6b6d0a9eecc7525"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/add-watch.md": {
+    "mtime": 1781057097.9186084,
+    "ast_hash": "0df0589623217ca38a12bdcabfb42f4c",
+    "semantic_hash": "0df0589623217ca38a12bdcabfb42f4c"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/exports.md": {
+    "mtime": 1781057097.9186084,
+    "ast_hash": "7fb1a81aca17a462db70684a324fcfb0",
+    "semantic_hash": "7fb1a81aca17a462db70684a324fcfb0"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/extraction-spec.md": {
+    "mtime": 1781057097.9225142,
+    "ast_hash": "24808b03abfeaf5f6435bb69c0125b2c",
+    "semantic_hash": "24808b03abfeaf5f6435bb69c0125b2c"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/github-and-merge.md": {
+    "mtime": 1781057097.9225142,
+    "ast_hash": "cde13df085e4c492aeb7ba298a996d0d",
+    "semantic_hash": "cde13df085e4c492aeb7ba298a996d0d"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/hooks.md": {
+    "mtime": 1781057097.9225142,
+    "ast_hash": "3f545db6ce646650bb9de588f5512a27",
+    "semantic_hash": "3f545db6ce646650bb9de588f5512a27"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/query.md": {
+    "mtime": 1781057097.9225142,
+    "ast_hash": "8b40ed8c9e9060fc215219a8fc964091",
+    "semantic_hash": "8b40ed8c9e9060fc215219a8fc964091"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/transcribe.md": {
+    "mtime": 1781057097.9225142,
+    "ast_hash": "70f6aa30d6211f3a2c7e9fc45479f50c",
+    "semantic_hash": "70f6aa30d6211f3a2c7e9fc45479f50c"
+  },
+  "/home/andres/tf-companion/.claude/skills/graphify/references/update.md": {
+    "mtime": 1781057097.9225142,
+    "ast_hash": "0dad167a95bdb389f02fecffb60b1bc8",
+    "semantic_hash": "0dad167a95bdb389f02fecffb60b1bc8"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-51-38-921Z.yml": {
+    "mtime": 1780973498.9217722,
+    "ast_hash": "a85809e4a99e99710cabf3a1f620370f",
+    "semantic_hash": "a85809e4a99e99710cabf3a1f620370f"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-52-06-982Z.yml": {
+    "mtime": 1780973526.9800832,
+    "ast_hash": "a85809e4a99e99710cabf3a1f620370f",
+    "semantic_hash": "a85809e4a99e99710cabf3a1f620370f"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-52-25-224Z.yml": {
+    "mtime": 1780973545.2220967,
+    "ast_hash": "71b221c25f0ad1d2d9f92bd43aa53c5e",
+    "semantic_hash": "71b221c25f0ad1d2d9f92bd43aa53c5e"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-52-46-258Z.yml": {
+    "mtime": 1780973566.2542253,
+    "ast_hash": "7ad4d124cd9f13569da7c461ea9faaec",
+    "semantic_hash": "7ad4d124cd9f13569da7c461ea9faaec"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-52-57-844Z.yml": {
+    "mtime": 1780973577.842186,
+    "ast_hash": "f35b96759b8e6c7d2778b7364da1d8f6",
+    "semantic_hash": "f35b96759b8e6c7d2778b7364da1d8f6"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-53-18-871Z.yml": {
+    "mtime": 1780973598.867283,
+    "ast_hash": "2b9a371baf464bf22757eb6ed94b77dd",
+    "semantic_hash": "2b9a371baf464bf22757eb6ed94b77dd"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-57-30-773Z.yml": {
+    "mtime": 1780973850.7731307,
+    "ast_hash": "2b9a371baf464bf22757eb6ed94b77dd",
+    "semantic_hash": "2b9a371baf464bf22757eb6ed94b77dd"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-57-46-731Z.yml": {
+    "mtime": 1780973866.7288702,
+    "ast_hash": "2b9a371baf464bf22757eb6ed94b77dd",
+    "semantic_hash": "2b9a371baf464bf22757eb6ed94b77dd"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-58-44-111Z.yml": {
+    "mtime": 1780973924.1090374,
+    "ast_hash": "fa5dc28a2f1b206d66bedec9ff9446da",
+    "semantic_hash": "fa5dc28a2f1b206d66bedec9ff9446da"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T02-59-57-906Z.yml": {
+    "mtime": 1780973997.905786,
+    "ast_hash": "fa5dc28a2f1b206d66bedec9ff9446da",
+    "semantic_hash": "fa5dc28a2f1b206d66bedec9ff9446da"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T03-00-05-793Z.yml": {
+    "mtime": 1780974005.7896898,
+    "ast_hash": "fa5dc28a2f1b206d66bedec9ff9446da",
+    "semantic_hash": "fa5dc28a2f1b206d66bedec9ff9446da"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T03-00-33-677Z.yml": {
+    "mtime": 1780974033.6791508,
+    "ast_hash": "fa5dc28a2f1b206d66bedec9ff9446da",
+    "semantic_hash": "fa5dc28a2f1b206d66bedec9ff9446da"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T03-14-35-939Z.yml": {
+    "mtime": 1780974875.936911,
+    "ast_hash": "1ede6fe528ad1f16916f97011f37fa3f",
+    "semantic_hash": "1ede6fe528ad1f16916f97011f37fa3f"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T03-14-40-707Z.yml": {
+    "mtime": 1780974880.7032967,
+    "ast_hash": "c7a361e1ccf265c0ea869c12e103b573",
+    "semantic_hash": "c7a361e1ccf265c0ea869c12e103b573"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T03-15-44-941Z.yml": {
+    "mtime": 1780974944.9389503,
+    "ast_hash": "a85809e4a99e99710cabf3a1f620370f",
+    "semantic_hash": "a85809e4a99e99710cabf3a1f620370f"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T03-15-50-109Z.yml": {
+    "mtime": 1780974950.1044877,
+    "ast_hash": "17001548eb7ba883c7510ad487c2c877",
+    "semantic_hash": "17001548eb7ba883c7510ad487c2c877"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T03-16-03-136Z.yml": {
+    "mtime": 1780974963.1359224,
+    "ast_hash": "8c0a892e6a01be5ab7c89f98140eb261",
+    "semantic_hash": "8c0a892e6a01be5ab7c89f98140eb261"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T06-29-16-961Z.yml": {
+    "mtime": 1780986556.9613924,
+    "ast_hash": "70a654a915b093e34ebbaa46c6e17b04",
+    "semantic_hash": "70a654a915b093e34ebbaa46c6e17b04"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T06-30-34-100Z.yml": {
+    "mtime": 1780986634.1012082,
+    "ast_hash": "c8522db20eca1a35b709e0edd11c7ed4",
+    "semantic_hash": "c8522db20eca1a35b709e0edd11c7ed4"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T06-31-43-870Z.yml": {
+    "mtime": 1780986703.8693585,
+    "ast_hash": "d9cc766c39534234eec372fb6216a2cb",
+    "semantic_hash": "d9cc766c39534234eec372fb6216a2cb"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T06-32-18-666Z.yml": {
+    "mtime": 1780986738.66935,
+    "ast_hash": "60c67a1558ea873ad8adca906e3767a6",
+    "semantic_hash": "60c67a1558ea873ad8adca906e3767a6"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T06-35-50-542Z.yml": {
+    "mtime": 1780986950.54137,
+    "ast_hash": "888d10cb1cfdb98887ba45942dee19b4",
+    "semantic_hash": "888d10cb1cfdb98887ba45942dee19b4"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T06-36-20-100Z.yml": {
+    "mtime": 1780986980.1013947,
+    "ast_hash": "6ba00931642308608835b92ac37556cf",
+    "semantic_hash": "6ba00931642308608835b92ac37556cf"
+  },
+  "/home/andres/tf-companion/.playwright-mcp/page-2026-06-09T06-36-23-069Z.yml": {
+    "mtime": 1780986983.0733988,
+    "ast_hash": "d16d58d3c96177f3ea9aa6af212f8c30",
+    "semantic_hash": "d16d58d3c96177f3ea9aa6af212f8c30"
+  },
+  "/home/andres/tf-companion/AGENTS.md": {
+    "mtime": 1781091843.4139745,
+    "ast_hash": "ad1c69803138c4e2ce9aedcb85c9eb21",
+    "semantic_hash": "ad1c69803138c4e2ce9aedcb85c9eb21"
+  },
+  "/home/andres/tf-companion/CLAUDE.md": {
+    "mtime": 1781091817.979639,
+    "ast_hash": "81d83862d6eff10e48ec2fb4ee3d8ce7",
+    "semantic_hash": "81d83862d6eff10e48ec2fb4ee3d8ce7"
+  },
+  "/home/andres/tf-companion/README.md": {
+    "mtime": 1780988534.3531132,
+    "ast_hash": "250753155c6a9dbccc7608c6defe0e13",
+    "semantic_hash": "250753155c6a9dbccc7608c6defe0e13"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/README.md": {
+    "mtime": 1780889920.2355337,
+    "ast_hash": "8d94a207fba77b3d957c71ff0c1dde2e",
+    "semantic_hash": "8d94a207fba77b3d957c71ff0c1dde2e"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/config/Config YAML.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "bb57513730dbe2a236f77e277f0467b4",
+    "semantic_hash": "bb57513730dbe2a236f77e277f0467b4"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/help/Help.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "c2180ae16ddc1a5d2848ba0b961ede3e",
+    "semantic_hash": "c2180ae16ddc1a5d2848ba0b961ede3e"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/index.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "f57241ff99ffa47e2a0ebdc8b4d64416",
+    "semantic_hash": "f57241ff99ffa47e2a0ebdc8b4d64416"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/Apply Report.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "c31d6595a7a74c357f52ab1b7e3e18f9",
+    "semantic_hash": "c31d6595a7a74c357f52ab1b7e3e18f9"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/Destroy Report.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "8736e3a338b11e6309208efe6d8ae21a",
+    "semantic_hash": "8736e3a338b11e6309208efe6d8ae21a"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/Plan Report.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "192830504072676a1ab6d26a456aea6f",
+    "semantic_hash": "192830504072676a1ab6d26a456aea6f"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/reports/Reports.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "53d0d033ad50921663409a1564bf1b02",
+    "semantic_hash": "53d0d033ad50921663409a1564bf1b02"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/repos/Repositories.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "b2fd35f9d319b78a560d63df9c021821",
+    "semantic_hash": "b2fd35f9d319b78a560d63df9c021821"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/runs/New Run Modal.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "2c02be34c857a7fbace21cec4a8edd78",
+    "semantic_hash": "2c02be34c857a7fbace21cec4a8edd78"
+  },
+  "/home/andres/tf-companion/design_handoff_tfops/runs/Runs.html": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "95ed2ceddcc4055f3843ee305d3aa2af",
+    "semantic_hash": "95ed2ceddcc4055f3843ee305d3aa2af"
+  },
+  "/home/andres/tf-companion/docs/superpowers/specs/2026-06-07-tfops-ui-prototype-parity-design.md": {
+    "mtime": 1780889920.2399337,
+    "ast_hash": "69cb743d5fd230bd24124d02462b0e20",
+    "semantic_hash": "69cb743d5fd230bd24124d02462b0e20"
+  },
+  "/home/andres/tf-companion/docs/superpowers/specs/2026-06-07-tfops-ui-redesign.md": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "ac8c52e0cd4e549f069a9897a46daf42",
+    "semantic_hash": "ac8c52e0cd4e549f069a9897a46daf42"
+  },
+  "/home/andres/tf-companion/docs/superpowers/specs/2026-06-08-prototype-pixel-port-design.md": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "cb31b77bdc5d0206b53d8563d5bd8aeb",
+    "semantic_hash": "cb31b77bdc5d0206b53d8563d5bd8aeb"
+  },
+  "/home/andres/tf-companion/examples/README.md": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "f8873d5b930cdb395c6b6bd0ae112de2",
+    "semantic_hash": "f8873d5b930cdb395c6b6bd0ae112de2"
+  },
+  "/home/andres/tf-companion/examples/infrastructure/README.md": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "4313605b8fce272934ea0606f3b20084",
+    "semantic_hash": "4313605b8fce272934ea0606f3b20084"
+  },
+  "/home/andres/tf-companion/examples/reports/tfops-plan-20260609-070026.html": {
+    "mtime": 1780988426.537285,
+    "ast_hash": "390413a7fd7f399fe9df79aa7d1fcc25",
+    "semantic_hash": "390413a7fd7f399fe9df79aa7d1fcc25"
+  },
+  "/home/andres/tf-companion/examples/reports/tfops-plan-20260609-070051.html": {
+    "mtime": 1780988451.885252,
+    "ast_hash": "3b5e8b1a93c63410466f55fc2d35b9b1",
+    "semantic_hash": "3b5e8b1a93c63410466f55fc2d35b9b1"
+  },
+  "/home/andres/tf-companion/examples/reports/tfops-plan-20260609-070126.html": {
+    "mtime": 1780988486.5052705,
+    "ast_hash": "5894036a295bff90eba502d17693a919",
+    "semantic_hash": "5894036a295bff90eba502d17693a919"
+  },
+  "/home/andres/tf-companion/examples/sample-config.yaml": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "5c8e37b815d94264258f67d6b531d6a2",
+    "semantic_hash": "5c8e37b815d94264258f67d6b531d6a2"
+  },
+  "/home/andres/tf-companion/frontend/index.html": {
+    "mtime": 1780889920.2443335,
+    "ast_hash": "e21cc11f1aff76970408f8df8c0d6b3f",
+    "semantic_hash": "e21cc11f1aff76970408f8df8c0d6b3f"
+  },
+  "/home/andres/tf-companion/docs/demo.svg": {
+    "mtime": 1780988511.533178,
+    "ast_hash": "e0da287c0ee8a506b19de6f98a4a6a70",
+    "semantic_hash": "e0da287c0ee8a506b19de6f98a4a6a70"
+  },
+  "/home/andres/tf-companion/docs/screenshots/01-overview.png": {
+    "mtime": 1780930238.5553944,
+    "ast_hash": "bc1504192fcdc2033b13f62466285be7",
+    "semantic_hash": "bc1504192fcdc2033b13f62466285be7"
+  },
+  "/home/andres/tf-companion/docs/screenshots/02-runs.png": {
+    "mtime": 1780930239.3040912,
+    "ast_hash": "cb6914b82790ce36c24160256e42d512",
+    "semantic_hash": "cb6914b82790ce36c24160256e42d512"
+  },
+  "/home/andres/tf-companion/docs/screenshots/03-runs-detail.png": {
+    "mtime": 1780930240.9493988,
+    "ast_hash": "d8866e1c9bc48b41c080b045821f0523",
+    "semantic_hash": "d8866e1c9bc48b41c080b045821f0523"
+  },
+  "/home/andres/tf-companion/docs/screenshots/04-new-run-modal.png": {
+    "mtime": 1780930241.6971061,
+    "ast_hash": "b11362bfb9cc19514707781c0aa20e3d",
+    "semantic_hash": "b11362bfb9cc19514707781c0aa20e3d"
+  },
+  "/home/andres/tf-companion/docs/screenshots/05-repositories.png": {
+    "mtime": 1780930242.3532698,
+    "ast_hash": "377bedbf3c2ea21eff30a98b184616f6",
+    "semantic_hash": "377bedbf3c2ea21eff30a98b184616f6"
+  },
+  "/home/andres/tf-companion/docs/screenshots/06-config-yaml.png": {
+    "mtime": 1780930243.0133834,
+    "ast_hash": "dd22eb2bc54ff2736e7cf5a8d9866936",
+    "semantic_hash": "dd22eb2bc54ff2736e7cf5a8d9866936"
+  },
+  "/home/andres/tf-companion/docs/screenshots/07-reports.png": {
+    "mtime": 1780930243.6694736,
+    "ast_hash": "d4f6470a9a19c737f0f5c2a8da04d30d",
+    "semantic_hash": "d4f6470a9a19c737f0f5c2a8da04d30d"
+  },
+  "/home/andres/tf-companion/docs/screenshots/08-sidebar-collapsed.png": {
+    "mtime": 1780930244.7112207,
+    "ast_hash": "0ec3274707fe93381bf2f49ff07b1f00",
+    "semantic_hash": "0ec3274707fe93381bf2f49ff07b1f00"
+  }
+}

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>New run · tfops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cloudscape.css">
+<link rel="stylesheet" href="run.css">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+</head>
+<body style="background:var(--bg-layout)">
+
+<div class="run-overlay" onclick="if(event.target===this)location.href='Runs.html'">
+  <div class="run-modal" role="dialog" aria-label="New run">
+    <div class="rm-head">
+      <div>
+        <div class="t">New run</div>
+        <div class="s">Configure and launch a Terraform run across your repository targets.</div>
+      </div>
+      <button class="rm-close" id="closeBtn" aria-label="Close" onclick="location.href='Runs.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+
+    <div class="rm-body">
+      <div class="rm-main">
+        <!-- command -->
+        <div class="rm-section">
+          <div class="rm-label">Command</div>
+          <div class="cmd-row" id="cmdRow"></div>
+        </div>
+
+        <!-- repo + branch -->
+        <div class="rm-section" id="repoBranch"></div>
+
+        <!-- run mode -->
+        <div class="rm-section">
+          <div class="rm-label">Run mode</div>
+          <div class="tiles" id="modeTiles"></div>
+        </div>
+
+        <!-- targets -->
+        <div class="rm-section">
+          <div class="rm-label">Targets <span class="rm-sublabel">— grouped by pipeline · drag to set promotion order</span></div>
+          <div class="tgt-toolbar">
+            <button class="btn btn-link" id="selAll">Select all</button>
+            <button class="btn btn-link" id="selNone">None</button>
+            <button class="btn btn-link" id="skipProd">Skip prod</button>
+            <span class="sp"></span>
+          </div>
+          <div id="tgtList"></div>
+        </div>
+
+        <!-- danger / auto-approve -->
+        <div class="rm-section" id="dangerZone"></div>
+
+        <!-- advanced -->
+        <div class="rm-section">
+          <div class="adv-toggle" id="advToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>Advanced options</div>
+          <div class="adv-body" id="advBody" style="display:none">
+            <div class="field-row">
+              <div><label class="field-label">Profile override</label><input class="inp" id="profileInp" placeholder="leave blank for per-target mapping"><div class="field-hint">Overrides each target's AWS profile.</div></div>
+              <div><label class="field-label">Extra arguments</label><input class="inp mono" id="extraInp" placeholder="-target=aws_s3_bucket.foo"><div class="field-hint">Passed through to Terraform.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- summary rail -->
+      <aside class="rm-side" id="summary"></aside>
+    </div>
+
+    <div class="rm-foot" id="rmFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="run.js"></script>
+</body>
+</html>

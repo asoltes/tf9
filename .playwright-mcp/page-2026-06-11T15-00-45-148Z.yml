@@ -1,0 +1,92 @@
+- generic [ref=e2]:
+  - generic [ref=e845]:
+    - generic [ref=e846]:
+      - img [ref=e848]
+      - text: tfops
+    - link "Runs" [ref=e851] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e852] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e853]:
+      - button "Cycle theme" [ref=e854] [cursor=pointer]:
+        - img [ref=e855]
+      - button "Checking…" [ref=e859] [cursor=pointer]:
+        - generic [ref=e861]: Checking…
+      - generic [ref=e862] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_37e04251695328e9
+  - generic [ref=e863]:
+    - navigation [ref=e864]:
+      - generic [ref=e865]:
+        - link "Overview" [ref=e866] [cursor=pointer]:
+          - /url: "#overview"
+        - link "Runs" [ref=e867] [cursor=pointer]:
+          - /url: "#runs"
+        - generic [ref=e869]: Settings
+        - link "Repositories" [ref=e870] [cursor=pointer]:
+          - /url: "#repos"
+        - link "Config YAML" [ref=e871] [cursor=pointer]:
+          - /url: "#config"
+        - link "CLI Directory Profiles" [ref=e872] [cursor=pointer]:
+          - /url: "#profile-mappings"
+        - link "Reports" [ref=e874] [cursor=pointer]:
+          - /url: "#reports"
+        - link "Logs" [ref=e875] [cursor=pointer]:
+          - /url: "#logs"
+        - link "Help" [ref=e876] [cursor=pointer]:
+          - /url: "#help"
+      - button "Collapse sidebar" [ref=e877] [cursor=pointer]:
+        - img [ref=e878]
+    - main [ref=e880]:
+      - generic [ref=e881]:
+        - link "tfops" [ref=e882] [cursor=pointer]:
+          - /url: "#overview"
+        - generic [ref=e883]: /
+        - link "Settings" [ref=e884] [cursor=pointer]:
+          - /url: "#repos"
+        - generic [ref=e885]: /
+        - generic [ref=e886]: Config YAML
+      - generic [ref=e887]:
+        - generic [ref=e888]:
+          - generic [ref=e889]:
+            - generic [ref=e890]: Config YAML
+            - generic [ref=e891]:
+              - text: Shared CLI and web UI configuration.
+              - code [ref=e892]: ~/.config/tfops/config.yaml
+              - text: — store AWS profile names, account IDs and regions here, never credentials.
+          - generic [ref=e893]:
+            - button "Reload" [ref=e894] [cursor=pointer]:
+              - img [ref=e896]
+              - text: Reload
+            - button "Save" [disabled] [ref=e899]:
+              - img [ref=e901]
+              - text: Save
+        - generic [ref=e905]:
+          - generic [ref=e907]:
+            - generic [ref=e908]: Configuration file
+            - generic [ref=e909]: ~/.config/tfops/config.yaml
+          - generic [ref=e910]:
+            - generic [ref=e911]:
+              - generic [ref=e912]:
+                - generic [ref=e915]: "1"
+                - textbox [ref=e918]
+              - generic [ref=e919]:
+                - generic [ref=e920] [cursor=pointer]:
+                  - generic [ref=e922]:
+                    - img [ref=e923]
+                    - text: "0"
+                  - generic [ref=e927]:
+                    - img [ref=e928]
+                    - text: "1"
+                - generic [ref=e930]: Ln 1, Col 1
+                - generic [ref=e931]: "Spaces: 2"
+                - generic [ref=e932]: YAML
+                - generic "Toggle word wrap" [ref=e933] [cursor=pointer]:
+                  - img [ref=e935]
+                - generic "Toggle theme" [ref=e938] [cursor=pointer]:
+                  - img [ref=e939]
+            - generic [ref=e942]:
+              - button "Format document" [ref=e943] [cursor=pointer]:
+                - img [ref=e945]
+                - text: Format document
+              - generic [ref=e946]: Validated against the tfops schema · Tab inserts 2 spaces · ⌘S to save
+      - generic:
+        - img

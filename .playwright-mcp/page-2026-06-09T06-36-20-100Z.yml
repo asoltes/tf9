@@ -1,0 +1,73 @@
+- generic [ref=e2]:
+  - generic [ref=e2989]:
+    - generic [ref=e2990]:
+      - img [ref=e2992]
+      - text: tfops
+    - link "Runs" [ref=e2995] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e2996] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e2997]:
+      - button "Toggle theme" [ref=e2998] [cursor=pointer]:
+        - img [ref=e2999]
+      - button "Checking…" [ref=e3002] [cursor=pointer]:
+        - generic [ref=e3004]: Checking…
+      - generic [ref=e3005] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_a691ccfdf32a745a
+  - generic [ref=e3006]:
+    - navigation [ref=e3007]:
+      - generic [ref=e3008]:
+        - link "Overview" [ref=e3009] [cursor=pointer]:
+          - /url: "#overview"
+        - link "Runs" [ref=e3010] [cursor=pointer]:
+          - /url: "#runs"
+        - generic [ref=e3012]: Settings
+        - link "Repositories" [ref=e3013] [cursor=pointer]:
+          - /url: "#repos"
+        - link "Config YAML" [ref=e3014] [cursor=pointer]:
+          - /url: "#config"
+        - link "Reports" [ref=e3016] [cursor=pointer]:
+          - /url: "#reports"
+        - link "Help" [ref=e3017] [cursor=pointer]:
+          - /url: "#help"
+      - button "Collapse sidebar" [ref=e3018] [cursor=pointer]:
+        - img [ref=e3019]
+    - main [ref=e3021]:
+      - generic [ref=e3022]:
+        - link "tfops" [ref=e3023] [cursor=pointer]:
+          - /url: "#overview"
+        - generic [ref=e3024]: /
+        - generic [ref=e3025]: Reports
+      - generic [ref=e3026]:
+        - generic [ref=e3027]:
+          - generic [ref=e3028]: tfops
+          - generic [ref=e3029]: /
+          - generic [ref=e3030]: Reports
+        - generic [ref=e3032]:
+          - generic [ref=e3033]:
+            - text: Reports
+            - generic [ref=e3034]: (0)
+          - generic [ref=e3035]: Terraform run reports — plan, apply, and destroy output across your repositories.
+        - generic [ref=e3036]:
+          - generic [ref=e3037]:
+            - button "All 0" [ref=e3038] [cursor=pointer]:
+              - text: All
+              - generic [ref=e3039]: "0"
+            - button "Plan 0" [ref=e3040] [cursor=pointer]:
+              - text: Plan
+              - generic [ref=e3041]: "0"
+            - button "Apply 0" [ref=e3042] [cursor=pointer]:
+              - text: Apply
+              - generic [ref=e3043]: "0"
+            - button "Destroy 0" [ref=e3044] [cursor=pointer]:
+              - text: Destroy
+              - generic [ref=e3045]: "0"
+          - generic [ref=e3046]:
+            - button "Cards" [ref=e3047] [cursor=pointer]:
+              - img [ref=e3048]
+              - text: Cards
+            - button "List" [ref=e3053] [cursor=pointer]:
+              - img [ref=e3054]
+              - text: List
+        - generic [ref=e3055]:
+          - img [ref=e3056]
+          - generic [ref=e3059]: Loading reports…

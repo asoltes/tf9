@@ -1,0 +1,241 @@
+/* =========================================================================
+   Reports History — styles (builds on cloudscape.css)
+   ========================================================================= */
+
+.rh-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.rh-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.rh-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.rh-spacer  { flex: 1; }
+
+.rh-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--divider);
+  background: var(--container);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+  font-family: var(--sans);
+}
+.rh-filter:hover { border-color: var(--border-strong); color: var(--text); }
+.rh-filter.on   { border-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
+
+.rh-filter .cnt {
+  font-size: 11px; font-weight: 700;
+  background: var(--divider); color: var(--text-2);
+  padding: 0 6px; border-radius: 999px; min-width: 18px; text-align: center;
+}
+.rh-filter.on .cnt { background: var(--blue); color: #fff; }
+
+.rh-view-toggle {
+  display: inline-flex;
+  border: 2px solid var(--input-border);
+  border-radius: var(--radius-i);
+  overflow: hidden;
+}
+.rh-view-toggle button {
+  border: none; background: var(--container); color: var(--text-2);
+  font-size: 13px; font-weight: 600; padding: 5px 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; font-family: var(--sans);
+}
+.rh-view-toggle button svg { width: 14px; height: 14px; }
+.rh-view-toggle button.on  { background: var(--blue); color: #fff; }
+
+/* ── Cards grid ──────────────────────────────────────────────────────────── */
+.rh-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.rh-card {
+  background: var(--container);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: var(--shadow-c);
+  cursor: pointer;
+  transition: transform .12s, border-color .12s, box-shadow .12s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rh-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 16px rgba(0,7,22,.1), 0 0 0 1px var(--border-strong);
+}
+
+.rh-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rh-card-id {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.rh-card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+.rh-card-status.success { background: var(--green-bg); color: var(--green); }
+.rh-card-status.failed  { background: var(--red-bg);   color: var(--red);   }
+.rh-card-status svg { width: 12px; height: 12px; }
+
+/* repo + branch */
+.rh-card-repo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  min-width: 0;
+}
+.rh-card-repo .rn {
+  font-family: var(--mono); font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rh-card-repo .br {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--mono); font-size: 12px; color: var(--text-2);
+  flex-shrink: 0;
+}
+.rh-card-repo .br svg { width: 12px; height: 12px; color: var(--text-3); }
+
+/* stats */
+.rh-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* bar */
+.rh-card-bar {
+  display: flex; height: 6px; border-radius: 999px;
+  overflow: hidden; background: var(--divider);
+}
+.rh-card-bar i { display: block; height: 100%; }
+.rh-card-bar .b-add { background: var(--green); }
+.rh-card-bar .b-chg { background: var(--amber); }
+.rh-card-bar .b-del { background: var(--red); }
+
+/* footer meta */
+.rh-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.rh-card-targets {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.rh-card-targets .tc {
+  font-family: var(--mono); font-size: 10.5px;
+  background: var(--grey-badge); color: var(--text);
+  border-radius: 4px; padding: 1px 6px;
+}
+.rh-card-targets .tm { font-size: 10.5px; color: var(--link); font-weight: 600; }
+.rh-card-date { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+
+/* duration badge */
+.rh-card-dur {
+  font-family: var(--mono); font-size: 11px; color: var(--text-2);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.rh-card-dur svg { width: 12px; height: 12px; color: var(--text-3); }
+
+/* ── Table / list view ───────────────────────────────────────────────────── */
+.rh-table-wrap {
+  background: var(--container);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-c);
+  box-shadow: var(--shadow-c);
+  overflow: hidden;
+}
+.rh-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.rh-tbl thead th {
+  text-align: left; font-weight: 700; color: var(--text); font-size: 12px;
+  padding: 11px 16px; border-bottom: 1px solid var(--divider);
+  white-space: nowrap; background: var(--th);
+}
+.rh-tbl thead th:first-child { border-top-left-radius: var(--radius-c); }
+.rh-tbl thead th:last-child  { border-top-right-radius: var(--radius-c); }
+.rh-tbl thead th.num { text-align: right; }
+.rh-tbl tbody td {
+  padding: 12px 16px; border-bottom: 1px solid var(--divider); vertical-align: middle;
+}
+.rh-tbl tbody tr { cursor: pointer; transition: background .08s; }
+.rh-tbl tbody tr:hover td { background: var(--th); }
+.rh-tbl tbody tr:last-child td { border-bottom: none; }
+
+.rh-tbl .run-id  { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--text); }
+.rh-tbl .repo    { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--text); }
+.rh-tbl .branch  { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 12px; color: var(--text); }
+.rh-tbl .branch svg { width: 13px; height: 13px; color: var(--text-3); flex-shrink: 0; }
+.rh-tbl .tgt-chips { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.rh-tbl .tgt-chip  { font-family: var(--mono); font-size: 11px; background: var(--grey-badge); color: var(--text); border-radius: 4px; padding: 1px 6px; }
+.rh-tbl .tgt-more  { font-size: 11px; color: var(--link); font-weight: 600; }
+.rh-tbl .num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.rh-tbl .date    { font-family: var(--mono); font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.rh-tbl .dist    { display: flex; height: 6px; width: 84px; border-radius: 999px; overflow: hidden; background: var(--divider); }
+.rh-tbl .dist i  { display: block; height: 100%; }
+
+.rh-tbl .st { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+.rh-tbl .st.success { background: var(--green-bg); color: var(--green); }
+.rh-tbl .st.failed  { background: var(--red-bg);   color: var(--red);   }
+.rh-tbl .st svg { width: 12px; height: 12px; }
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.rh-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; color: var(--text-2); text-align: center;
+}
+.rh-empty svg { width: 40px; height: 40px; color: var(--text-3); margin-bottom: 12px; }
+.rh-empty .t  { font-weight: 700; color: var(--text); margin-bottom: 4px; }
+
+/* ── Dark-mode tweaks ────────────────────────────────────────────────────── */
+html[data-theme="dark"] .rh-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.3), 0 0 0 1px var(--border-strong);
+}
+html[data-theme="dark"] .rh-filter       { background: transparent; }
+html[data-theme="dark"] .rh-view-toggle button { background: var(--container); }
+html[data-theme="dark"] .rh-card-targets .tc   { background: var(--grey-badge); }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) { .rh-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px)  { .rh-cards { grid-template-columns: 1fr; } }

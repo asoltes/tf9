@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terraform Plan · 2026-06-09 07:01:26 UTC</title>
+<script>
+
+(function(){
+  var m = localStorage.getItem('tfops-color-mode');
+  document.documentElement.setAttribute('data-theme', m === 'light' ? 'light' : 'dark');
+})();
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+ 
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --th:        #21262d;
+  --hover:     #1c2128;
+  --text:      #c9d1d9;
+  --text-h:    #f0f6fc;
+  --muted:     #8b949e;
+  --faint:     #484f58;
+  --border:    #30363d;
+  --border2:   #21262d;
+  --green:     #3fb950;
+  --amber:     #d29922;
+  --red:       #f85149;
+  --blue:      #58a6ff;
+  --orange:    #db6d28;
+  --pill-bg:   #1a3a5f;
+  --pill-c:    #58a6ff;
+  --pill-br:   rgba(31,111,235,.33);
+  --sb-ok-bg:  #1a3a1f; --sb-ok-c:  #3fb950; --sb-ok-br: #238636;
+  --sb-no-bg:  #1f2937; --sb-no-c:  #6b7280; --sb-no-br: #374151;
+  --sb-ds-bg:  #3b1619; --sb-ds-c:  #f85149; --sb-ds-br: #6e2a2a;
+  --term-bg:   #010409;
+  --term-text: #c9d1d9;
+  --a30:#484f58;--a31:#f85149;--a32:#3fb950;--a33:#d29922;--a34:#58a6ff;--a35:#db61a2;--a36:#39c5cf;--a37:#c9d1d9;
+  --a90:#6e7681;--a91:#ffa198;--a92:#56d364;--a93:#e3b341;--a94:#79c0ff;--a95:#d2a8ff;--a96:#76e3ea;--a97:#cae8ff;
+}
+[data-theme="light"] {
+  --bg:        #f6f8fa;
+  --surface:   #ffffff;
+  --th:        #f6f8fa;
+  --hover:     #eaeef2;
+  --text:      #24292f;
+  --text-h:    #1f2328;
+  --muted:     #57606a;
+  --faint:     #8c959f;
+  --border:    #d0d7de;
+  --border2:   #d0d7de;
+  --green:     #1a7f37;
+  --amber:     #9a6700;
+  --red:       #cf222e;
+  --blue:      #0969da;
+  --orange:    #bc4c00;
+  --pill-bg:   #dbeafe;
+  --pill-c:    #1d4ed8;
+  --pill-br:   #93c5fd;
+  --sb-ok-bg:  #dafbe1; --sb-ok-c:  #1a7f37; --sb-ok-br: #56d364;
+  --sb-no-bg:  #f6f8fa; --sb-no-c:  #57606a; --sb-no-br: #d0d7de;
+  --sb-ds-bg:  #ffebe9; --sb-ds-c:  #cf222e; --sb-ds-br: #ffc1ba;
+  --term-bg:   #f6f8fa;
+  --term-text: #24292f;
+  --a30:#24292f;--a31:#cf222e;--a32:#1a7f37;--a33:#9a6700;--a34:#0969da;--a35:#8250df;--a36:#1b7c83;--a37:#57606a;
+  --a90:#8c959f;--a91:#cf222e;--a92:#1a7f37;--a93:#9a6700;--a94:#0969da;--a95:#8250df;--a96:#1b7c83;--a97:#24292f;
+}
+
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;font-size:14px;line-height:1.6;min-height:100vh;transition:background-color .2s,color .2s}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+
+ 
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 0;position:sticky;top:0;z-index:50;backdrop-filter:blur(8px);transition:background-color .2s,border-color .2s}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hdr-title{font-size:18px;font-weight:700;color:var(--text-h);display:flex;align-items:center;gap:8px}
+.hdr-title svg{opacity:.7}
+.hdr-meta{color:var(--muted);font-size:12px;margin-top:3px}
+.pill{display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.pill-plan{background:var(--pill-bg);color:var(--pill-c);border:1px solid var(--pill-br)}
+
+ 
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:24px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;position:relative;overflow:hidden;transition:background-color .2s,border-color .2s}
+.card::before{content:'';position:absolute;inset:0;opacity:.06;pointer-events:none}
+.card-add::before{background:linear-gradient(135deg,var(--green),transparent)}
+.card-change::before{background:linear-gradient(135deg,var(--amber),transparent)}
+.card-destroy::before{background:linear-gradient(135deg,var(--red),transparent)}
+.card-envs::before{background:linear-gradient(135deg,var(--blue),transparent)}
+.card-val{font-size:38px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.card-lbl{color:var(--muted);font-size:11px;margin-top:6px;text-transform:uppercase;letter-spacing:.6px}
+.card-add .card-val{color:var(--green)}
+.card-change .card-val{color:var(--amber)}
+.card-destroy .card-val{color:var(--red)}
+.card-envs .card-val{color:var(--blue)}
+
+ 
+.sec{margin:28px 0}
+.sec-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+ 
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:background-color .2s,border-color .2s}
+table{width:100%;border-collapse:collapse}
+th{background:var(--th);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;text-align:left;white-space:nowrap;transition:background-color .2s}
+td{padding:11px 16px;border-top:1px solid var(--border2);vertical-align:middle;transition:background-color .15s}
+tr:hover td{background:var(--hover)}
+.mono{font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:12px}
+.fw{font-weight:600}
+.profile-cell{color:var(--muted)}
+.ma{color:var(--green);font-weight:700}.mc{color:var(--amber);font-weight:700}.md{color:var(--red);font-weight:700}.mz{color:var(--faint)}
+.sb{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+.sc{background:var(--sb-ok-bg);color:var(--sb-ok-c);border:1px solid var(--sb-ok-br)}
+.sn{background:var(--sb-no-bg);color:var(--sb-no-c);border:1px solid var(--sb-no-br)}
+.sd{background:var(--sb-ds-bg);color:var(--sb-ds-c);border:1px solid var(--sb-ds-br)}
+.sf{background:var(--sb-ds-bg);color:var(--sb-ds-c);border:1px solid var(--sb-ds-br)}
+
+ 
+.env-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;transition:box-shadow .2s,background-color .2s,border-color .2s}
+.env-block:has(.env-body.open){box-shadow:0 0 0 1px #388bfd55}
+.env-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;user-select:none;transition:background .15s;gap:12px}
+.env-hdr:hover{background:var(--hover)}
+.env-hdr-left{display:flex;align-items:center;gap:14px;min-width:0}
+.env-nm{font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:13px;font-weight:700;color:var(--text-h);white-space:nowrap}
+.env-pr{color:var(--muted);font-size:12px;white-space:nowrap}
+.env-nums{display:flex;gap:10px;font-family:'SF Mono',Consolas,monospace;font-size:12px;font-weight:600}
+.ea{color:var(--green)}.ec{color:var(--amber)}.ed{color:var(--red)}
+.chevron{color:var(--muted);font-size:10px;transition:transform .25s;flex-shrink:0}
+.env-body{display:none;border-top:1px solid var(--border)}
+.env-body.open{display:block}
+.env-out{background:var(--term-bg);color:var(--term-text);padding:16px 20px;overflow-x:auto;font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:12px;line-height:1.65;white-space:pre;max-height:70vh;overflow-y:auto;transition:background-color .2s,color .2s}
+
+ 
+.ftr{color:var(--faint);font-size:11px;text-align:center;padding:28px 0 20px;border-top:1px solid var(--border2);margin-top:32px}
+
+ 
+@media(max-width:640px){
+  .cards{grid-template-columns:1fr 1fr}
+  .env-pr,.env-nums{display:none}
+  .wrap{padding:0 14px}
+  th:nth-child(2),td:nth-child(2){display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap">
+    <div class="hdr-inner">
+      <div>
+        <div class="hdr-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          Terraform Plan Report
+        </div>
+        <div class="hdr-meta">2026-06-09 07:01:26 UTC &nbsp;·&nbsp; infrastructure</div>
+      </div>
+      <span class="pill pill-plan">plan</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:24px;padding-bottom:8px">
+
+  <div class="cards">
+    <div class="card card-add">
+      <div class="card-val">+0</div>
+      <div class="card-lbl">to add</div>
+    </div>
+    <div class="card card-change">
+      <div class="card-val">~0</div>
+      <div class="card-lbl">to change</div>
+    </div>
+    <div class="card card-destroy">
+      <div class="card-val">-0</div>
+      <div class="card-lbl">to destroy</div>
+    </div>
+    <div class="card card-envs">
+      <div class="card-val">2</div>
+      <div class="card-lbl">environments</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Summary</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Environment</th>
+            <th>Profile</th>
+            <th>Add</th><th>Change</th><th>Destroy</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td class="mono fw">dev</td>
+            <td class="profile-cell">ctp-loadtest-euw2</td>
+            <td class="mono"><span class="mz">+0</span></td>
+            <td class="mono"><span class="mz">~0</span></td>
+            <td class="mono"><span class="mz">-0</span></td>
+            <td><span class="sb sn">No changes</span></td>
+          </tr>
+          
+          <tr>
+            <td class="mono fw">prod</td>
+            <td class="profile-cell">ctp-loadtest-euw2</td>
+            <td class="mono"><span class="mz">+0</span></td>
+            <td class="mono"><span class="mz">~0</span></td>
+            <td class="mono"><span class="mz">-0</span></td>
+            <td><span class="sb sn">No changes</span></td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Details</div>
+    
+    <div class="env-block">
+      <div class="env-hdr" onclick="toggle(this)" data-add="0" data-change="0" data-destroy="0" data-failed="false">
+        <div class="env-hdr-left">
+          <span class="env-nm">dev</span>
+          <span class="env-pr">ctp-loadtest-euw2</span>
+          <span class="env-nums">
+            <span class="ea">+0</span>
+            <span class="ec">~0</span>
+            <span class="ed">-0</span>
+          </span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="env-body">
+        <div class="env-out">
+Changes to Outputs:
+  <span style="color:var(--a32)">+</span> environment = &#34;dev&#34;
+
+You can apply this plan to save these new output values to the Terraform
+state, without changing any real infrastructure.
+<span style="color:var(--a90)">
+─────────────────────────────────────────────────────────────────────────────</span>
+
+Note: You didn&#39;t use the -out option to save this plan, so Terraform can&#39;t
+guarantee to take exactly these actions if you run &#34;terraform apply&#34; now.
+</div>
+      </div>
+    </div>
+    
+    <div class="env-block">
+      <div class="env-hdr" onclick="toggle(this)" data-add="0" data-change="0" data-destroy="0" data-failed="false">
+        <div class="env-hdr-left">
+          <span class="env-nm">prod</span>
+          <span class="env-pr">ctp-loadtest-euw2</span>
+          <span class="env-nums">
+            <span class="ea">+0</span>
+            <span class="ec">~0</span>
+            <span class="ed">-0</span>
+          </span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="env-body">
+        <div class="env-out">
+Changes to Outputs:
+  <span style="color:var(--a32)">+</span> environment = &#34;prod&#34;
+
+You can apply this plan to save these new output values to the Terraform
+state, without changing any real infrastructure.
+<span style="color:var(--a90)">
+─────────────────────────────────────────────────────────────────────────────</span>
+
+Note: You didn&#39;t use the -out option to save this plan, so Terraform can&#39;t
+guarantee to take exactly these actions if you run &#34;terraform apply&#34; now.
+</div>
+      </div>
+    </div>
+    
+  </div>
+
+</main>
+
+<footer class="ftr wrap">Generated by tfops &nbsp;·&nbsp; 2026-06-09 07:01:26 UTC</footer>
+
+<script>
+function toggle(hdr) {
+  const body = hdr.nextElementSibling;
+  const icon = hdr.querySelector('.chevron');
+  const open = body.classList.toggle('open');
+  icon.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+document.querySelectorAll('.env-hdr').forEach(hdr => {
+  const d = hdr.dataset;
+  const hasChanges = parseInt(d.add)||parseInt(d.change)||parseInt(d.destroy)||d.failed==='true';
+  if (hasChanges) {
+    hdr.nextElementSibling.classList.add('open');
+    hdr.querySelector('.chevron').style.transform = 'rotate(180deg)';
+  }
+});
+
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.tfopsTheme) {
+    document.documentElement.setAttribute('data-theme', e.data.tfopsTheme);
+  }
+});
+</script>
+
+</body>
+</html>

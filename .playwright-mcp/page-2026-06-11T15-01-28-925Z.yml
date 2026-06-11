@@ -1,0 +1,198 @@
+- generic [ref=e2]:
+  - generic [ref=e1461]:
+    - generic [ref=e1462]:
+      - img [ref=e1464]
+      - text: tfops
+    - link "Runs" [ref=e1467] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e1468] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e1469]:
+      - button "Cycle theme" [ref=e1470] [cursor=pointer]:
+        - img [ref=e1471]
+      - button "Checking…" [ref=e1475] [cursor=pointer]:
+        - generic [ref=e1477]: Checking…
+      - generic [ref=e1478] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_37e04251695328e9
+  - generic [ref=e1479]:
+    - navigation [ref=e1480]:
+      - generic:
+        - link "Overview":
+          - /url: "#overview"
+        - link "Runs":
+          - /url: "#runs"
+        - generic: Settings
+        - link "Repositories":
+          - /url: "#repos"
+        - link "Config YAML":
+          - /url: "#config"
+        - link "CLI Directory Profiles":
+          - /url: "#profile-mappings"
+        - link "Reports":
+          - /url: "#reports"
+        - link "Logs":
+          - /url: "#logs"
+        - link "Help":
+          - /url: "#help"
+      - button "Expand sidebar" [ref=e1481] [cursor=pointer]:
+        - img [ref=e1482]
+    - main [ref=e1484]:
+      - generic [ref=e1485]:
+        - link "tfops" [ref=e1486] [cursor=pointer]:
+          - /url: "#overview"
+        - generic [ref=e1487]: /
+        - generic [ref=e1488]: Help
+      - generic [ref=e1489]:
+        - generic [ref=e1491]:
+          - generic [ref=e1492]: Help
+          - generic [ref=e1493]:
+            - text: How tfops is configured and run. The CLI and this web UI share one
+            - code [ref=e1494]: config.yaml
+            - text: .
+        - generic [ref=e1495]:
+          - complementary [ref=e1496]:
+            - generic [ref=e1497]: On this page
+            - link "Quick start" [ref=e1498] [cursor=pointer]:
+              - /url: "#quickstart"
+            - link "Configuration" [ref=e1499] [cursor=pointer]:
+              - /url: "#config"
+            - link "Terraform runs" [ref=e1500] [cursor=pointer]:
+              - /url: "#runs"
+            - link "Approval gate" [ref=e1501] [cursor=pointer]:
+              - /url: "#approval"
+            - link "CWD mode" [ref=e1502] [cursor=pointer]:
+              - /url: "#cwd"
+            - link "Recursive mode" [ref=e1503] [cursor=pointer]:
+              - /url: "#recursive"
+            - link "CLI commands" [ref=e1504] [cursor=pointer]:
+              - /url: "#commands"
+            - link "Sensitive data" [ref=e1505] [cursor=pointer]:
+              - /url: "#sensitive"
+          - generic [ref=e1506]:
+            - generic [ref=e1507]:
+              - heading "Quick start" [level=2] [ref=e1508]
+              - generic [ref=e1509]: Three steps from an empty config to a streamed plan.
+              - generic [ref=e1510]:
+                - generic [ref=e1511]:
+                  - generic [ref=e1512]: "1"
+                  - generic [ref=e1513]: Register a repository
+                  - generic [ref=e1514]:
+                    - text: Add your infrastructure repo and its path under Repositories, or with
+                    - code [ref=e1515]: tfops config repo add
+                    - text: .
+                - generic [ref=e1516]:
+                  - generic [ref=e1517]: "2"
+                  - generic [ref=e1518]: Build a pipeline
+                  - generic [ref=e1519]: Group Terraform directories into promotion pipelines and order them (dev → staging → prod).
+                - generic [ref=e1520]:
+                  - generic [ref=e1521]: "3"
+                  - generic [ref=e1522]: Run
+                  - generic [ref=e1523]: Start a plan or apply from New run and watch each target stream live.
+            - generic [ref=e1524]:
+              - heading "Configuration" [level=2] [ref=e1525]
+              - generic [ref=e1526]:
+                - text: Repositories and ordered Terraform targets live in
+                - code [ref=e1527]: ~/.config/tfops/config.yaml
+                - text: . The CLI and web UI read and write the same file.
+              - generic [ref=e1528]:
+                - button "copy" [ref=e1529] [cursor=pointer]:
+                  - img [ref=e1530]
+                  - text: copy
+                - generic [ref=e1533]: "version: 1 repositories: - name: infrastructure path: /absolute/path/to/infrastructure targets: - name: dev directory: environments/dev aws_profile: company-dev account_id: \"123456789012\" region: eu-west-2"
+              - generic [ref=e1534]:
+                - code [ref=e1535]: account_id
+                - generic [ref=e1536]: · optional — verified against STS before runs.
+              - generic [ref=e1537]:
+                - code [ref=e1538]: disabled
+                - generic [ref=e1539]: · optional — skips the target in promotion and parallel runs.
+            - generic [ref=e1540]:
+              - heading "Terraform runs" [level=2] [ref=e1541]
+              - generic [ref=e1542]:
+                - text: Targets run in YAML order by default, stopping on the first apply failure.
+                - code [ref=e1543]: "--parallel"
+                - text: uses up to four workers and is rejected for apply and destroy.
+              - generic [ref=e1544]:
+                - button "copy" [ref=e1545] [cursor=pointer]:
+                  - img [ref=e1546]
+                  - text: copy
+                - generic [ref=e1549]: tfops plan --repo infrastructure tfops plan dev --repo infrastructure tfops apply prod --repo infrastructure tfops plan --repo infrastructure --parallel tfops state list --repo infrastructure --filter dev
+            - generic [ref=e1550]:
+              - heading "Approval gate" [level=2] [ref=e1551]
+              - generic [ref=e1552]:
+                - code [ref=e1553]: apply
+                - text: and
+                - code [ref=e1554]: destroy
+                - text: always run terraform without
+                - code [ref=e1555]: "-auto-approve"
+                - text: . Terraform shows the full plan, then prompts for confirmation — identical to running terraform directly.
+              - generic [ref=e1556]:
+                - button "copy" [ref=e1557] [cursor=pointer]:
+                  - img [ref=e1558]
+                  - text: copy
+                - generic [ref=e1561]: "Do you want to perform these actions? Terraform will perform the actions described above. Only 'yes' will be accepted to approve. Enter a value:"
+              - generic [ref=e1562]:
+                - code [ref=e1563]: "--force"
+                - generic [ref=e1564]:
+                  - text: · adds
+                  - code [ref=e1565]: "-auto-approve"
+                  - text: and skips the prompt — useful in CI/CD.
+              - generic [ref=e1567]:
+                - text: In the web UI, when an apply or destroy run reaches the
+                - code [ref=e1568]: "Enter a value:"
+                - text: prompt, the terminal shows an amber approval bar — click Approve to continue or Deny to abort.
+            - generic [ref=e1569]:
+              - heading "CWD mode" [level=2] [ref=e1570]
+              - generic [ref=e1571]:
+                - text: Run terraform commands from any directory that contains
+                - code [ref=e1572]: .tf
+                - text: files — no repo registration needed. Reports and run history are recorded the same way as managed repo runs.
+              - generic [ref=e1573]:
+                - button "copy" [ref=e1574] [cursor=pointer]:
+                  - img [ref=e1575]
+                  - text: copy
+                - generic [ref=e1578]: "# inside any terraform module directory cd ~/my-infra/staging tfops plan tfops apply tfops apply --force # override the AWS profile tfops plan --profile my-aws-profile"
+              - generic [ref=e1580]:
+                - text: If the current directory has no
+                - code [ref=e1581]: .tf
+                - text: files, tfops falls back to scanning immediate subdirectories — the original behaviour.
+            - generic [ref=e1582]:
+              - heading "Recursive mode" [level=2] [ref=e1583]
+              - generic [ref=e1584]:
+                - code [ref=e1585]: "--recursive"
+                - text: (
+                - code [ref=e1586]: "-R"
+                - text: ) scans the immediate subdirectories of the current folder for Terraform modules and runs the command across all of them — no repo registration needed. Pair it with CLI Directory to Profile Mappings (Settings) to automatically assign the right AWS profile to each directory.
+              - generic [ref=e1587]:
+                - button "copy" [ref=e1588] [cursor=pointer]:
+                  - img [ref=e1589]
+                  - text: copy
+                - generic [ref=e1592]: "# cd into any parent folder and run across all child tf dirs cd ~/my-infra tfops plan -R tfops plan --recursive # with a profile override for all dirs tfops plan -R --profile ctp-ecp-dev # --recursive and --repo are mutually exclusive"
+              - generic [ref=e1593]:
+                - code [ref=e1594]: profile_mappings
+                - generic [ref=e1595]:
+                  - text: · defined in Settings → CLI Directory to Profile Mappings. Each entry maps an exact directory base name (e.g.
+                  - code [ref=e1596]: dev
+                  - text: ) to an AWS CLI profile. Rows are executed in the order shown in the UI — drag to reorder.
+                  - code [ref=e1597]: "--profile"
+                  - text: overrides all mappings.
+              - generic [ref=e1598]:
+                - button "copy" [ref=e1599] [cursor=pointer]:
+                  - img [ref=e1600]
+                  - text: copy
+                - generic [ref=e1603]: "# config.yaml shape written by the UI profile_mappings: - dir: dev profile: ctp-ecp-dev - dir: qa profile: ctp-ecp-qa - dir: prod profile: ctp-ecp-prod"
+            - generic [ref=e1604]:
+              - heading "CLI commands" [level=2] [ref=e1605]
+              - generic [ref=e1606]: Manage repositories and targets from the terminal — the web UI edits the same file.
+              - generic [ref=e1607]:
+                - button "copy" [ref=e1608] [cursor=pointer]:
+                  - img [ref=e1609]
+                  - text: copy
+                - generic [ref=e1612]: "# repositories tfops config repo list tfops config repo add <name> <absolute-path> tfops config repo remove <name> # targets tfops config target list --repo <name> tfops config target add --repo <name> <target> <directory> --profile <aws-profile> tfops config target move --repo <name> <target> --after <target> tfops config target remove --repo <name> <target> tfops serve --report latest"
+            - generic [ref=e1613]:
+              - heading "Sensitive data" [level=2] [ref=e1614]
+              - generic [ref=e1615]:
+                - text: The YAML stores AWS profile names and optional account metadata — never credentials. Authentication stays in the AWS CLI configuration. Reports can contain infrastructure details and are stored outside the repository under
+                - code [ref=e1616]: ~/.config/tfops/reports
+                - text: ; review before sharing.
+      - generic:
+        - img
+        - text: Copied

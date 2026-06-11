@@ -1,0 +1,1 @@
+{"nodes": [{"id": "api_handlers_safejoin", "label": "safeJoin Path-Traversal Guard", "file_type": "code", "source_file": "internal/api/handlers.go", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

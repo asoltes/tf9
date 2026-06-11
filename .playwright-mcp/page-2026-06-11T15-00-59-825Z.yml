@@ -1,0 +1,63 @@
+- generic [ref=e2]:
+  - generic [ref=e1104]:
+    - generic [ref=e1105]:
+      - img [ref=e1107]
+      - text: tfops
+    - link "Runs" [ref=e1110] [cursor=pointer]:
+      - /url: "#runs"
+    - link "Reports" [ref=e1111] [cursor=pointer]:
+      - /url: "#reports"
+    - generic [ref=e1112]:
+      - button "Cycle theme" [ref=e1113] [cursor=pointer]:
+        - img [ref=e1114]
+      - button "Checking…" [ref=e1118] [cursor=pointer]:
+        - generic [ref=e1120]: Checking…
+      - generic [ref=e1121] [cursor=pointer]: AWSReservedSSO_AdministratorAccess_37e04251695328e9
+  - generic [ref=e1122]:
+    - navigation [ref=e1123]:
+      - generic [ref=e1124]:
+        - link "Overview" [ref=e1125] [cursor=pointer]:
+          - /url: "#overview"
+        - link "Runs" [ref=e1126] [cursor=pointer]:
+          - /url: "#runs"
+        - generic [ref=e1128]: Settings
+        - link "Repositories" [ref=e1129] [cursor=pointer]:
+          - /url: "#repos"
+        - link "Config YAML" [ref=e1130] [cursor=pointer]:
+          - /url: "#config"
+        - link "CLI Directory Profiles" [ref=e1131] [cursor=pointer]:
+          - /url: "#profile-mappings"
+        - link "Reports" [ref=e1133] [cursor=pointer]:
+          - /url: "#reports"
+        - link "Logs" [ref=e1134] [cursor=pointer]:
+          - /url: "#logs"
+        - link "Help" [ref=e1135] [cursor=pointer]:
+          - /url: "#help"
+      - button "Collapse sidebar" [ref=e1136] [cursor=pointer]:
+        - img [ref=e1137]
+    - main [ref=e1139]:
+      - generic [ref=e1140]:
+        - generic [ref=e1142]:
+          - generic [ref=e1143]:
+            - generic [ref=e1144]: Runs
+            - generic [ref=e1145]: Terraform runs across your repositories. Select a run to stream its output.
+          - generic [ref=e1146]:
+            - button "Refresh" [ref=e1147] [cursor=pointer]:
+              - img [ref=e1148]
+            - button "New run" [ref=e1151] [cursor=pointer]:
+              - img [ref=e1152]
+              - text: New run
+        - table [ref=e1158]:
+          - rowgroup [ref=e1159]:
+            - row "Run ID Command Repo Branch Targets Mode Started Duration Status Changes" [ref=e1160]:
+              - columnheader "Run ID" [ref=e1161]
+              - columnheader "Command" [ref=e1162]
+              - columnheader "Repo" [ref=e1163]
+              - columnheader "Branch" [ref=e1164]
+              - columnheader "Targets" [ref=e1165]
+              - columnheader "Mode" [ref=e1166]
+              - columnheader "Started" [ref=e1167]
+              - columnheader "Duration" [ref=e1168]
+              - columnheader "Status" [ref=e1169]
+              - columnheader "Changes" [ref=e1170]
+          - rowgroup

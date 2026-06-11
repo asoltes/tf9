@@ -1,0 +1,24 @@
+version: 1
+repositories:
+  - name: infrastructure
+    path: /home/andres/tf-companion/examples/infrastructure
+    targets:
+      - name: dev
+        directory: environments/dev
+        aws_profile: example-dev
+        region: eu-west-2
+      - name: prod
+        directory: environments/prod
+        aws_profile: example-prod
+        region: eu-west-2
+
+# Global directory → AWS profile mappings. Used by `tfops plan --recursive` (-R):
+# cd into a parent folder and run across all child terraform dirs, each with the
+# configured profile. Slice order = execution order. --profile overrides all rows.
+# profile_mappings:
+#   - dir: dev
+#     profile: ctp-ecp-dev
+#   - dir: qa
+#     profile: ctp-ecp-qa
+#   - dir: prod
+#     profile: ctp-ecp-prod

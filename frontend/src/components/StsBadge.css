@@ -1,0 +1,167 @@
+/* AWS STS auth status badge — topnav indicator (ported verbatim from sts.js) */
+.sts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  user-select: none;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sts-badge:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.sts-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.sts-badge.ok .sts-dot {
+  background: #3fb950;
+  box-shadow: 0 0 0 2px rgba(63, 185, 80, 0.25);
+}
+.sts-badge.fail .sts-dot {
+  background: #f85149;
+  box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.2);
+}
+.sts-badge.checking .sts-dot {
+  background: #d29922;
+  animation: sts-pulse 0.9s ease-in-out infinite;
+}
+.sts-badge.ok .sts-lbl {
+  color: rgba(255, 255, 255, 0.92);
+}
+.sts-badge.fail .sts-lbl {
+  color: rgba(255, 255, 255, 0.6);
+}
+.sts-badge.checking .sts-lbl {
+  color: rgba(255, 255, 255, 0.65);
+}
+@keyframes sts-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* SSO login popover */
+.sts-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 340px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.45);
+  z-index: 9999;
+  font-family: var(--sans);
+  overflow: hidden;
+}
+.ssp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ssp-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.ssp-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-3); font-size: 14px; line-height: 1; padding: 2px 4px;
+}
+.ssp-close:hover { color: var(--text-1); }
+.ssp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+}
+.ssp-label { font-size: 12px; color: var(--text-2); white-space: nowrap; min-width: 44px; }
+.ssp-sel {
+  flex: 1;
+  height: 28px;
+  padding: 0 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-1);
+  font-size: 12.5px;
+}
+.ssp-term {
+  margin: 0 14px 4px;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  max-height: 160px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+.ssp-line { color: #c9d1d9; white-space: pre-wrap; word-break: break-all; }
+.ssp-msg {
+  margin: 0 14px 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.ssp-msg.error { background: var(--red-bg, rgba(248,81,73,.12)); color: var(--red, #f85149); }
+.ssp-foot {
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--border);
+}
+.ssp-btn {
+  width: 100%;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .15s;
+}
+/* identity block shown when session is ok */
+.ssp-identity {
+  padding: 8px 14px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.ssp-id-row { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; }
+.ssp-id-k { font-size: 11px; color: var(--text-3); min-width: 50px; flex-shrink: 0; }
+.ssp-id-v { font-size: 12px; color: var(--text-1); }
+.ssp-id-v.mono { font-family: var(--mono); }
+.ssp-arn { font-size: 11px; word-break: break-all; color: var(--text-2); }
+
+.ssp-actions { display: flex; gap: 8px; }
+.ssp-actions .ssp-btn { flex: 1; width: auto; }
+
+.ssp-btn.primary { background: var(--blue); color: #fff; }
+.ssp-btn.primary:hover:not(:disabled) { filter: brightness(1.1); }
+.ssp-btn.primary:disabled { opacity: .5; cursor: default; }
+.ssp-btn.danger { background: rgba(248,81,73,.14); color: var(--red, #f85149); border: 1px solid rgba(248,81,73,.3); }
+.ssp-btn.danger:hover:not(:disabled) { background: rgba(248,81,73,.24); }
+.ssp-btn.danger:disabled { opacity: .5; cursor: default; }
+.ssp-btn.running { background: var(--surface-2); color: var(--text-2); cursor: default; }
+.ssp-btn.ok { background: rgba(63,185,80,.18); color: #3fb950; cursor: default; }
+.ssp-spin {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--text-3);
+  border-top-color: transparent;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

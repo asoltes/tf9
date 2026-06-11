@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tfops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cloudscape.css">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<script src="sts.js"></script>
+<style>
+  .hub-hero{display:flex;align-items:center;gap:16px;margin-bottom:26px}
+  .hub-hero .mk{width:54px;height:54px;border-radius:14px;background:var(--blue-bg);border:1px solid var(--blue);display:grid;place-items:center;color:var(--blue)}
+  .hub-hero .mk svg{width:28px;height:28px}
+  .hub-hero h1{margin:0;font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.4px}
+  .hub-hero p{margin:4px 0 0;color:var(--text-2);font-size:14px;max-width:640px}
+  .hub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .hub-card{display:flex;flex-direction:column;gap:10px;background:var(--container);border:1px solid var(--divider);border-radius:14px;padding:20px;box-shadow:var(--shadow-sm);text-decoration:none;transition:transform .12s,border-color .12s,box-shadow .12s}
+  .hub-card:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-c)}
+  .hub-card .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+  .hub-card .ic svg{width:21px;height:21px}
+  .hub-card .ct{font-size:16px;font-weight:700;color:var(--text)}
+  .hub-card .cd{font-size:13px;color:var(--text-2);line-height:1.5}
+  .hub-card .go{margin-top:auto;font-size:12.5px;font-weight:700;color:var(--link);display:flex;align-items:center;gap:6px}
+  .hub-card .go svg{width:14px;height:14px}
+  .ic.blue{background:var(--blue-bg);color:var(--blue)} .ic.green{background:var(--green-bg);color:var(--green)}
+  .ic.orange{background:#ffe0c2;color:#8a3a00} .ic.purple{background:#f1e9fb;color:var(--purple)} .ic.grey{background:var(--th);color:var(--text-2)}
+  html[data-theme="dark"] .ic.orange{background:#3a230f;color:#ffa657} html[data-theme="dark"] .ic.purple{background:#241a38;color:#bc8cff}
+  @media(max-width:900px){.hub-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:620px){.hub-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="brand"><span style="display:flex;color:#ff9900"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span> tfops</div>
+  <div class="tn-sep"></div>
+  <a class="tn-item" href="runs/Runs.html" style="text-decoration:none">Runs</a>
+  <a class="tn-item" href="reports/Reports.html" style="text-decoration:none">Reports</a>
+  <div class="tn-spacer"></div>
+  <div class="tn-right">
+    <div class="tn-theme" data-theme-btn aria-label="Toggle theme"></div>
+    <div id="stsBadge"></div>
+    <div class="tn-item">andres@company</div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidenav">
+
+    <a href="#" class="active">Overview</a>
+    <a href="runs/Runs.html">Runs</a>
+    <div class="nav-div"></div>
+    <div class="nav-sec">Settings</div>
+    <a href="repos/Repositories.html">Repositories</a>
+    <a href="config/Config%20YAML.html">Config YAML</a>
+    <div class="nav-div"></div>
+    <a href="reports/Reports.html">Reports</a>
+    <a href="help/Help.html">Help</a>
+  </nav>
+
+  <main class="content">
+    <div class="crumbs"><a>tfops</a><span class="sep">/</span><span class="cur">Overview</span></div>
+
+    <div class="hub-hero">
+      <div class="mk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+      <div>
+        <h1>tfops</h1>
+        <p>Run Terraform across ordered repository targets. A redesigned, themeable interface — explore each surface below. Toggle light / dark from the top-right; it carries across every page.</p>
+      </div>
+    </div>
+
+    <div class="hub-grid">
+      <a class="hub-card" href="runs/Runs.html">
+        <div class="ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+        <div class="ct">Runs</div>
+        <div class="cd">Run history and the live split panel — concurrent parallel terminals, promotion stepper, side/bottom dock.</div>
+        <div class="go">Open Runs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </a>
+
+      <a class="hub-card" href="runs/New%20Run%20Modal.html">
+        <div class="ic green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="10 8 16 12 10 16"/></svg></div>
+        <div class="ct">New run</div>
+        <div class="cd">Pick a command, repo and branch; choose targets by pipeline with a live CLI preview and danger checks.</div>
+        <div class="go">Open New run <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </a>
+
+      <a class="hub-card" href="repos/Repositories.html">
+        <div class="ic purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="ct">Repositories</div>
+        <div class="cd">Each top-level directory is its own promotion pipeline. Drag stages to set execution order.</div>
+        <div class="go">Open Repositories <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </a>
+
+      <a class="hub-card" href="config/Config%20YAML.html">
+        <div class="ic grey"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <div class="ct">Config YAML</div>
+        <div class="cd">A real code editor — gutter, syntax highlighting, current-line, and live schema validation with a problems pane.</div>
+        <div class="go">Open editor <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </a>
+
+      <a class="hub-card" href="reports/Reports.html">
+        <div class="ic orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></div>
+        <div class="ct">Reports</div>
+        <div class="cd">Self-contained plan / apply / destroy reports with search, copy resource addresses, and raw terminal output.</div>
+        <div class="go">Open report <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </a>
+
+      <a class="hub-card" href="help/Help.html">
+        <div class="ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="ct">Help</div>
+        <div class="cd">Quick start, the config schema, and CLI command reference with copyable snippets.</div>
+        <div class="go">Open Help <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </a>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

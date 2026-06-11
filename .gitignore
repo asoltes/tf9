@@ -1,0 +1,48 @@
+# Go build and test artifacts
+/tfops
+*.test
+*.out
+coverage/
+coverage.*
+
+# Frontend dependencies, caches, and generated bundle
+/frontend/node_modules/
+/frontend/.vite/
+/internal/web/dist/
+
+# Local MCP server config (machine-specific)
+.mcp.json
+
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+!.env.*.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Terraform local state and plans
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# Editor and operating-system metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+platform-companion.zip
+platform-companion.zip:Zone.Identifier

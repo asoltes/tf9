@@ -1,0 +1,114 @@
+/* =========================================================================
+   tfops — global light/dark theme layer
+   Base stylesheets are authored light (chrome) + dark (terminals).
+   This sheet flips them based on html[data-theme]:
+     • dark  → re-tokenize chrome + override light surfaces
+     • light → override terminals to a light palette
+   Load AFTER cloudscape.css and any page CSS.
+   ========================================================================= */
+
+/* ── DARK: re-tokenize ──────────────────────────────────────────────────── */
+html[data-theme="dark"]{
+  --bg-layout:#0d1117; --container:#161b22; --squid:#e6edf3;
+  --text:#e6edf3; --text-2:#9aa5b1; --text-3:#6e7681;
+  --link:#58a6ff; --link-hover:#79c0ff; --blue:#58a6ff; --blue-bg:#132b45; --purple:#bc8cff;
+  --th:#1b222c; --divider:#30363d; --border-strong:#3d444d; --input-border:#4b545e;
+  --nav-bg:#010409; --nav-bg-2:#21262d;
+  --green:#3fb950; --green-bg:#102619; --amber:#d29922; --amber-bg:#27220f; --red:#f85149; --red-bg:#2b1618;
+  --grey-badge:#30363d;
+  --shadow-c:0 0 0 1px #30363d, 0 1px 4px rgba(0,0,0,.4);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.5);
+  --shadow-pop:0 8px 30px rgba(0,0,0,.6), 0 0 0 1px #30363d;
+}
+
+/* ── DARK: chrome surface overrides (hardcoded light values) ────────────── */
+html[data-theme="dark"] .btn-normal{background:transparent}
+html[data-theme="dark"] .btn-normal:hover{background:#132b45}
+html[data-theme="dark"] .btn-icon{color:#9aa5b1}
+html[data-theme="dark"] .btn-icon:hover{background:#21262d;color:var(--text)}
+html[data-theme="dark"] .inp,html[data-theme="dark"] .sel{background:#0d1117;color:var(--text)}
+html[data-theme="dark"] .sidenav a:hover{background:#1c2128}
+html[data-theme="dark"] .tbl thead th{background:var(--th)}
+html[data-theme="dark"] .tbl tbody tr.selectable:hover{background:#1c2128}
+html[data-theme="dark"] .badge.blue{background:#132b45;color:#79c0ff}
+html[data-theme="dark"] .badge.green{background:#102619;color:#56d364}
+html[data-theme="dark"] .badge.amber{background:#27220f;color:#e3b341}
+html[data-theme="dark"] .badge.orange{background:#3a230f;color:#ffa657}
+html[data-theme="dark"] .badge.red{background:#2b1618;color:#ffa198}
+html[data-theme="dark"] .badge{background:#30363d;color:var(--text)}
+html[data-theme="dark"] .seq-summary .s-node{background:#0d1117}
+html[data-theme="dark"] .view-toggle button{background:#161b22;color:var(--text-2)}
+html[data-theme="dark"] .view-toggle button.on{background:var(--blue);color:#04101f}
+html[data-theme="dark"] .stage{background:#1c2330}
+html[data-theme="dark"] .stage.placeholder{background:#132b45}
+html[data-theme="dark"] .stage-grip:hover{background:#21262d}
+html[data-theme="dark"] .stage-dir{background:#0d1117}
+html[data-theme="dark"] .add-stage .plus{background:#21262d}
+html[data-theme="dark"] .add-stage:hover .plus{background:#161b22}
+html[data-theme="dark"] .flow-note{background:#11161d}
+html[data-theme="dark"] .group{background:#11161d}
+html[data-theme="dark"] .group-title .gfolder{background:#132b45}
+html[data-theme="dark"] .dir-row:hover{background:#1c2128}
+html[data-theme="dark"] .modal{background:#161b22}
+html[data-theme="dark"] .radio{border-color:#4b545e}
+
+/* runs history + split panel */
+html[data-theme="dark"] .runs-tbl thead th{background:var(--th)}
+html[data-theme="dark"] .runs-tbl tbody tr:hover td{background:#1c2128}
+html[data-theme="dark"] .runs-tbl tbody tr.is-running td{background:#102339}
+html[data-theme="dark"] .runs-tbl tbody tr.is-running.selected td,
+html[data-theme="dark"] .runs-tbl tbody tr.selected td{background:var(--blue-bg)}
+html[data-theme="dark"] .tgt-chip{background:#21262d;color:var(--text)}
+html[data-theme="dark"] .splitpanel,html[data-theme="dark"] .sp-handle,html[data-theme="dark"] .sp-head{background:#161b22}
+html[data-theme="dark"] .dock-toggle button{background:#161b22;color:var(--text-2)}
+html[data-theme="dark"] .dock-toggle button.on{background:var(--blue);color:#04101f}
+html[data-theme="dark"] .tdot{background:#0d1117}
+
+/* new run modal */
+html[data-theme="dark"] .run-modal,html[data-theme="dark"] .rm-head,html[data-theme="dark"] .rm-foot{background:#161b22}
+html[data-theme="dark"] .rm-side{background:#11161d}
+html[data-theme="dark"] .rm-close:hover{background:#21262d}
+html[data-theme="dark"] .cmd-chip,html[data-theme="dark"] .tile,html[data-theme="dark"] .tgroup,html[data-theme="dark"] .aa-control{background:#1c2330}
+html[data-theme="dark"] .cmd-chip .ic,html[data-theme="dark"] .tile .ti-ic{background:#0d1117}
+html[data-theme="dark"] .tgroup-head{background:#11161d}
+html[data-theme="dark"] .tgt:hover{background:#21262d}
+html[data-theme="dark"] .exec-box,html[data-theme="dark"] .sum-cmd .pill{background:#0d1117}
+html[data-theme="dark"] .cbox{background:#0d1117;border-color:#4b545e}
+
+/* config editor follows global theme via JS (#editor[data-theme]) */
+
+/* ── LIGHT: flip terminals to a light palette ───────────────────────────── */
+html[data-theme="light"] .term-card{background:#fff;border-color:#d8dee4}
+html[data-theme="light"] .term-card.run{border-color:#a8d3f5;box-shadow:0 0 0 1px #a8d3f5}
+html[data-theme="light"] .term-card.done{border-color:#a7e3b4}
+html[data-theme="light"] .term-card.fail{border-color:#f3b7b2}
+html[data-theme="light"] .tc-head{background:#f6f8fa;border-color:#e4e8ec;color:#1f2328}
+html[data-theme="light"] .term-card.run .tc-head{background:#eff6fd}
+html[data-theme="light"] .term-card.fail .tc-head{background:#fff5f5}
+html[data-theme="light"] .tc-head .en{color:#1f2328}
+html[data-theme="light"] .tc-head .pr{color:#59636e}
+html[data-theme="light"] .tc-head .sd{background:#8c959f}
+html[data-theme="light"] .tc-body{color:#1f2328}
+html[data-theme="light"] .merged-term,html[data-theme="light"] .term-single,html[data-theme="light"] .promo-term{background:#fbfcfd;border-color:#d8dee4}
+html[data-theme="light"] .term-tab{background:#eef1f4;color:#59636e}
+html[data-theme="light"] .term-tab.on{background:#fff;color:#1f2328;border-color:#d8dee4}
+html[data-theme="light"] .tc-exp{color:#8c959f}
+html[data-theme="light"] .tc-exp:hover{background:#eef1f4;color:#1f2328}
+/* terminal line colors (light) */
+html[data-theme="light"] .tl-add,html[data-theme="light"] .tc-stats .a{color:#1a7f37}
+html[data-theme="light"] .tl-del,html[data-theme="light"] .tc-stats .d{color:#cf222e}
+html[data-theme="light"] .tl-chg,html[data-theme="light"] .tc-stats .c{color:#9a6700}
+html[data-theme="light"] .tl-plan{color:#0969da}
+html[data-theme="light"] .tl-ok{color:#1a7f37}
+html[data-theme="light"] .tl-err{color:#cf222e}
+html[data-theme="light"] .tl-dim{color:#8b949e}
+html[data-theme="light"] .tl-data{color:#57606a}
+html[data-theme="light"] .tc-state.run{color:#0969da;background:#ddf0ff}
+html[data-theme="light"] .tc-state.done{color:#1a7f37;background:#dcffe4}
+html[data-theme="light"] .tc-state.fail{color:#cf222e;background:#ffe3e0}
+html[data-theme="light"] .tc-state.queued{color:#59636e;background:#eef1f4}
+
+/* theme toggle button in the top nav */
+.tn-theme{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;cursor:pointer;color:#d5dbdb}
+.tn-theme:hover{background:var(--nav-bg-2);color:#fff}
+.tn-theme svg{width:16px;height:16px}

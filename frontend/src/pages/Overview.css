@@ -1,0 +1,130 @@
+/* Overview hub — page-scoped styles ported verbatim from index.html.
+   Scoped under .overview-page to avoid class collisions across the SPA. */
+.overview-page .hub-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.overview-page .hub-hero .mk {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue);
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+}
+.overview-page .hub-hero .mk svg {
+  width: 28px;
+  height: 28px;
+}
+.overview-page .hub-hero h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.4px;
+}
+.overview-page .hub-hero p {
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font-size: 14px;
+  max-width: 640px;
+}
+.overview-page .hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.overview-page .hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--container);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.overview-page .hub-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-c);
+}
+.overview-page .hub-card .ic {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.overview-page .hub-card .ic svg {
+  width: 21px;
+  height: 21px;
+}
+.overview-page .hub-card .ct {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.overview-page .hub-card .cd {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.overview-page .hub-card .go {
+  margin-top: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--link);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.overview-page .hub-card .go svg {
+  width: 14px;
+  height: 14px;
+}
+.overview-page .ic.blue {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.overview-page .ic.green {
+  background: var(--green-bg);
+  color: var(--green);
+}
+.overview-page .ic.orange {
+  background: #ffe0c2;
+  color: #8a3a00;
+}
+.overview-page .ic.purple {
+  background: #f1e9fb;
+  color: var(--purple);
+}
+.overview-page .ic.grey {
+  background: var(--th);
+  color: var(--text-2);
+}
+html[data-theme='dark'] .overview-page .ic.orange {
+  background: #3a230f;
+  color: #ffa657;
+}
+html[data-theme='dark'] .overview-page .ic.purple {
+  background: #241a38;
+  color: #bc8cff;
+}
+@media (max-width: 900px) {
+  .overview-page .hub-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 620px) {
+  .overview-page .hub-grid {
+    grid-template-columns: 1fr;
+  }
+}
