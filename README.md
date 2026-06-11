@@ -351,6 +351,3 @@ credentials. Authentication remains in the AWS CLI configuration.
 Terraform reports can contain infrastructure details. They are stored outside
 the repository under `~/.config/tfops/reports` by default and should be reviewed
 before sharing.
-# tfops
-# tfops
-# tfops
