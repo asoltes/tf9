@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { api, awsApi } from './api';
 import type { Repo, Paginated } from './types';
 import { identityLabel } from './lib/identity';
@@ -14,6 +14,8 @@ import LogsPage from './pages/Logs';
 import Help from './pages/Help';
 import Overview from './pages/Overview';
 import ProfileMappingsPage from './pages/ProfileMappings';
+
+const RepositoryWorkspace = lazy(() => import('./pages/RepositoryWorkspace'));
 
 const MODE_KEY = 'tfops-color-mode';
 type Mode = 'light' | 'dark' | 'dim';
@@ -47,6 +49,11 @@ function PageContent({
     case 'overview': return <Overview firstRun={firstRun} />;
     case 'runs':     return <Runs openNewRun={page.newRun} />;
     case 'repos':    return <Repos />;
+    case 'workspace': return (
+      <Suspense fallback={<div className="workspace-loading">Loading workspace…</div>}>
+        <RepositoryWorkspace name={page.name} />
+      </Suspense>
+    );
     case 'config':            return <ConfigYaml />;
     case 'profile-mappings':  return <ProfileMappingsPage />;
     case 'reports':           return <ReportsPage />;
@@ -60,6 +67,9 @@ function parseHash(raw: string): Page {
   const h = raw.replace(/^#/, '');
   if (!h || h === 'overview') return { id: 'overview' };
   if (h.startsWith('report/')) return { id: 'report', name: h.slice(7) };
+  if (h === 'workspace') return { id: 'workspace' };
+  if (h.startsWith('workspace/')) return { id: 'workspace', name: decodeURIComponent(h.slice(10)) };
+  if (h.startsWith('repo/')) return { id: 'workspace', name: decodeURIComponent(h.slice(5)) };
   if (h === 'runs/new') return { id: 'runs', newRun: true };
   switch (h) {
     case 'runs':    return { id: 'runs' };
@@ -75,6 +85,7 @@ function parseHash(raw: string): Page {
 
 function pageToHash(p: Page): string {
   if (p.id === 'report') return `#report/${p.name}`;
+  if (p.id === 'workspace') return p.name ? `#workspace/${encodeURIComponent(p.name)}` : '#workspace';
   if (p.id === 'runs' && p.newRun) return '#runs/new';
   return `#${p.id}`;
 }

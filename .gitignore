@@ -8,6 +8,8 @@ coverage.*
 # Frontend dependencies, caches, and generated bundle
 /frontend/node_modules/
 /frontend/.vite/
+/frontend/playwright-report/
+/frontend/test-results/
 /internal/web/dist/
 
 # Local MCP server config (machine-specific)

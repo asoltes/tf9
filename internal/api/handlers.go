@@ -1,10 +1,12 @@
 package api
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -93,6 +95,11 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 		sub := ""
 		if len(parts) == 2 {
 			sub = parts[1]
+		}
+		if sub == "workspace" || strings.HasPrefix(sub, "workspace/") {
+			action := strings.TrimPrefix(sub, "workspace")
+			handleRepoWorkspace(w, r, name, strings.TrimPrefix(action, "/"))
+			return
 		}
 		switch sub {
 		case "browse":
@@ -466,10 +473,26 @@ func (s *statusRecorder) Flush() {
 	}
 }
 
+func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := s.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("response writer does not support hijacking")
+	}
+	s.status = http.StatusSwitchingProtocols
+	return hijacker.Hijack()
+}
+
+func (s *statusRecorder) Unwrap() http.ResponseWriter {
+	return s.ResponseWriter
+}
+
 // isStreamPath reports whether a path is a long-lived SSE endpoint, which is
 // logged at DEBUG to avoid noise (duration is the whole stream lifetime).
 func isStreamPath(path string) bool {
-	return strings.HasSuffix(path, "/stream") || strings.HasSuffix(path, "/sso-login")
+	return strings.HasSuffix(path, "/stream") ||
+		strings.HasSuffix(path, "/sso-login") ||
+		strings.HasSuffix(path, "/events") ||
+		strings.HasSuffix(path, "/terminal")
 }
 
 // logRequests logs every API request with method, path, status, and duration.

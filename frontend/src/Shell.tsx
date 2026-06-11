@@ -14,6 +14,7 @@ import StsBadge from './components/StsBadge';
  */
 interface ShellProps {
   children: React.ReactNode;
+  fullWidth?: boolean;
   contentType?: unknown;
   splitPanel?: React.ReactNode;
   splitPanelOpen?: boolean;
@@ -33,6 +34,7 @@ interface SideLink {
 const PRIMARY_LINKS: SideLink[] = [
   { id: 'overview', text: 'Overview', href: '#overview' },
   { id: 'runs', text: 'Runs', href: '#runs' },
+  { id: 'workspace', text: 'Workspace', href: '#workspace' },
 ];
 
 const SETTINGS_LINKS: SideLink[] = [
@@ -54,6 +56,10 @@ const CRUMBS: Record<Page['id'], { text: string; page: Page | null }[]> = {
     { text: 'tfops', page: { id: 'overview' } },
     { text: 'Settings', page: { id: 'repos' } },
     { text: 'Repositories', page: null },
+  ],
+  workspace: [
+    { text: 'tfops', page: { id: 'overview' } },
+    { text: 'Workspace', page: null },
   ],
   config: [
     { text: 'tfops', page: { id: 'overview' } },
@@ -105,16 +111,18 @@ const ICON_EXPAND = (
   </svg>
 );
 
-export default function Shell({ children }: ShellProps) {
+export default function Shell({ children, fullWidth = false }: ShellProps) {
   const { page, navigate, mode, toggleTheme, userEmail } = useNav();
 
   const [navCollapsed, setNavCollapsed] = React.useState<boolean>(() => {
-    return localStorage.getItem('tfops-nav-collapsed') === '1';
+    return typeof localStorage !== 'undefined' && localStorage.getItem('tfops-nav-collapsed') === '1';
   });
   function toggleNav() {
     setNavCollapsed(prev => {
       const next = !prev;
-      localStorage.setItem('tfops-nav-collapsed', next ? '1' : '0');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('tfops-nav-collapsed', next ? '1' : '0');
+      }
       return next;
     });
   }
@@ -152,6 +160,14 @@ export default function Shell({ children }: ShellProps) {
           tfops
         </div>
         <div className="tn-sep" />
+        <a
+          className="tn-item"
+          href="#workspace"
+          style={{ textDecoration: 'none' }}
+          onClick={(e) => go(e, { id: 'workspace' })}
+        >
+          Workspace
+        </a>
         <a
           className="tn-item"
           href="#runs"
@@ -211,7 +227,7 @@ export default function Shell({ children }: ShellProps) {
           </button>
         </nav>
 
-        <main className="content">
+        <main className={`content${fullWidth ? ' shell-full-width' : ''}`}>
           <div className="crumbs">
             {crumbs.map((c, i) => (
               <React.Fragment key={i}>

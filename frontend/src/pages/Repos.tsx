@@ -226,6 +226,15 @@ function RepoTable({
                   </button>
                   <button
                     className="btn btn-normal btn-sm"
+                    onClick={e => {
+                      e.stopPropagation();
+                      window.location.hash = `#workspace/${encodeURIComponent(repo.name)}`;
+                    }}
+                  >
+                    Workspace
+                  </button>
+                  <button
+                    className="btn btn-normal btn-sm"
                     onClick={e => { e.stopPropagation(); onConfigure(repo.name); }}
                   >
                     Configure

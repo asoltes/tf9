@@ -121,6 +121,7 @@ export type Page =
   | { id: 'overview' }
   | { id: 'runs'; newRun?: boolean }
   | { id: 'repos' }
+  | { id: 'workspace'; name?: string }
   | { id: 'config' }
   | { id: 'profile-mappings' }
   | { id: 'reports' }
@@ -153,4 +154,22 @@ export interface Identity {
 export interface GitChangedFile {
   xy: string;   // two-char porcelain code, e.g. "M ", " M", "??"
   path: string;
+}
+
+export interface WorkspaceEntry {
+  name: string;
+  path: string;
+  isDir: boolean;
+  size?: number;
+  modified?: string;
+}
+
+export interface WorkspaceFile {
+  path: string;
+  content: string;
+  revision: string;
+  size: number;
+  language: string;
+  readOnly: boolean;
+  binary: boolean;
 }

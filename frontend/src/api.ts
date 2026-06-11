@@ -1,4 +1,10 @@
-import type { GitCommit, Identity, LogLevel, LogsResponse } from './types';
+import type { GitCommit, Identity, LogLevel, LogsResponse, WorkspaceEntry, WorkspaceFile } from './types';
+
+export class ApiError extends Error {
+  constructor(message: string, public status: number, public code?: string) {
+    super(message);
+  }
+}
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const opts: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
@@ -6,7 +12,7 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   const res = await fetch(path, opts);
   if (!res.ok) {
     const err = await res.json().catch(() => null) as { error?: { code?: string; message?: string } } | null;
-    throw new Error(err?.error?.message ?? res.statusText);
+    throw new ApiError(err?.error?.message ?? res.statusText, res.status, err?.error?.code);
   }
   return res.json().catch(() => null) as T;
 }
@@ -98,4 +104,37 @@ export const repoGit = {
     api.post<{ output: string }>(`/api/repos/${encodeURIComponent(name)}/pull`, {}),
   checkout:   (name: string, branch: string)           =>
     api.post<{ output: string }>(`/api/repos/${encodeURIComponent(name)}/checkout`, { branch }),
+};
+
+export const workspaceApi = {
+  tree: (name: string, path = '') =>
+    api.get<{ path: string; entries: WorkspaceEntry[] }>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/tree?path=${encodeURIComponent(path)}`,
+    ),
+  file: (name: string, path: string) =>
+    api.get<WorkspaceFile>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/file?path=${encodeURIComponent(path)}`,
+    ),
+  save: (name: string, path: string, content: string, revision: string, force = false) =>
+    api.put<{ revision: string }>(`/api/repos/${encodeURIComponent(name)}/workspace/file`, {
+      path, content, revision, force,
+    }),
+  create: (name: string, path: string, type: 'file' | 'directory') =>
+    api.post<{ path: string }>(`/api/repos/${encodeURIComponent(name)}/workspace/entry`, { path, type }),
+  move: (name: string, path: string, destination: string) =>
+    api.patch<{ path: string }>(`/api/repos/${encodeURIComponent(name)}/workspace/entry`, { path, destination }),
+  remove: (name: string, path: string) =>
+    api.delete<{ ok: boolean }>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/entry?path=${encodeURIComponent(path)}`,
+    ),
+  diff: (name: string, path = '') =>
+    api.get<{ diff: string }>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/diff?path=${encodeURIComponent(path)}`,
+    ),
+  eventsUrl: (name: string) => `/api/repos/${encodeURIComponent(name)}/workspace/events`,
+  terminalUrl: (name: string, path = '') => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const query = path ? `?path=${encodeURIComponent(path)}` : '';
+    return `${protocol}//${window.location.host}/api/repos/${encodeURIComponent(name)}/workspace/terminal${query}`;
+  },
 };

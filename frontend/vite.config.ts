@@ -9,7 +9,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8080',
+      '/api': { target: 'http://localhost:8080', ws: true },
       '/reports': 'http://localhost:8080',
       '/events': 'http://localhost:8080',
     },
