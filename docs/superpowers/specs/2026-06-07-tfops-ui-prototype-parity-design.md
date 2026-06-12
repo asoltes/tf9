@@ -1,4 +1,4 @@
-# tfops UI — Prototype Parity Design
+# tf9 UI — Prototype Parity Design
 
 **Date:** 2026-06-07
 **Status:** Approved (design); pending spec review
@@ -6,8 +6,8 @@
 
 ## 1. Goal
 
-Bring the existing tfops web UI up to parity with the high-fidelity HTML/CSS/JS
-prototype delivered in `design_handoff_tfops/` (extracted from
+Bring the existing tf9 web UI up to parity with the high-fidelity HTML/CSS/JS
+prototype delivered in `design_handoff_tf9/` (extracted from
 `platform-companion.zip`). Preserve the prototype's information architecture,
 layouts, and interactions while building on the project's existing stack.
 
@@ -24,7 +24,7 @@ layouts, and interactions while building on the project's existing stack.
 - **Data:** Wire everything to the real Go backend (`/api/*` + SSE). The
   prototype's mock data (`data-*.js`), simulated streaming, and `localStorage`
   persistence are reference-only and are replaced by real endpoints.
-- **Theme:** Unchanged — `applyMode` + `tfops-color-mode` localStorage key. Dark
+- **Theme:** Unchanged — `applyMode` + `tf9-color-mode` localStorage key. Dark
   default, light toggle.
 
 ### Why this approach
@@ -100,7 +100,7 @@ Each phase is independently shippable. Phase 0 unblocks the rest.
 - In the runner, when `TfCommand == "force-unlock"`, run
   `terraform force-unlock -force <id>` for each selected target that has a lock
   id; targets without an id are skipped.
-- Thread through `cmd/tfops/main.go` so the CLI supports it (flag for lock ids,
+- Thread through `cmd/tf9/main.go` so the CLI supports it (flag for lock ids,
   e.g. `--lock-ids dev:abc,staging:def`).
 - Tests: runner force-unlock command assembly; handler parsing of `lockIds`.
 

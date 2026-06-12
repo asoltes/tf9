@@ -1,5 +1,5 @@
 # Go build and test artifacts
-/tfops
+/tf9
 *.test
 *.out
 coverage/
@@ -10,6 +10,7 @@ coverage.*
 /frontend/.vite/
 /frontend/playwright-report/
 /frontend/test-results/
+/frontend/e2e/screenshots/
 /internal/web/dist/
 
 # Local MCP server config (machine-specific)

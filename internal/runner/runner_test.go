@@ -1,7 +1,9 @@
 package runner
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,8 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/andres/tfops/internal/config"
+	"github.com/andres/tf9/internal/config"
 )
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error { return nil }
 
 // writeFakeBin writes an executable shell script to dir/name.
 func writeFakeBin(t *testing.T, dir, name, script string) {
@@ -270,6 +278,144 @@ func TestBuildArgsNormalCommands(t *testing.T) {
 	args, _ = buildArgs("destroy", nil, "", ImportSpec{}, false)
 	if len(args) != 1 || args[0] != "destroy" {
 		t.Fatalf("interactive destroy args = %v, want [destroy]", args)
+	}
+}
+
+func TestSavedPlanFilePathSanitizesTarget(t *testing.T) {
+	dir := t.TempDir()
+	got := SavedPlanFilePath(dir, "prod/us west")
+	if !strings.HasPrefix(filepath.Base(got), "prod_us_west-") || !strings.HasSuffix(got, ".tfplan") {
+		t.Fatalf("savedPlanFilePath() = %q, want sanitized name with hash suffix", got)
+	}
+	if got == SavedPlanFilePath(dir, "prod_us_west") {
+		t.Fatal("distinct target names produced the same saved plan path")
+	}
+}
+
+func TestPlanSavesAndApplyUsesReviewedPlan(t *testing.T) {
+	argsFile := filepath.Join(t.TempDir(), "args.txt")
+	t.Setenv("TF_TEST_ARGS", argsFile)
+	setupFakeBins(t, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$TF_TEST_ARGS\"\nfor a in \"$@\"; do case \"$a\" in -out=*) touch \"${a#-out=}\";; esac; done\n")
+	tfDir := makeTfDir(t)
+	planDir := t.TempDir()
+
+	_, _, err := Run(Options{
+		SearchRoot:      tfDir,
+		TfCommand:       "plan",
+		ReportDir:       "-",
+		ProfileOverride: "test-profile",
+		Output:          io.Discard,
+		SavePlanDir:     planDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	planFile := SavedPlanFilePath(planDir, filepath.Base(tfDir))
+	if _, err := os.Stat(planFile); err != nil {
+		t.Fatalf("saved plan was not created: %v", err)
+	}
+
+	_, _, err = Run(Options{
+		SearchRoot:      tfDir,
+		TfCommand:       "apply",
+		ReportDir:       "-",
+		ProfileOverride: "test-profile",
+		Output:          io.Discard,
+		ApplyPlanFiles:  map[string]string{filepath.Base(tfDir): planFile},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "apply\n-input=false\n" + planFile + "\n"
+	if string(got) != want {
+		t.Fatalf("terraform args = %q, want %q", string(got), want)
+	}
+}
+
+func TestDeniedApplyIsNotReportedAsFailure(t *testing.T) {
+	setupFakeBins(t, "#!/bin/sh\necho 'Apply cancelled.'\nexit 1\n")
+	tfDir := makeTfDir(t)
+	var out strings.Builder
+
+	results, _, err := Run(Options{
+		SearchRoot:      tfDir,
+		TfCommand:       "apply",
+		ReportDir:       "-",
+		ProfileOverride: "test-profile",
+		AutoApprove:     true,
+		Output:          &out,
+	})
+	if !errors.Is(err, ErrApprovalDenied) {
+		t.Fatalf("Run() error = %v, want ErrApprovalDenied", err)
+	}
+	if len(results) != 1 || results[0].Failed {
+		t.Fatalf("denied result should not be failed: %#v", results)
+	}
+	got := out.String()
+	if !strings.Contains(got, "[DENIED]") || !strings.Contains(got, "approval denied") {
+		t.Fatalf("denial output missing clear status: %q", got)
+	}
+	if strings.Contains(got, "[FAILED]") || strings.Contains(got, "fix "+filepath.Base(tfDir)) {
+		t.Fatalf("denial output was reported as failure: %q", got)
+	}
+}
+
+func TestApprovalWasDeniedRecognizesApplyAndDestroy(t *testing.T) {
+	for _, output := range []string{
+		"Apply cancelled.",
+		"\x1b[31mDestroy cancelled.\x1b[0m",
+	} {
+		if !approvalWasDenied(output) {
+			t.Fatalf("approvalWasDenied(%q) = false", output)
+		}
+	}
+	if approvalWasDenied("Error: provider failed") {
+		t.Fatal("ordinary Terraform failure was classified as denial")
+	}
+}
+
+func TestApprovalMonitorDisplaysApproved(t *testing.T) {
+	var out, stdin bytes.Buffer
+	input := make(chan string, 1)
+	input <- "yes"
+	monitor := &approvalMonitor{
+		out:     &out,
+		stdinW:  nopWriteCloser{Writer: &stdin},
+		inputCh: input,
+		ctx:     context.Background(),
+	}
+
+	if _, err := monitor.Write([]byte("Enter a value:")); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), approvalAcceptedLine) {
+		t.Fatalf("output = %q, want approved marker", out.String())
+	}
+	if stdin.String() != "yes\n" {
+		t.Fatalf("terraform stdin = %q, want yes newline", stdin.String())
+	}
+}
+
+func TestApprovalMonitorDoesNotApproveDenial(t *testing.T) {
+	var out, stdin bytes.Buffer
+	input := make(chan string, 1)
+	input <- "no"
+	monitor := &approvalMonitor{
+		out:     &out,
+		stdinW:  nopWriteCloser{Writer: &stdin},
+		inputCh: input,
+		ctx:     context.Background(),
+	}
+
+	if _, err := monitor.Write([]byte("Enter a value:")); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out.String(), "[APPROVED]") {
+		t.Fatalf("denial output incorrectly contains approval: %q", out.String())
 	}
 }
 

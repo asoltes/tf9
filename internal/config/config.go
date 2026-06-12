@@ -71,9 +71,14 @@ type Config struct {
 	Repositories    []Repository    `yaml:"repositories" json:"repositories"`
 	ProfileMappings ProfileMappings `yaml:"profile_mappings,omitempty" json:"profile_mappings,omitempty"`
 	StsProfile      string          `yaml:"sts_profile,omitempty" json:"sts_profile,omitempty"`
+	Web             WebConfig       `yaml:"web,omitempty" json:"web,omitempty"`
 	// LogLevel sets the application log verbosity: debug, info, warn, or error.
-	// Empty means info. The TFOPS_LOG_LEVEL env var overrides this when set.
+	// Empty means info. The TF9_LOG_LEVEL env var overrides this when set.
 	LogLevel string `yaml:"log_level,omitempty" json:"log_level,omitempty"`
+}
+
+type WebConfig struct {
+	SavedPlanApply bool `yaml:"saved_plan_apply,omitempty" json:"saved_plan_apply,omitempty"`
 }
 
 type Repository struct {
@@ -113,7 +118,7 @@ func ConfigPath() string {
 	if override != "" {
 		return expandHome(override)
 	}
-	if env := os.Getenv("TFOPS_CONFIG"); env != "" {
+	if env := os.Getenv("TF9_CONFIG"); env != "" {
 		return expandHome(env)
 	}
 	return filepath.Join(configDir(), "config.yaml")
@@ -121,10 +126,10 @@ func ConfigPath() string {
 
 func configDir() string {
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "tfops")
+		return filepath.Join(xdg, "tf9")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "tfops")
+	return filepath.Join(home, ".config", "tf9")
 }
 
 func runtimeDir() string {
@@ -154,30 +159,110 @@ func DefaultReportDir() string {
 	return dir
 }
 
+// CostScanDir returns the directory holding saved Infracost breakdown scans.
+func CostScanDir() string {
+	dir := filepath.Join(runtimeDir(), "cost-scans")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		slog.Warn("could not create cost scan dir", "dir", dir, "err", err)
+	}
+	return dir
+}
+
+// SavedPlanDir returns the private directory used by the web UI to retain
+// reviewed Terraform plan files between the plan and apply runs.
+func SavedPlanDir() string {
+	dir := filepath.Join(runtimeDir(), "plans")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		slog.Warn("could not create saved plan dir", "dir", dir, "err", err)
+	}
+	return dir
+}
+
 func RunsFile() string {
 	if err := os.MkdirAll(runtimeDir(), 0o755); err == nil {
 		return filepath.Join(runtimeDir(), "runs.json")
 	} else {
 		slog.Warn("could not create config dir, using temp for runs file", "dir", runtimeDir(), "err", err)
 	}
-	return filepath.Join(os.TempDir(), "tfops-runs.json")
+	return filepath.Join(os.TempDir(), "tf9-runs.json")
 }
 
 // LogFile returns the path to the application log file. Falls back to a temp
 // path if the config dir cannot be created.
 func LogFile() string {
 	if err := os.MkdirAll(runtimeDir(), 0o755); err == nil {
-		return filepath.Join(runtimeDir(), "tfops.log")
+		return filepath.Join(runtimeDir(), "tf9.log")
 	} else {
 		slog.Warn("could not create config dir, using temp for log file", "dir", runtimeDir(), "err", err)
 	}
-	return filepath.Join(os.TempDir(), "tfops.log")
+	return filepath.Join(os.TempDir(), "tf9.log")
 }
 
 func Load() (Config, error) {
 	storeMu.Lock()
 	defer storeMu.Unlock()
 	return loadLocked(true)
+}
+
+// InfracostConfig holds Infracost cost-estimation settings. It is persisted to a
+// separate file (infracost.yaml) so the API key never round-trips through the
+// committed config.yaml / the raw YAML editor.
+type InfracostConfig struct {
+	APIKey           string `yaml:"api_key,omitempty"`
+	EnabledByDefault bool   `yaml:"enabled_by_default"`
+	Currency         string `yaml:"currency,omitempty"`
+}
+
+// InfracostPath returns the path to the Infracost settings file.
+func InfracostPath() string {
+	return filepath.Join(runtimeDir(), "infracost.yaml")
+}
+
+// LoadInfracost reads the Infracost settings. A missing file yields defaults.
+// The INFRACOST_API_KEY environment variable overrides the stored key.
+func LoadInfracost() (InfracostConfig, error) {
+	cfg := InfracostConfig{Currency: "USD"}
+	data, err := os.ReadFile(InfracostPath())
+	if errors.Is(err, os.ErrNotExist) {
+		// fall through to env override / defaults
+	} else if err != nil {
+		return cfg, fmt.Errorf("read infracost config %s: %w", InfracostPath(), err)
+	} else if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return cfg, fmt.Errorf("parse infracost config %s: %w", InfracostPath(), err)
+	}
+	if env := strings.TrimSpace(os.Getenv("INFRACOST_API_KEY")); env != "" {
+		cfg.APIKey = env
+	}
+	if strings.TrimSpace(cfg.Currency) == "" {
+		cfg.Currency = "USD"
+	}
+	return cfg, nil
+}
+
+// SaveInfracost persists the Infracost settings with 0600 perms (it holds a
+// secret API key). An empty APIKey is preserved as-is so callers can clear it.
+func SaveInfracost(cfg InfracostConfig) error {
+	cfg.APIKey = strings.TrimSpace(cfg.APIKey)
+	cfg.Currency = strings.TrimSpace(cfg.Currency)
+	if cfg.Currency == "" {
+		cfg.Currency = "USD"
+	}
+	if err := os.MkdirAll(runtimeDir(), 0o755); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
+	}
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal infracost config: %w", err)
+	}
+	if err := os.WriteFile(InfracostPath(), data, 0o600); err != nil {
+		return fmt.Errorf("write infracost config %s: %w", InfracostPath(), err)
+	}
+	// Enforce 0600 even if the file already existed with looser perms — it holds
+	// the API key secret.
+	if err := os.Chmod(InfracostPath(), 0o600); err != nil {
+		slog.Warn("could not tighten infracost config perms", "path", InfracostPath(), "err", err)
+	}
+	return nil
 }
 
 // ReadRaw returns the config source and a revision used for optimistic locking.

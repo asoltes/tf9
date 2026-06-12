@@ -2,6 +2,7 @@ package api
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,11 +18,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/andres/tfops/internal/applog"
-	"github.com/andres/tfops/internal/aws"
-	"github.com/andres/tfops/internal/config"
-	"github.com/andres/tfops/internal/git"
-	"github.com/andres/tfops/internal/report"
+	"github.com/andres/tf9/internal/applog"
+	"github.com/andres/tf9/internal/aws"
+	"github.com/andres/tf9/internal/config"
+	"github.com/andres/tf9/internal/cost"
+	"github.com/andres/tf9/internal/git"
+	"github.com/andres/tf9/internal/report"
 )
 
 // safeJoin ensures the resolved path stays within root. Returns an error if unsafe.
@@ -40,8 +42,21 @@ func safeJoin(root, sub string) (string, error) {
 // Handler returns an http.Handler for all /api/* routes.
 func Handler(mgr *RunManager, reportDir string) http.Handler {
 	mux := http.NewServeMux()
+	chatManager := newWorkspaceChatManager()
 
 	// Runs
+	mux.HandleFunc("/api/web/settings", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+		cfg, err := config.Load()
+		if err != nil {
+			jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+			return
+		}
+		jsonOK(w, map[string]bool{"savedPlanApply": cfg.Web.SavedPlanApply})
+	})
 	mux.HandleFunc("/api/runs", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -98,7 +113,7 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 		}
 		if sub == "workspace" || strings.HasPrefix(sub, "workspace/") {
 			action := strings.TrimPrefix(sub, "workspace")
-			handleRepoWorkspace(w, r, name, strings.TrimPrefix(action, "/"))
+			handleRepoWorkspace(w, r, name, strings.TrimPrefix(action, "/"), chatManager)
 			return
 		}
 		switch sub {
@@ -408,6 +423,58 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 		methodNotAllowed(w)
 	})
 
+	// Infracost cost-estimation settings (token never returned to the client).
+	mux.HandleFunc("/api/infracost/settings", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			getInfracostSettings(w, r)
+		case http.MethodPut:
+			putInfracostSettings(w, r)
+		default:
+			methodNotAllowed(w)
+		}
+	})
+
+	// Aggregate cost data across saved reports for the Cost dashboard.
+	mux.HandleFunc("/api/cost/summary", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+		costSummary(w, r, reportDir)
+	})
+
+	// Infracost breakdown scans across configured repo targets (Breakdown/Diff
+	// dashboards). POST runs a new scan; GET returns the latest scan + diff.
+	mux.HandleFunc("/api/cost/scan", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			runCostScan(w, r)
+		case http.MethodGet:
+			getCostScan(w, r)
+		default:
+			methodNotAllowed(w)
+		}
+	})
+
+	// Saved scan history (timestamps + totals) for the trend chart.
+	mux.HandleFunc("/api/cost/scans", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+		listCostScans(w, r)
+	})
+
+	// Shareable cost report download: ?format=html|text from the latest scan.
+	mux.HandleFunc("/api/cost/report", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			methodNotAllowed(w)
+			return
+		}
+		downloadCostReport(w, r)
+	})
+
 	// Application logs — recent lines + current level.
 	mux.HandleFunc("/api/logs", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -633,6 +700,24 @@ func startRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, reportDir
 		jsonErr(w, "bad_request", "command is required", http.StatusBadRequest)
 		return
 	}
+	cfg, err := config.Load()
+	if err != nil {
+		jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if cfg.Web.SavedPlanApply {
+		if req.Command == "auto" {
+			jsonErr(w, "bad_request", "auto is disabled while web.saved_plan_apply is enabled; run and review a plan first", http.StatusBadRequest)
+			return
+		}
+		if req.Command == "apply" {
+			req, err = mgr.PrepareReviewedApply(req)
+			if err != nil {
+				jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+	}
 
 	searchRoot, repoLabel, err := resolveSearchRoot(req.Repo)
 	if err != nil {
@@ -680,19 +765,20 @@ func resolveTargetDirs(req RunRequest) []string {
 
 func listRuns(w http.ResponseWriter, r *http.Request, mgr *RunManager) {
 	type runSummary struct {
-		ID         string     `json:"id"`
-		Status     RunStatus  `json:"status"`
-		Command    string     `json:"command"`
-		EnvFilter  string     `json:"envFilter"`
-		Repo       string     `json:"repo"`
-		GitBranch  string     `json:"gitBranch,omitempty"`
-		StartedAt  time.Time  `json:"startedAt"`
-		FinishedAt *time.Time `json:"finishedAt,omitempty"`
-		TargetDirs []string   `json:"targetDirs"`
-		Request    RunRequest `json:"request"`
-		Add        int        `json:"add"`
-		Change     int        `json:"change"`
-		Destroy    int        `json:"destroy"`
+		ID             string     `json:"id"`
+		Status         RunStatus  `json:"status"`
+		Command        string     `json:"command"`
+		EnvFilter      string     `json:"envFilter"`
+		Repo           string     `json:"repo"`
+		GitBranch      string     `json:"gitBranch,omitempty"`
+		StartedAt      time.Time  `json:"startedAt"`
+		FinishedAt     *time.Time `json:"finishedAt,omitempty"`
+		TargetDirs     []string   `json:"targetDirs"`
+		Request        RunRequest `json:"request"`
+		Add            int        `json:"add"`
+		Change         int        `json:"change"`
+		Destroy        int        `json:"destroy"`
+		SavedPlanReady bool       `json:"savedPlanReady,omitempty"`
 	}
 	page, limit := parsePage(r)
 	runs, total := mgr.List(page, limit)
@@ -706,19 +792,20 @@ func listRuns(w http.ResponseWriter, r *http.Request, mgr *RunManager) {
 			destroy += res.Destroy
 		}
 		out[i] = runSummary{
-			ID:         run.ID,
-			Status:     run.Status,
-			Command:    run.Request.Command,
-			EnvFilter:  run.Request.EnvFilter,
-			Repo:       run.Request.Repo,
-			GitBranch:  run.GitBranch,
-			StartedAt:  run.StartedAt,
-			FinishedAt: run.FinishedAt,
-			TargetDirs: resolveTargetDirs(run.Request),
-			Request:    run.Request,
-			Add:        add,
-			Change:     change,
-			Destroy:    destroy,
+			ID:             run.ID,
+			Status:         run.Status,
+			Command:        run.Request.Command,
+			EnvFilter:      run.Request.EnvFilter,
+			Repo:           run.Request.Repo,
+			GitBranch:      run.GitBranch,
+			StartedAt:      run.StartedAt,
+			FinishedAt:     run.FinishedAt,
+			TargetDirs:     resolveTargetDirs(run.Request),
+			Request:        run.Request,
+			Add:            add,
+			Change:         change,
+			Destroy:        destroy,
+			SavedPlanReady: run.SavedPlanReady,
 		}
 		run.mu.RUnlock()
 	}
@@ -733,27 +820,29 @@ func getRun(w http.ResponseWriter, _ *http.Request, mgr *RunManager, id string) 
 	}
 	run.mu.RLock()
 	resp := struct {
-		ID         string             `json:"id"`
-		StartedAt  time.Time          `json:"startedAt"`
-		FinishedAt *time.Time         `json:"finishedAt,omitempty"`
-		Status     RunStatus          `json:"status"`
-		Request    RunRequest         `json:"request"`
-		ReportPath string             `json:"reportPath,omitempty"`
-		Results    []report.EnvResult `json:"results,omitempty"`
-		GitBranch  string             `json:"gitBranch,omitempty"`
-		TargetDirs []string           `json:"targetDirs"`
-		Lines      []string           `json:"lines"`
+		ID             string             `json:"id"`
+		StartedAt      time.Time          `json:"startedAt"`
+		FinishedAt     *time.Time         `json:"finishedAt,omitempty"`
+		Status         RunStatus          `json:"status"`
+		Request        RunRequest         `json:"request"`
+		ReportPath     string             `json:"reportPath,omitempty"`
+		Results        []report.EnvResult `json:"results,omitempty"`
+		GitBranch      string             `json:"gitBranch,omitempty"`
+		TargetDirs     []string           `json:"targetDirs"`
+		Lines          []string           `json:"lines"`
+		SavedPlanReady bool               `json:"savedPlanReady,omitempty"`
 	}{
-		ID:         run.ID,
-		StartedAt:  run.StartedAt,
-		FinishedAt: run.FinishedAt,
-		Status:     run.Status,
-		Request:    run.Request,
-		ReportPath: run.ReportPath,
-		Results:    run.Results,
-		GitBranch:  run.GitBranch,
-		TargetDirs: resolveTargetDirs(run.Request),
-		Lines:      run.lines,
+		ID:             run.ID,
+		StartedAt:      run.StartedAt,
+		FinishedAt:     run.FinishedAt,
+		Status:         run.Status,
+		Request:        run.Request,
+		ReportPath:     run.ReportPath,
+		Results:        run.Results,
+		GitBranch:      run.GitBranch,
+		TargetDirs:     resolveTargetDirs(run.Request),
+		Lines:          run.lines,
+		SavedPlanReady: run.SavedPlanReady,
 	}
 	run.mu.RUnlock()
 	jsonOK(w, resp)
@@ -1024,20 +1113,24 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 		return
 	}
 	type entry struct {
-		Name    string    `json:"name"`
-		Command string    `json:"command"`
-		RunAt   time.Time `json:"runAt"`
-		SizeKB  int64     `json:"sizeKb"`
-		IsLive  bool      `json:"isLive"`
-		Add     int       `json:"add"`
-		Change  int       `json:"change"`
-		Destroy int       `json:"destroy"`
-		Envs    int       `json:"envs"`
-		Failed  int       `json:"failed"`
+		Name         string    `json:"name"`
+		Command      string    `json:"command"`
+		RunAt        time.Time `json:"runAt"`
+		SizeKB       int64     `json:"sizeKb"`
+		IsLive       bool      `json:"isLive"`
+		Add          int       `json:"add"`
+		Change       int       `json:"change"`
+		Destroy      int       `json:"destroy"`
+		Envs         int       `json:"envs"`
+		Failed       int       `json:"failed"`
+		HasCost      bool      `json:"hasCost,omitempty"`
+		Currency     string    `json:"currency,omitempty"`
+		TotalMonthly float64   `json:"totalMonthly,omitempty"`
+		DiffMonthly  float64   `json:"diffMonthly,omitempty"`
 	}
 	out := make([]entry, 0, len(entries))
 	for _, e := range entries {
-		if e.IsDir() || !strings.HasPrefix(e.Name(), "tfops-") || !strings.HasSuffix(e.Name(), ".html") {
+		if e.IsDir() || !strings.HasPrefix(e.Name(), "tf9-") || !strings.HasSuffix(e.Name(), ".html") {
 			continue
 		}
 		info, _ := e.Info()
@@ -1059,6 +1152,10 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 				en.Destroy = sum.Destroy
 				en.Envs = sum.Envs
 				en.Failed = sum.Failed
+				en.HasCost = sum.HasCost
+				en.Currency = sum.Currency
+				en.TotalMonthly = sum.TotalMonthly
+				en.DiffMonthly = sum.DiffMonthly
 			}
 		}
 		out = append(out, en)
@@ -1072,9 +1169,293 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 	jsonOK(w, paginated{Items: items, Page: page, Limit: limit, Total: total})
 }
 
+// getInfracostSettings returns the Infracost settings without exposing the key.
+func getInfracostSettings(w http.ResponseWriter, _ *http.Request) {
+	cfg, err := config.LoadInfracost()
+	if err != nil {
+		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	jsonOK(w, struct {
+		EnabledByDefault bool   `json:"enabledByDefault"`
+		Currency         string `json:"currency"`
+		TokenConfigured  bool   `json:"tokenConfigured"`
+	}{
+		EnabledByDefault: cfg.EnabledByDefault,
+		Currency:         cfg.Currency,
+		TokenConfigured:  strings.TrimSpace(cfg.APIKey) != "",
+	})
+}
+
+// putInfracostSettings saves the Infracost settings. An empty/absent token field
+// leaves the stored token unchanged; sending "" with clearToken removes it.
+func putInfracostSettings(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Token            *string `json:"token"`
+		EnabledByDefault bool    `json:"enabledByDefault"`
+		Currency         string  `json:"currency"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonErr(w, "bad_request", "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	cfg, err := config.LoadInfracost()
+	if err != nil {
+		slog.Warn("could not load infracost settings", "err", err)
+	}
+	cfg.EnabledByDefault = body.EnabledByDefault
+	if strings.TrimSpace(body.Currency) != "" {
+		cfg.Currency = strings.TrimSpace(body.Currency)
+	}
+	// Only overwrite the token when the caller explicitly provides the field.
+	if body.Token != nil {
+		cfg.APIKey = strings.TrimSpace(*body.Token)
+	}
+	if err := config.SaveInfracost(cfg); err != nil {
+		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	getInfracostSettings(w, r)
+}
+
+// costSummary aggregates cost data from saved apply reports for the Cost
+// dashboard. Only `apply` runs are included — they reflect the cost of what is
+// actually deployed, whereas plans are speculative.
+func costSummary(w http.ResponseWriter, r *http.Request, reportDir string) {
+	entries, err := os.ReadDir(reportDir)
+	if err != nil {
+		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	type item struct {
+		Report        string    `json:"report"`
+		RunAt         time.Time `json:"runAt"`
+		Currency      string    `json:"currency"`
+		TotalMonthly  float64   `json:"totalMonthly"`
+		ResourceCount int       `json:"resourceCount"`
+	}
+	type resourceRow struct {
+		Name        string  `json:"name"`
+		Type        string  `json:"type"`
+		MonthlyCost float64 `json:"monthlyCost"`
+	}
+	type serviceRow struct {
+		Type        string  `json:"type"`
+		Count       int     `json:"count"`
+		MonthlyCost float64 `json:"monthlyCost"`
+	}
+	type detail struct {
+		Report        string        `json:"report"`
+		RunAt         time.Time     `json:"runAt"`
+		Currency      string        `json:"currency"`
+		TotalMonthly  float64       `json:"totalMonthly"`
+		ResourceCount int           `json:"resourceCount"`
+		Resources     []resourceRow `json:"resources"`
+		ByService     []serviceRow  `json:"byService"`
+	}
+
+	items := make([]item, 0, len(entries))
+	var newest *report.Summary
+	var newestName string
+	var newestAt time.Time
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasPrefix(e.Name(), "tf9-") || !strings.HasSuffix(e.Name(), ".html") {
+			continue
+		}
+		cmd, runAt, isLive := report.ParseReportName(e.Name())
+		if cmd != "apply" || isLive {
+			continue
+		}
+		jsonPath := filepath.Join(reportDir, strings.TrimSuffix(e.Name(), ".html")+".json")
+		b, rerr := os.ReadFile(jsonPath)
+		if rerr != nil {
+			continue
+		}
+		var sum report.Summary
+		if json.Unmarshal(b, &sum) != nil || !sum.HasCost {
+			continue
+		}
+		items = append(items, item{
+			Report:        e.Name(),
+			RunAt:         runAt,
+			Currency:      sum.Currency,
+			TotalMonthly:  sum.TotalMonthly,
+			ResourceCount: sum.ResourceCount,
+		})
+		if newest == nil || runAt.After(newestAt) {
+			s := sum
+			newest = &s
+			newestName = e.Name()
+			newestAt = runAt
+		}
+	}
+	// Newest first for the time-series / table.
+	sort.Slice(items, func(i, j int) bool { return items[i].RunAt.After(items[j].RunAt) })
+
+	// Build the detail view from the most recent apply: a flat resource list plus
+	// a per-type ("by service") rollup for monitoring where cost concentrates.
+	var det *detail
+	if newest != nil {
+		d := detail{
+			Report:        newestName,
+			RunAt:         newestAt,
+			Currency:      newest.Currency,
+			TotalMonthly:  newest.TotalMonthly,
+			ResourceCount: newest.ResourceCount,
+			Resources:     []resourceRow{},
+			ByService:     []serviceRow{},
+		}
+		svc := map[string]*serviceRow{}
+		for _, res := range newest.Results {
+			if res.Cost == nil {
+				continue
+			}
+			for _, rr := range res.Cost.Resources {
+				d.Resources = append(d.Resources, resourceRow{Name: rr.Name, Type: rr.Type, MonthlyCost: rr.MonthlyCost})
+				s := svc[rr.Type]
+				if s == nil {
+					s = &serviceRow{Type: rr.Type}
+					svc[rr.Type] = s
+				}
+				s.Count++
+				s.MonthlyCost += rr.MonthlyCost
+			}
+		}
+		sort.Slice(d.Resources, func(i, j int) bool { return d.Resources[i].MonthlyCost > d.Resources[j].MonthlyCost })
+		for _, s := range svc {
+			d.ByService = append(d.ByService, *s)
+		}
+		sort.Slice(d.ByService, func(i, j int) bool { return d.ByService[i].MonthlyCost > d.ByService[j].MonthlyCost })
+		det = &d
+	}
+
+	jsonOK(w, struct {
+		Items  []item  `json:"items"`
+		Latest *detail `json:"latest"`
+	}{Items: items, Latest: det})
+}
+
+// resolveInfracost returns the API key + currency, or an error suitable for a
+// 400 when no key is configured.
+func resolveInfracost() (key, currency string, err error) {
+	ic, lerr := config.LoadInfracost()
+	if lerr != nil {
+		slog.Warn("could not load infracost settings", "err", lerr)
+	}
+	if strings.TrimSpace(ic.APIKey) == "" {
+		return "", "", fmt.Errorf("no Infracost API key configured — set one on the Cost page")
+	}
+	return ic.APIKey, ic.Currency, nil
+}
+
+// runCostScan runs an Infracost breakdown across all configured repo targets,
+// saves it, and returns the new scan plus a diff against the previous scan.
+func runCostScan(w http.ResponseWriter, r *http.Request) {
+	key, currency, err := resolveInfracost()
+	if err != nil {
+		jsonErr(w, "no_api_key", err.Error(), http.StatusBadRequest)
+		return
+	}
+	cfg, err := config.Load()
+	if err != nil {
+		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Breakdown calls the Infracost pricing API per resource; allow generous time.
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Minute)
+	defer cancel()
+
+	prevLatest, _ := cost.LoadLatestTwo()
+	scan, err := cost.RunBreakdown(ctx, cfg, key, currency)
+	if err != nil {
+		jsonErr(w, "scan_failed", err.Error(), http.StatusBadGateway)
+		return
+	}
+	if err := cost.SaveScan(scan); err != nil {
+		slog.Warn("could not save cost scan", "err", err)
+	}
+	jsonOK(w, struct {
+		Scan *cost.Scan     `json:"scan"`
+		Diff *cost.ScanDiff `json:"diff"`
+	}{Scan: scan, Diff: cost.Diff(scan, prevLatest)})
+}
+
+// getCostScan returns the latest saved scan and its diff against the prior scan.
+func getCostScan(w http.ResponseWriter, _ *http.Request) {
+	latest, prev := cost.LoadLatestTwo()
+	if latest == nil {
+		jsonOK(w, struct {
+			Scan *cost.Scan     `json:"scan"`
+			Diff *cost.ScanDiff `json:"diff"`
+		}{Scan: nil, Diff: nil})
+		return
+	}
+	jsonOK(w, struct {
+		Scan *cost.Scan     `json:"scan"`
+		Diff *cost.ScanDiff `json:"diff"`
+	}{Scan: latest, Diff: cost.Diff(latest, prev)})
+}
+
+// listCostScans returns saved scan timestamps + totals for the trend chart.
+func listCostScans(w http.ResponseWriter, _ *http.Request) {
+	names, err := cost.ListScanFiles()
+	if err != nil {
+		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	type item struct {
+		RunAt        time.Time `json:"runAt"`
+		Currency     string    `json:"currency"`
+		TotalMonthly float64   `json:"totalMonthly"`
+		Targets      int       `json:"targets"`
+	}
+	items := make([]item, 0, len(names))
+	for _, n := range names {
+		s, lerr := cost.LoadScan(n)
+		if lerr != nil {
+			continue
+		}
+		items = append(items, item{RunAt: s.RunAt, Currency: s.Currency, TotalMonthly: s.TotalMonthly, Targets: len(s.Targets)})
+	}
+	jsonOK(w, struct {
+		Items []item `json:"items"`
+	}{Items: items})
+}
+
+// downloadCostReport streams a shareable HTML or text cost report built from the
+// latest scan.
+func downloadCostReport(w http.ResponseWriter, r *http.Request) {
+	latest, prev := cost.LoadLatestTwo()
+	if latest == nil {
+		jsonErr(w, "not_found", "no cost scan available — run a breakdown first", http.StatusNotFound)
+		return
+	}
+	diff := cost.Diff(latest, prev)
+	stamp := latest.RunAt.UTC().Format("20060102-150405")
+	switch r.URL.Query().Get("format") {
+	case "text", "txt":
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="cost-report-%s.txt"`, stamp))
+		if _, err := w.Write([]byte(cost.TextReport(latest, diff))); err != nil {
+			slog.Debug("write text cost report failed", "err", err)
+		}
+	default: // html
+		html, err := cost.HTMLReport(latest, diff)
+		if err != nil {
+			jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="cost-report-%s.html"`, stamp))
+		if _, err := w.Write(html); err != nil {
+			slog.Debug("write html cost report failed", "err", err)
+		}
+	}
+}
+
 // deleteReport removes a report HTML file and its JSON sidecar.
 func getReportData(w http.ResponseWriter, _ *http.Request, reportDir, name string) {
-	if !strings.HasPrefix(name, "tfops-") || !strings.HasSuffix(name, ".html") {
+	if !strings.HasPrefix(name, "tf9-") || !strings.HasSuffix(name, ".html") {
 		jsonErr(w, "bad_request", "invalid report name", http.StatusBadRequest)
 		return
 	}
@@ -1115,7 +1496,7 @@ func deleteReport(w http.ResponseWriter, r *http.Request, reportDir string) {
 		jsonErr(w, "bad_request", "name is required", http.StatusBadRequest)
 		return
 	}
-	if !strings.HasPrefix(name, "tfops-") || !strings.HasSuffix(name, ".html") {
+	if !strings.HasPrefix(name, "tf9-") || !strings.HasSuffix(name, ".html") {
 		jsonErr(w, "bad_request", "invalid report name", http.StatusBadRequest)
 		return
 	}
@@ -1141,7 +1522,7 @@ func deleteReport(w http.ResponseWriter, r *http.Request, reportDir string) {
 }
 
 func downloadReport(w http.ResponseWriter, _ *http.Request, reportDir, name string) {
-	if !strings.HasPrefix(name, "tfops-") || !strings.HasSuffix(name, ".html") {
+	if !strings.HasPrefix(name, "tf9-") || !strings.HasSuffix(name, ".html") {
 		jsonErr(w, "bad_request", "invalid report name", http.StatusBadRequest)
 		return
 	}

@@ -23,7 +23,7 @@
   };
 
   var SAMPLE = [
-    "# tfops configuration — ~/.config/tfops/config.yaml",
+    "# tf9 configuration — ~/.config/tf9/config.yaml",
     "# Stores AWS profile names, account IDs and regions. Never credentials.",
     "version: 1",
     "",

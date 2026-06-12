@@ -24,7 +24,7 @@
   document.head.appendChild(style);
 
   /* ---- persistence ------------------------------------------------------- */
-  var KEY = "tfops-sts-auth";
+  var KEY = "tf9-sts-auth";
   function getAuth() {
     try { var v = localStorage.getItem(KEY); return v === null ? true : v === "true"; }
     catch (e) { return true; }

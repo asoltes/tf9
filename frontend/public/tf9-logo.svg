@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 142 40" role="img" aria-labelledby="title">
+  <title id="title">tf9</title>
+  <g transform="translate(2 1) scale(.594)">
+    <path fill="#7c5cff" d="M31 5 54 18v30L42 55V25L19 12z"/>
+    <path fill="#5b3fd6" d="m17 14 12 7-9 5v22L9 42V20z"/>
+    <path fill="#241b55" d="m23 32 16 9v14l-16-9z"/>
+    <path fill="#a994ff" d="m23 32 16 9 4-3-16-9z"/>
+  </g>
+  <text x="44" y="29" fill="#fff" font-family="Inter, Open Sans, Arial, sans-serif" font-size="27" font-weight="800" letter-spacing="-1.5">tf<tspan fill="#9b83ff">9</tspan></text>
+</svg>

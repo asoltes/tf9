@@ -1,7 +1,7 @@
-# tfops UI Redesign — Design Spec
+# tf9 UI Redesign — Design Spec
 
 **Date:** 2026-06-07  
-**Source:** `design_handoff_tfops/` (inside `platform-companion.zip`)  
+**Source:** `design_handoff_tf9/` (inside `platform-companion.zip`)  
 **Approach:** Option A — frontend-first with dual-format SSE detection, backend structured SSE as follow-on.
 
 ---
@@ -20,7 +20,7 @@ Implement the high-fidelity design handoff into the existing React + Cloudscape 
 8. Reports page redesign (filter chips, cards view, list view)
 9. Toast notification system
 10. macOS traffic light dots + copy/download in fullscreen terminal
-11. Single `tfops.css` custom token file
+11. Single `tf9.css` custom token file
 
 ---
 
@@ -36,7 +36,7 @@ Implement the high-fidelity design handoff into the existing React + Cloudscape 
 
 ### New files
 ```
-frontend/src/tfops.css                    Custom tokens + terminal/pipeline/toast CSS
+frontend/src/tf9.css                    Custom tokens + terminal/pipeline/toast CSS
 frontend/src/components/StsAuthBadge.tsx  Topnav STS pill (checking/ok/fail)
 frontend/src/components/ToastContainer.tsx Slide-up toast system + useToast context
 frontend/src/components/TerminalCard.tsx  Shared terminal card (header + pre body)
@@ -44,12 +44,12 @@ frontend/src/components/FullscreenTerminal.tsx  Full-page overlay with copy/down
 frontend/src/components/PipelineView.tsx  Horizontal swim-lane group view
 frontend/src/components/PipelineTableView.tsx Sortable table view
 frontend/src/components/StageEditModal.tsx Edit modal with group override
-frontend/src/hooks/useRepoOverrides.ts    localStorage tfops-repo-overrides CRUD hook
+frontend/src/hooks/useRepoOverrides.ts    localStorage tf9-repo-overrides CRUD hook
 ```
 
 ### Modified files
 ```
-frontend/src/main.tsx                     Import tfops.css
+frontend/src/main.tsx                     Import tf9.css
 frontend/src/App.tsx                      Add StsAuthBadge to TopNavigation utilities
 frontend/src/types.ts                     Add RunTarget, TargetStatus, LocalOverrides types
 frontend/src/pages/Runs.tsx               Add Mode column, pulsing running-row dot
@@ -64,7 +64,7 @@ frontend/src/components/NewRunModal.tsx   Full replacement — two-col + CLI pre
 
 ## CSS Strategy
 
-**`frontend/src/tfops.css`** is imported once in `main.tsx`. It defines:
+**`frontend/src/tf9.css`** is imported once in `main.tsx`. It defines:
 
 ```css
 /* Terminal card tokens — light mode */
@@ -99,7 +99,7 @@ frontend/src/components/NewRunModal.tsx   Full replacement — two-col + CLI pre
 /* Pulsing dot animation */
 ```
 
-Cloudscape's own dark/light theming is already handled by `applyMode()` in `App.tsx`. We hook `tfops.css` onto Cloudscape's `data-mode` attribute (which Cloudscape sets on `<html>`) rather than a separate `data-theme` attribute.
+Cloudscape's own dark/light theming is already handled by `applyMode()` in `App.tsx`. We hook `tf9.css` onto Cloudscape's `data-mode` attribute (which Cloudscape sets on `<html>`) rather than a separate `data-theme` attribute.
 
 ---
 
@@ -109,7 +109,7 @@ Cloudscape's own dark/light theming is already handled by `applyMode()` in `App.
 
 ```
 States: checking | ok | fail
-Storage: localStorage['tfops-sts-auth'] → persists last known state
+Storage: localStorage['tf9-sts-auth'] → persists last known state
 On mount:
   1. Read localStorage → show that state immediately (no flash)
   2. After 900ms: call GET /api/aws/profiles
@@ -239,7 +239,7 @@ Command behavior:
   plan/init/validate → all options available
 
 Submission: same API as current (POST /api/runs), lockIds passed in extraArgs as --lock-id=dev:abc123
-localStorage filter: on open, read tfops-repo-overrides, filter disabled=true targets before rendering
+localStorage filter: on open, read tf9-repo-overrides, filter disabled=true targets before rendering
 ```
 
 ### `PipelineView`
@@ -247,7 +247,7 @@ localStorage filter: on open, read tfops-repo-overrides, filter disabled=true ta
 ```
 Data source:
   Server: RepoConfig.targets[] (canonical order + profile/region/account)
-  localStorage: tfops-repo-overrides[`${repo}:${target.name}`] → { disabled, group }
+  localStorage: tf9-repo-overrides[`${repo}:${target.name}`] → { disabled, group }
   Effective group = localStorage.group || first segment of target.directory (e.g. "environments/dev" → group "environments")
   Note: the current toGroupRows() uses the *last* segment — this is a behavior change to match the design spec.
 
@@ -306,7 +306,7 @@ type TargetKey = string; // `${repoName}:${targetName}`
 interface TargetOverride { disabled: boolean; group: string; }
 type Overrides = Record<TargetKey, TargetOverride>;
 
-const STORAGE_KEY = 'tfops-repo-overrides';
+const STORAGE_KEY = 'tf9-repo-overrides';
 
 // Returns [overrides, setOverride, isDisabled, getGroup]
 // setOverride(key, patch) merges patch into stored overrides + triggers re-render
@@ -385,7 +385,7 @@ When the Go backend is updated to emit structured SSE:
 | Progress bar running segment | `@keyframes shimmer` background-position animation |
 | Toast slide-up | `translateY(20px)` → `translateY(0)`, 200ms ease-out |
 | Stage card drag | @dnd-kit horizontal strategy, ghost clone + placeholder |
-| Theme toggle | Cloudscape `applyMode()` sets `data-mode` on `<html>`; tfops.css responds to it |
+| Theme toggle | Cloudscape `applyMode()` sets `data-mode` on `<html>`; tf9.css responds to it |
 | localStorage writes | Synchronous in event handlers; no debounce needed (small data) |
 
 ---

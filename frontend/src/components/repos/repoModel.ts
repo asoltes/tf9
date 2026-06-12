@@ -1,6 +1,6 @@
 /**
  * Pipeline grouping + reorder helpers for the Repositories page, ported from
- * design_handoff_tfops/repos/app.js. Targets are grouped by their top-level
+ * design_handoff_tf9/repos/app.js. Targets are grouped by their top-level
  * directory (or explicit `group` override); reordering rewrites the flat
  * targets array in place so each group keeps occupying the same global slots —
  * matching the prototype's promotion-order semantics exactly.

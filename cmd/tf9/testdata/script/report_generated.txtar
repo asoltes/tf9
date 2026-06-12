@@ -1,0 +1,15 @@
+# HTML report generation is on by default and suppressed by --no-report.
+
+cd repo
+
+exec tf9 plan --report-dir $WORK/reports
+stdout 'Report saved'
+
+exec tf9 plan --no-report --report-dir $WORK/reports2
+! stdout 'Report saved'
+! exists $WORK/reports2
+
+-- repo/main.tf --
+resource "terraform_data" "demo" {
+  input = "report"
+}

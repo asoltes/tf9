@@ -1,4 +1,7 @@
-import type { GitCommit, Identity, LogLevel, LogsResponse, WorkspaceEntry, WorkspaceFile } from './types';
+import type {
+  CostScanHistoryItem, CostScanResult, CostSummary, GitCommit, Identity, InfracostSettings,
+  LogLevel, LogsResponse, WorkspaceChatMode, WorkspaceChatState, WorkspaceEntry, WorkspaceFile,
+} from './types';
 
 export class ApiError extends Error {
   constructor(message: string, public status: number, public code?: string) {
@@ -84,6 +87,20 @@ export const reportsApi = {
   rawUrl: (name: string) => `/api/reports/${encodeURIComponent(name)}/raw`,
 };
 
+// ── Infracost cost estimation ─────────────────────────────────────
+
+export const costApi = {
+  settings: () => api.get<InfracostSettings>('/api/infracost/settings'),
+  saveSettings: (body: { token?: string | null; enabledByDefault: boolean; currency: string }) =>
+    api.put<InfracostSettings>('/api/infracost/settings', body),
+  summary: () => api.get<CostSummary>('/api/cost/summary'),
+  // Breakdown scans across configured repo targets.
+  runScan: () => api.post<CostScanResult>('/api/cost/scan', {}),
+  getScan: () => api.get<CostScanResult>('/api/cost/scan'),
+  scanHistory: () => api.get<{ items: CostScanHistoryItem[] }>('/api/cost/scans'),
+  reportUrl: (format: 'html' | 'text') => `/api/cost/report?format=${format}`,
+};
+
 // ── Repo git operations ───────────────────────────────────────────
 
 export const repoGit = {
@@ -92,9 +109,9 @@ export const repoGit = {
   commits:    (name: string, base: string, head: string) =>
     api.get<GitCommit[]>(`/api/repos/${encodeURIComponent(name)}/commits?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`),
   rebase:     (name: string, baseBranch: string)      =>
-    api.post<void>(`/api/repos/${encodeURIComponent(name)}/rebase`, { baseBranch }),
+    api.post<{ output?: string; error?: string }>(`/api/repos/${encodeURIComponent(name)}/rebase`, { baseBranch }),
   cherryPick: (name: string, commits: string[])       =>
-    api.post<void>(`/api/repos/${encodeURIComponent(name)}/cherry-pick`, { commits }),
+    api.post<{ output?: string; error?: string }>(`/api/repos/${encodeURIComponent(name)}/cherry-pick`, { commits }),
   merge:      (name: string, branchName: string)       =>
     api.post<void>(`/api/repos/${encodeURIComponent(name)}/merge`, { branchName }),
   status:     (name: string)                           =>
@@ -137,4 +154,28 @@ export const workspaceApi = {
     const query = path ? `?path=${encodeURIComponent(path)}` : '';
     return `${protocol}//${window.location.host}/api/repos/${encodeURIComponent(name)}/workspace/terminal${query}`;
   },
+};
+
+export const workspaceChatApi = {
+  state: (name: string) =>
+    api.get<WorkspaceChatState>(`/api/repos/${encodeURIComponent(name)}/workspace/chat`),
+  send: (name: string, message: string) =>
+    api.post<{ turnId: string }>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/chat/message`,
+      { message },
+    ),
+  setMode: (name: string, mode: WorkspaceChatMode) =>
+    api.put<{ mode: WorkspaceChatMode }>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/chat/mode`,
+      { mode },
+    ),
+  cancel: (name: string) =>
+    api.post<{ status: string }>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/chat/cancel`,
+      {},
+    ),
+  reset: (name: string) =>
+    api.delete<{ ok: boolean }>(`/api/repos/${encodeURIComponent(name)}/workspace/chat/reset`),
+  streamUrl: (name: string, turnId: string) =>
+    `/api/repos/${encodeURIComponent(name)}/workspace/chat/stream?turnId=${encodeURIComponent(turnId)}`,
 };

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture screenshots of the tfops web UI for the README."""
+"""Capture screenshots of the tf9 web UI for the README."""
 
 import os
 import sys

@@ -258,18 +258,42 @@ type Summary struct {
 	Envs      int         `json:"envs"`
 	Failed    int         `json:"failed"`
 	Results   []EnvResult `json:"results,omitempty"`
+	// Cost totals across environments (present only when cost estimation ran).
+	Currency      string  `json:"currency,omitempty"`
+	TotalMonthly  float64 `json:"totalMonthly,omitempty"`
+	DiffMonthly   float64 `json:"diffMonthly,omitempty"`
+	ResourceCount int     `json:"resourceCount,omitempty"`
+	HasCost       bool    `json:"hasCost,omitempty"`
+}
+
+// CostEstimate holds Infracost cost data for a single environment.
+type CostEstimate struct {
+	Currency      string         `json:"currency"`
+	TotalMonthly  float64        `json:"totalMonthly"`
+	DiffMonthly   float64        `json:"diffMonthly"` // 0 for apply / directory breakdown
+	HasDiff       bool           `json:"hasDiff"`
+	ResourceCount int            `json:"resourceCount"`
+	Resources     []CostResource `json:"resources,omitempty"`
+}
+
+// CostResource is a single priced resource from an Infracost breakdown.
+type CostResource struct {
+	Name        string  `json:"name"` // terraform address, e.g. aws_instance.web
+	Type        string  `json:"type"` // resource type, e.g. aws_instance
+	MonthlyCost float64 `json:"monthlyCost"`
 }
 
 // EnvResult holds the plan outcome for a single environment.
 type EnvResult struct {
-	Env       string `json:"env"`
-	Profile   string `json:"profile"`
-	Failed    bool   `json:"failed"`
-	NoChanges bool   `json:"noChanges"`
-	Add       int    `json:"add"`
-	Change    int    `json:"change"`
-	Destroy   int    `json:"destroy"`
-	Output    string `json:"output"` // plain-text plan output (ANSI stripped)
+	Env       string        `json:"env"`
+	Profile   string        `json:"profile"`
+	Failed    bool          `json:"failed"`
+	NoChanges bool          `json:"noChanges"`
+	Add       int           `json:"add"`
+	Change    int           `json:"change"`
+	Destroy   int           `json:"destroy"`
+	Output    string        `json:"output"` // plain-text plan output (ANSI stripped)
+	Cost      *CostEstimate `json:"cost,omitempty"`
 }
 
 // Options carries report metadata.
@@ -278,7 +302,7 @@ type Options struct {
 	RepoLabel string
 	RunAt     time.Time
 	OutputDir string
-	// Filename overrides the default timestamped name (e.g. "tfops-plan-live.html").
+	// Filename overrides the default timestamped name (e.g. "tf9-plan-live.html").
 	Filename string
 	// IsLive injects an SSE client script so the browser auto-reloads when the file changes.
 	IsLive bool
@@ -295,10 +319,13 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 		if cmd == "" {
 			cmd = "run"
 		}
-		filename = fmt.Sprintf("tfops-%s-%s.html", cmd, opts.RunAt.Format("20060102-150405"))
+		filename = fmt.Sprintf("tf9-%s-%s.html", cmd, opts.RunAt.Format("20060102-150405"))
 	}
 	path := filepath.Join(opts.OutputDir, filename)
 
+	if err := os.MkdirAll(opts.OutputDir, 0o755); err != nil {
+		return "", fmt.Errorf("create report dir: %w", err)
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return "", fmt.Errorf("create report: %w", err)
@@ -306,10 +333,21 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 	defer f.Close()
 
 	totalAdd, totalChange, totalDestroy := 0, 0, 0
+	var totalMonthly, diffMonthly float64
+	resourceCount := 0
+	hasCost := false
+	currency := "USD"
 	for _, r := range results {
 		totalAdd += r.Add
 		totalChange += r.Change
 		totalDestroy += r.Destroy
+		if r.Cost != nil {
+			hasCost = true
+			currency = r.Cost.Currency
+			totalMonthly += r.Cost.TotalMonthly
+			diffMonthly += r.Cost.DiffMonthly
+			resourceCount += r.Cost.ResourceCount
+		}
 	}
 
 	funcs := template.FuncMap{
@@ -319,6 +357,13 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 		"changesTable": changesTable,
 		"fmtTime":      func(t time.Time) string { return t.UTC().Format("2006-01-02 15:04:05 UTC") },
 		"gt":           func(a, b int) bool { return a > b },
+		"money":        func(v float64) string { return fmt.Sprintf("%.2f", v) },
+		"signedMoney": func(v float64) string {
+			if v >= 0 {
+				return fmt.Sprintf("+%.2f", v)
+			}
+			return fmt.Sprintf("%.2f", v)
+		},
 		"ucfirst": func(s string) string {
 			if s == "" {
 				return s
@@ -336,9 +381,14 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 		Results                             []EnvResult
 		TotalAdd, TotalChange, TotalDestroy int
 		IsPlan                              bool
+		HasCost                             bool
+		Currency                            string
+		TotalMonthly, DiffMonthly           float64
+		ResourceCount                       int
+		AnnualCost                          float64
 	}
 	isPlan := opts.Command == "plan"
-	if err := tmpl.Execute(f, data{opts, results, totalAdd, totalChange, totalDestroy, isPlan}); err != nil {
+	if err := tmpl.Execute(f, data{opts, results, totalAdd, totalChange, totalDestroy, isPlan, hasCost, currency, totalMonthly, diffMonthly, resourceCount, totalMonthly * 12}); err != nil {
 		return "", fmt.Errorf("render report: %w", err)
 	}
 
@@ -364,6 +414,13 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 			sum.Destroy += r.Destroy
 			if r.Failed {
 				sum.Failed++
+			}
+			if r.Cost != nil {
+				sum.HasCost = true
+				sum.Currency = r.Cost.Currency
+				sum.TotalMonthly += r.Cost.TotalMonthly
+				sum.DiffMonthly += r.Cost.DiffMonthly
+				sum.ResourceCount += r.Cost.ResourceCount
 			}
 		}
 		if b, err := json.Marshal(sum); err == nil {
@@ -405,9 +462,9 @@ func statusBadge(r EnvResult) string {
 }
 
 // ParseReportName parses a report filename into command, run time, and live flag.
-// Handles: tfops-plan-20260602-153045.html, tfops-apply-live.html, etc.
+// Handles: tf9-plan-20260602-153045.html, tf9-apply-live.html, etc.
 func ParseReportName(name string) (cmd string, runAt time.Time, isLive bool) {
-	s := strings.TrimPrefix(name, "tfops-")
+	s := strings.TrimPrefix(name, "tf9-")
 	s = strings.TrimSuffix(s, ".html")
 	if strings.HasSuffix(s, "-live") {
 		cmd = strings.ReplaceAll(strings.TrimSuffix(s, "-live"), "_", "-")
@@ -451,7 +508,7 @@ const htmlTpl = `<!DOCTYPE html>
 <script>
 // Apply theme before first paint to avoid flash
 (function(){
-  var m = localStorage.getItem('tfops-color-mode');
+  var m = localStorage.getItem('tf9-color-mode');
   document.documentElement.setAttribute('data-theme', m === 'light' ? 'light' : m === 'dim' ? 'dim' : 'dark');
 })();
 </script>
@@ -561,12 +618,16 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .card-change::before{background:linear-gradient(135deg,var(--amber),transparent)}
 .card-destroy::before{background:linear-gradient(135deg,var(--red),transparent)}
 .card-envs::before{background:linear-gradient(135deg,var(--blue),transparent)}
+.card-cost::before{background:linear-gradient(135deg,var(--amber),transparent)}
+.card-resources::before{background:linear-gradient(135deg,var(--blue),transparent)}
 .card-val{font-size:38px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
 .card-lbl{color:var(--muted);font-size:11px;margin-top:6px;text-transform:uppercase;letter-spacing:.6px}
 .card-add .card-val{color:var(--green)}
 .card-change .card-val{color:var(--amber)}
 .card-destroy .card-val{color:var(--red)}
 .card-envs .card-val{color:var(--blue)}
+.card-cost .card-val{color:var(--amber);font-size:26px}
+.card-resources .card-val{color:var(--blue)}
 
 /* ── Section ── */
 .sec{margin:28px 0}
@@ -693,6 +754,26 @@ tr:hover td{background:var(--hover)}
       <div class="card-val">{{len .Results}}</div>
       <div class="card-lbl">environments</div>
     </div>
+    {{if .HasCost}}
+    <div class="card card-cost">
+      <div class="card-val">{{.Currency}} {{money .TotalMonthly}}</div>
+      <div class="card-lbl">{{if .IsPlan}}projected monthly cost{{else}}estimated monthly cost{{end}}</div>
+    </div>
+    {{if .IsPlan}}
+    <div class="card card-cost">
+      <div class="card-val">{{.Currency}} {{signedMoney .DiffMonthly}}</div>
+      <div class="card-lbl">monthly cost change</div>
+    </div>
+    {{end}}
+    <div class="card card-cost">
+      <div class="card-val">{{.Currency}} {{money .AnnualCost}}</div>
+      <div class="card-lbl">projected annual cost</div>
+    </div>
+    <div class="card card-resources">
+      <div class="card-val">{{.ResourceCount}}</div>
+      <div class="card-lbl">priced resources</div>
+    </div>
+    {{end}}
   </div>
 
   <div class="sec">
@@ -704,6 +785,7 @@ tr:hover td{background:var(--hover)}
             <th>Environment</th>
             <th>Profile</th>
             <th>Add</th><th>Change</th><th>Destroy</th>
+            {{if .HasCost}}<th>Monthly Cost</th>{{end}}
             <th>Status</th>
           </tr>
         </thead>
@@ -715,6 +797,7 @@ tr:hover td{background:var(--hover)}
             <td class="mono">{{if .Failed}}<span class="mz">—</span>{{else if gt .Add 0}}<span class="ma">+{{.Add}}</span>{{else}}<span class="mz">+0</span>{{end}}</td>
             <td class="mono">{{if .Failed}}<span class="mz">—</span>{{else if gt .Change 0}}<span class="mc">~{{.Change}}</span>{{else}}<span class="mz">~0</span>{{end}}</td>
             <td class="mono">{{if .Failed}}<span class="mz">—</span>{{else if gt .Destroy 0}}<span class="md">-{{.Destroy}}</span>{{else}}<span class="mz">-0</span>{{end}}</td>
+            {{if $.HasCost}}<td class="mono">{{if .Cost}}{{.Cost.Currency}} {{money .Cost.TotalMonthly}}{{if .Cost.HasDiff}} ({{signedMoney .Cost.DiffMonthly}}){{end}}{{else}}<span class="mz">—</span>{{end}}</td>{{end}}
             <td><span class="sb {{statusClass .}}">{{statusBadge .}}</span></td>
           </tr>
           {{end}}
@@ -760,7 +843,7 @@ tr:hover td{background:var(--hover)}
 
 </main>
 
-<footer class="ftr wrap">Generated by tfops &nbsp;·&nbsp; {{fmtTime .Opts.RunAt}}</footer>
+<footer class="ftr wrap">Generated by tf9 &nbsp;·&nbsp; {{fmtTime .Opts.RunAt}}</footer>
 
 <script>
 function toggle(hdr) {
@@ -821,7 +904,7 @@ function toggleRct(row) {
 }
 function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
-  localStorage.setItem('tfops-color-mode', t);
+  localStorage.setItem('tf9-color-mode', t);
   document.querySelectorAll('#themeTog button').forEach(function(b) {
     b.classList.toggle('on', b.dataset.t === t);
   });
@@ -835,8 +918,8 @@ function setTheme(t) {
 })();
 // Sync theme with the parent SPA via postMessage (storage events don't fire in same-tab iframes)
 window.addEventListener('message', function(e) {
-  if (e.data && e.data.tfopsTheme) {
-    setTheme(e.data.tfopsTheme);
+  if (e.data && e.data.tf9Theme) {
+    setTheme(e.data.tf9Theme);
   }
 });
 </script>

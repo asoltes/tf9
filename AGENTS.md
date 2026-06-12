@@ -1,4 +1,4 @@
-# AGENTS.md — tfops developer guide
+# AGENTS.md — tf9 developer guide
 
 All conventions, architecture notes, and non-negotiable rules for AI agents
 and contributors live in [CLAUDE.md](CLAUDE.md). Read that file before making

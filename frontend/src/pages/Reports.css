@@ -12,6 +12,57 @@
   margin-bottom: 22px;
 }
 
+/* ── Cost cards ──────────────────────────────────────────────────────────── */
+.rh-cost-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.rh-cost-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rh-cost-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  pointer-events: none;
+}
+
+.rh-cost-card.amber::before { background: linear-gradient(135deg, var(--amber), transparent); }
+.rh-cost-card.blue::before  { background: linear-gradient(135deg, var(--blue), transparent); }
+.rh-cost-card.green::before { background: linear-gradient(135deg, var(--green), transparent); }
+.rh-cost-card.red::before   { background: linear-gradient(135deg, var(--red), transparent); }
+
+.rh-cost-val {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.rh-cost-card.amber .rh-cost-val { color: var(--amber); }
+.rh-cost-card.blue  .rh-cost-val { color: var(--blue); }
+.rh-cost-card.green .rh-cost-val { color: var(--green); }
+.rh-cost-card.red   .rh-cost-val { color: var(--red); }
+
+.rh-cost-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-2);
+  margin-top: 6px;
+}
+
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
 .rh-toolbar {
   display: flex;

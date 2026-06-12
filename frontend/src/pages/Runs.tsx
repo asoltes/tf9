@@ -101,12 +101,12 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
   // Opened via the Overview "New run" card / #runs/new deep-link.
   useEffect(() => { if (openNewRun) setNewRunOpen(true); }, [openNewRun]);
   const [dock, setDock] = useState<Dock>(() => {
-    const saved = localStorage.getItem('tfops-dock');
+    const saved = localStorage.getItem('tf9-dock');
     return saved === 'bottom' || saved === 'side' ? saved : 'side';
   });
   function handleDockChange(d: Dock) {
     setDock(d);
-    localStorage.setItem('tfops-dock', d);
+    localStorage.setItem('tf9-dock', d);
   }
 
   // ── Selected-run detail + live SSE streaming (real backend) ───────────────
@@ -197,6 +197,17 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
 
   async function onRerun(r: Run) {
     const res = await api.post<{ id: string }>('/api/runs', r.request);
+    setPage(1);
+    await loadRuns();
+    setSelectedId(res.id);
+  }
+
+  async function onApplyPlan(r: Run) {
+    const res = await api.post<{ id: string }>('/api/runs', {
+      command: 'apply',
+      repo: r.request.repo,
+      planRunId: r.id,
+    });
     setPage(1);
     await loadRuns();
     setSelectedId(res.id);
@@ -339,6 +350,7 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
               onDockChange={handleDockChange}
               onStatusChange={() => { loadRuns(); if (selectedId) loadRunDetail(selectedId); }}
               onRerun={onRerun}
+              onApplyPlan={onApplyPlan}
             />
           )}
         </div>

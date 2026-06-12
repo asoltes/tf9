@@ -2,7 +2,7 @@
   - generic [ref=e1377]:
     - generic [ref=e1378]:
       - img [ref=e1380]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e1383] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e1384] [cursor=pointer]:
@@ -37,7 +37,7 @@
         - img [ref=e1398]
     - main [ref=e1400]:
       - generic [ref=e1401]:
-        - link "tfops" [ref=e1402] [cursor=pointer]:
+        - link "tf9" [ref=e1402] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e1403]: /
         - generic [ref=e1404]: Logs
@@ -48,7 +48,7 @@
             - generic [ref=e1409]: (0)
           - generic [ref=e1410]:
             - text: Application logs from
-            - code [ref=e1411]: tfops serve
+            - code [ref=e1411]: tf9 serve
             - text: — also written to the log file on disk.
         - generic [ref=e1412]:
           - generic [ref=e1413]:

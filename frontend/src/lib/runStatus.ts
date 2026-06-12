@@ -29,14 +29,14 @@
  * waiting for interactive approval. Kept here so it can be imported by both
  * RunSplitPanel.tsx and the test suite from a single source of truth.
  */
-export const APPROVAL_SENTINEL = '__TFOPS_APPROVAL__';
+export const APPROVAL_SENTINEL = '__TF9_APPROVAL__';
 
 /**
  * Emitted by runner.go's approvalMonitor when terraform is no longer blocked on
  * the approval prompt (input received, or the run was cancelled/force-killed).
  * The frontend uses it to hide the approval bar reliably instead of guessing.
  */
-export const APPROVAL_CLEAR_SENTINEL = '__TFOPS_APPROVAL_CLEAR__';
+export const APPROVAL_CLEAR_SENTINEL = '__TF9_APPROVAL_CLEAR__';
 
 /**
  * Pure reducer for the approval gate state in RunSplitPanel. Encapsulated here
@@ -245,8 +245,9 @@ const INIT_DONE_RE = /has been successfully initialized|Terraform has been succe
  * Returns 'done' | 'fail' when terminal, or null when the section is still in
  * progress (caller decides running vs. queued).
  */
-export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | 'fail' | null {
+export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | 'fail' | 'denied' | null {
   let failed = false;
+  let denied = false;
   let sawApplyDone = false;
   let sawInitDone = false;
   let sawPlan = false;
@@ -254,11 +255,13 @@ export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | '
   for (const line of lines) {
     const plain = stripAnsi(line);
     if (/\[FAILED\]/.test(plain)) failed = true;
+    if (/\[DENIED\]/.test(plain)) denied = true;
     if (APPLY_DONE_RE.test(plain)) sawApplyDone = true;
     if (INIT_DONE_RE.test(plain)) sawInitDone = true;
     if (/Plan:\s+\d+ to add/.test(plain)) sawPlan = true;
     if (/No changes\./.test(plain)) sawNoChanges = true;
   }
+  if (denied) return 'denied';
   if (failed) return 'fail';
   if (ctx === 'apply' || ctx === 'destroy') {
     // "No changes" apply skips the approval prompt and still prints "Apply
@@ -276,8 +279,8 @@ export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | '
  * Derives a coarse per-target status from streamed lines.
  *
  * Status rules:
- *  - A section that has reached a terminal plan-count / `[FAILED]` marker is
- *    `done` (or `fail` if it failed).
+ *  - A section that has reached a terminal plan-count, `[FAILED]`, or
+ *    `[DENIED]` marker is done, failed, or denied respectively.
  *  - In parallel runs, every started section that is not terminal is `running`
  *    (they all stream concurrently).
  *  - In sequential runs, only the last non-terminal section is `running`; any
@@ -295,6 +298,7 @@ export function deriveTargetStatuses(lines: string[], expectedTargets?: string[]
     // Per-section stage (auto runs) takes precedence over the run-level command
     // so each apply/plan/init section is judged terminal by the right markers.
     const term = sectionTerminalStatus(s.lines, s.stage ?? command);
+    if (term === 'denied') return { name: s.name, status: 'denied' as TargetStatus };
     if (term === 'fail') return { name: s.name, status: 'fail' as TargetStatus };
     if (term === 'done') return { name: s.name, status: 'done' as TargetStatus };
     // Not terminal yet.

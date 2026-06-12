@@ -5,12 +5,28 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import Shell from '../Shell';
-import { api, ApiError, repoGit, workspaceApi } from '../api';
-import type { GitChangedFile, Paginated, Repo, WorkspaceEntry, WorkspaceFile } from '../types';
+import { api, ApiError, repoGit, workspaceApi, workspaceChatApi } from '../api';
+import type {
+  GitChangedFile, GitCommit, Paginated, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
+  WorkspaceChatMode, WorkspaceEntry, WorkspaceFile,
+} from '../types';
 import { useNav } from '../nav';
 import { parseGitDiff } from '../lib/gitDiff';
 import { clampDiffWidth, resizedWidth, storedDiffWidth } from '../lib/workspaceLayout';
 import { buildGitDecorationMaps, changedFilePath, type GitDecoration } from '../lib/gitStatusDecorations';
+import {
+  addWorkspaceRepository,
+  closeWorkspaceRepository,
+  normalizeWorkspaceTabs,
+  readWorkspaceTabs,
+  WORKSPACE_TABS_KEY,
+  type WorkspaceTabsState,
+} from '../lib/workspaceTabs';
+import {
+  readWorkspaceSession,
+  workspaceSessionKey,
+  type WorkspaceSessionState,
+} from '../lib/workspaceSession';
 import './RepositoryWorkspace.css';
 
 type EditorTab = WorkspaceFile & {
@@ -25,7 +41,7 @@ type WorkbenchIconName =
   | 'file' | 'terraform' | 'json' | 'yaml' | 'markdown' | 'code'
   | 'newFile' | 'newFolder' | 'refresh' | 'collapse' | 'terminal'
   | 'split' | 'trash' | 'maximize' | 'restore' | 'close' | 'branch'
-  | 'back' | 'save' | 'repo';
+  | 'back' | 'save' | 'repo' | 'ai';
 
 const ICON_PATHS: Record<WorkbenchIconName, React.ReactNode> = {
   files: <><path d="M5 3h9l5 5v13H5z" /><path d="M14 3v5h5M3 7H1v14h13" /></>,
@@ -54,6 +70,7 @@ const ICON_PATHS: Record<WorkbenchIconName, React.ReactNode> = {
   back: <path d="m15 18-6-6 6-6" />,
   save: <><path d="M4 3h14l2 2v16H4zM8 3v6h8V3M8 21v-8h8v8" /></>,
   repo: <><path d="M4 4h14v16H4zM8 4v16M12 8h3m-3 4h3" /></>,
+  ai: <><path d="m12 2 1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z" /><path d="m18.5 14 .8 2.7 2.7.8-2.7.8-.8 2.7-.8-2.7-2.7-.8 2.7-.8zM5 15l.7 2.3L8 18l-2.3.7L5 21l-.7-2.3L2 18l2.3-.7z" /></>,
 };
 
 function WorkbenchIcon({ name, className = '' }: { name: WorkbenchIconName; className?: string }) {
@@ -108,7 +125,7 @@ function statusLabel(xy: string) {
   return xy.trim()[0] || 'M';
 }
 
-const DIFF_WIDTH_KEY = 'tfops-workspace-diff-width';
+const DIFF_WIDTH_KEY = 'tf9-workspace-diff-width';
 
 function initialDiffWidth() {
   if (typeof localStorage === 'undefined') return 380;
@@ -182,65 +199,65 @@ function EntryNode({
   );
 }
 
-function WorkspacePicker() {
+function WorkspacePicker({
+  repos, error, onOpen,
+}: {
+  repos: Repo[];
+  error: string;
+  onOpen: (name: string) => void;
+}) {
   const { navigate } = useNav();
-  const [repos, setRepos] = useState<Repo[]>([]);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api.get<Paginated<Repo>>('/api/repos')
-      .then(result => setRepos(result.items.filter(repo => !repo.disabled)))
-      .catch(err => setError(err instanceof Error ? err.message : 'Could not load repositories.'));
-  }, []);
 
   return (
-    <Shell>
-      <div className="workspace-picker">
-        <div className="workspace-picker-hero">
-          <div className="workspace-picker-mark"><WorkbenchIcon name="code" /></div>
-          <div>
-            <h1>Workspace</h1>
-            <p>Open a repository in the full-screen editor and terminal.</p>
-          </div>
-        </div>
-        {error && <div className="alert">{error}</div>}
-        <div className="workspace-picker-grid">
-          {repos.map(repo => (
-            <button key={repo.name} className="workspace-repo-card" onClick={() => navigate({ id: 'workspace', name: repo.name })}>
-              <span className="workspace-repo-icon"><WorkbenchIcon name="repo" /></span>
-              <span className="workspace-repo-copy">
-                <strong>{repo.name}</strong>
-                <span>{repo.path}</span>
-              </span>
-              <span className="workspace-repo-open">Open ›</span>
-            </button>
-          ))}
-          {repos.length === 0 && !error && (
-            <div className="workspace-picker-empty">
-              No enabled repositories. Add one from <button onClick={() => navigate({ id: 'repos' })}>Repositories</button>.
-            </div>
-          )}
+    <div className="workspace-picker">
+      <div className="workspace-picker-hero">
+        <div className="workspace-picker-mark"><WorkbenchIcon name="code" /></div>
+        <div>
+          <h1>Workspace</h1>
+          <p>Open repositories in persistent workspace tabs.</p>
         </div>
       </div>
-    </Shell>
+      {error && <div className="alert">{error}</div>}
+      <div className="workspace-picker-grid">
+        {repos.map(repo => (
+          <button key={repo.name} className="workspace-repo-card" onClick={() => onOpen(repo.name)}>
+            <span className="workspace-repo-icon"><WorkbenchIcon name="repo" /></span>
+            <span className="workspace-repo-copy">
+              <strong>{repo.name}</strong>
+              <span>{repo.path}</span>
+            </span>
+            <span className="workspace-repo-open">Open ›</span>
+          </button>
+        ))}
+        {repos.length === 0 && !error && (
+          <div className="workspace-picker-empty">
+            No enabled repositories. Add one from <button onClick={() => navigate({ id: 'repos' })}>Repositories</button>.
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
-function LiveTerminal({
-  repo, directory, mode, maximized, onToggleMaximize, onCollapse,
+type TerminalSession = {
+  id: number;
+  directory: string;
+};
+
+function TerminalInstance({
+  repo, directory, mode, active, clearSignal, onConnectionChange,
 }: {
   repo: string;
   directory: string;
   mode: 'light' | 'dark' | 'dim';
-  maximized: boolean;
-  onToggleMaximize: () => void;
-  onCollapse: () => void;
+  active: boolean;
+  clearSignal: number;
+  onConnectionChange: (connection: 'connecting' | 'connected' | 'closed') => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
-  const [connection, setConnection] = useState<'connecting' | 'connected' | 'closed'>('connecting');
-  const [generation, setGeneration] = useState(0);
+  const fitRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -260,22 +277,23 @@ function LiveTerminal({
     terminal.loadAddon(fit);
     terminal.open(hostRef.current);
     fit.fit();
-    terminal.focus();
+    if (active) terminal.focus();
     terminalRef.current = terminal;
+    fitRef.current = fit;
 
     const socket = new WebSocket(workspaceApi.terminalUrl(repo, directory));
     socket.binaryType = 'arraybuffer';
     socketRef.current = socket;
     socket.onopen = () => {
-      setConnection('connected');
+      onConnectionChange('connected');
       socket.send(JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }));
     };
     socket.onmessage = event => {
       if (event.data instanceof ArrayBuffer) terminal.write(new Uint8Array(event.data));
       else terminal.write(String(event.data));
     };
-    socket.onclose = () => setConnection('closed');
-    socket.onerror = () => setConnection('closed');
+    socket.onclose = () => onConnectionChange('closed');
+    socket.onerror = () => onConnectionChange('closed');
     const input = terminal.onData(data => {
       if (socket.readyState === WebSocket.OPEN) socket.send(new TextEncoder().encode(data));
     });
@@ -294,44 +312,530 @@ function LiveTerminal({
       terminal.dispose();
       terminalRef.current = null;
       socketRef.current = null;
+      fitRef.current = null;
     };
-  }, [directory, generation, repo]);
+  }, [directory, onConnectionChange, repo]);
 
   useEffect(() => {
     if (terminalRef.current) terminalRef.current.options.theme = terminalTheme(mode);
   }, [mode]);
 
+  useEffect(() => {
+    if (clearSignal > 0) terminalRef.current?.clear();
+  }, [clearSignal]);
+
+  useEffect(() => {
+    if (!active) return;
+    const frame = window.requestAnimationFrame(() => {
+      fitRef.current?.fit();
+      const terminal = terminalRef.current;
+      const socket = socketRef.current;
+      if (terminal && socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'resize', cols: terminal.cols, rows: terminal.rows }));
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active]);
+
+  return <div ref={hostRef} className="rw-terminal-host" hidden={!active} />;
+}
+
+function LiveTerminal({
+  repo, sessions, activeSessionId, mode, active, maximized, onSelectSession, onNewSession,
+  onToggleMaximize, onCollapse,
+}: {
+  repo: string;
+  sessions: TerminalSession[];
+  activeSessionId: number;
+  mode: 'light' | 'dark' | 'dim';
+  active: boolean;
+  maximized: boolean;
+  onSelectSession: (id: number) => void;
+  onNewSession: () => void;
+  onToggleMaximize: () => void;
+  onCollapse: () => void;
+}) {
+  const [connections, setConnections] = useState<Record<number, 'connecting' | 'connected' | 'closed'>>({});
+  const [clearSignals, setClearSignals] = useState<Record<number, number>>({});
+  const activeSession = sessions.find(session => session.id === activeSessionId) ?? sessions[0];
+  const activeConnection = connections[activeSession?.id] ?? 'connecting';
+  const connectionHandlers = useRef(new Map<number, (connection: 'connecting' | 'connected' | 'closed') => void>());
+
+  function connectionHandler(id: number) {
+    const existing = connectionHandlers.current.get(id);
+    if (existing) return existing;
+    const handler = (connection: 'connecting' | 'connected' | 'closed') => {
+      setConnections(current => current[id] === connection ? current : { ...current, [id]: connection });
+    };
+    connectionHandlers.current.set(id, handler);
+    return handler;
+  }
+
   return (
     <section className="rw-terminal">
       <div className="rw-panel-head">
         <div className="rw-terminal-tabs">
-          <button className="active"><WorkbenchIcon name="terminal" /> TERMINAL</button>
-          <button>OUTPUT</button>
-          <button>PROBLEMS</button>
+          {sessions.map((session, index) => (
+            <button
+              key={session.id}
+              className={`rw-terminal-session-tab${session.id === activeSession?.id ? ' active' : ''}`}
+              aria-selected={session.id === activeSession?.id}
+              onClick={() => onSelectSession(session.id)}
+            >
+              <WorkbenchIcon name="terminal" />
+              <span className="rw-terminal-shell">{session.directory ? basename(session.directory) : 'shell'} {index + 1}</span>
+            </button>
+          ))}
         </div>
-        <span className={`rw-connection ${connection}`}>{connection}</span>
+        <span className={`rw-connection ${activeConnection}`}>{activeConnection}</span>
         <span className="rw-spacer" />
-        <button className="rw-icon-button" title="New terminal" onClick={() => {
-          setConnection('connecting');
-          setGeneration(value => value + 1);
-        }}><WorkbenchIcon name="terminal" /><span className="rw-terminal-shell">{directory ? basename(directory) : 'shell'}</span>＋</button>
+        <button className="rw-icon-button" aria-label="New terminal" title="New terminal" onClick={onNewSession}>
+          <WorkbenchIcon name="terminal" />＋
+        </button>
         <button className="rw-icon-button" title={maximized ? 'Restore panel' : 'Maximize panel'} onClick={onToggleMaximize}>
           <WorkbenchIcon name={maximized ? 'restore' : 'maximize'} />
         </button>
-        <button className="rw-icon-button" title="Clear terminal" onClick={() => terminalRef.current?.clear()}><WorkbenchIcon name="trash" /></button>
+        <button className="rw-icon-button" title="Clear terminal" onClick={() => {
+          if (!activeSession) return;
+          setClearSignals(current => ({ ...current, [activeSession.id]: (current[activeSession.id] ?? 0) + 1 }));
+        }}><WorkbenchIcon name="trash" /></button>
         <button className="rw-icon-button" title="Close panel" onClick={onCollapse}><WorkbenchIcon name="close" /></button>
       </div>
-      <div ref={hostRef} className="rw-terminal-host" />
+      {sessions.map(session => (
+        <TerminalInstance
+          key={session.id}
+          repo={repo}
+          directory={session.directory}
+          mode={mode}
+          active={active && session.id === activeSession?.id}
+          clearSignal={clearSignals[session.id] ?? 0}
+          onConnectionChange={connectionHandler(session.id)}
+        />
+      ))}
     </section>
   );
 }
 
-function Workbench({ name }: { name: string }) {
+type ChatToolActivity = {
+  tool: string;
+  summary: string;
+};
+
+function WorkspaceChat({ repo, active }: { repo: string; active: boolean }) {
+  const [messages, setMessages] = useState<WorkspaceChatMessage[]>([]);
+  const [mode, setMode] = useState<WorkspaceChatMode>('review');
+  const [available, setAvailable] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [running, setRunning] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [liveText, setLiveText] = useState('');
+  const [tools, setTools] = useState<ChatToolActivity[]>([]);
+  const [error, setError] = useState('');
+  const streamRef = useRef<EventSource | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  const loadState = useCallback(async () => {
+    const state = await workspaceChatApi.state(repo);
+    setMessages(state.messages ?? []);
+    setMode(state.mode);
+    setAvailable(state.available);
+    setAuthError(state.authError ?? '');
+    setRunning(state.running);
+    return state;
+  }, [repo]);
+
+  const connectStream = useCallback((turnId: string) => {
+    streamRef.current?.close();
+    setRunning(true);
+    setLiveText('');
+    setTools([]);
+    setError('');
+    const stream = new EventSource(workspaceChatApi.streamUrl(repo, turnId));
+    streamRef.current = stream;
+    stream.onmessage = event => {
+      const update = JSON.parse(event.data) as WorkspaceChatEvent;
+      if (update.type === 'delta' && update.delta) {
+        setLiveText(current => current + update.delta);
+      } else if (update.type === 'tool') {
+        setTools(current => [...current, {
+          tool: update.tool || 'Tool',
+          summary: update.summary || update.tool || 'Working',
+        }]);
+      } else if (update.type === 'error') {
+        setError(update.message || 'Claude Code failed.');
+      } else if (update.type === 'done') {
+        stream.close();
+        streamRef.current = null;
+        setRunning(false);
+        setLiveText('');
+        setTools([]);
+        void loadState().catch(err => setError(err instanceof Error ? err.message : 'Could not refresh chat.'));
+      }
+    };
+    stream.onerror = () => {
+      if (streamRef.current !== stream) return;
+      stream.close();
+      streamRef.current = null;
+      setRunning(false);
+      setError('The Claude response stream closed unexpectedly.');
+    };
+  }, [loadState, repo]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadState()
+      .then(state => {
+        if (!cancelled && state.running && state.activeTurnId) connectStream(state.activeTurnId);
+      })
+      .catch(err => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load AI chat.');
+      });
+    return () => {
+      cancelled = true;
+      streamRef.current?.close();
+      streamRef.current = null;
+    };
+  }, [connectStream, loadState]);
+
+  useEffect(() => {
+    if (!active) return;
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [active, liveText, messages, tools]);
+
+  async function sendMessage() {
+    const message = draft.trim();
+    if (!message || running || !available) return;
+    setDraft('');
+    setMessages(current => [...current, {
+      id: `pending-${Date.now()}`,
+      role: 'user',
+      content: message,
+      createdAt: new Date().toISOString(),
+    }]);
+    try {
+      const result = await workspaceChatApi.send(repo, message);
+      connectStream(result.turnId);
+    } catch (err) {
+      setRunning(false);
+      setError(err instanceof Error ? err.message : 'Could not start Claude Code.');
+      void loadState().catch(() => {});
+    }
+  }
+
+  async function changeMode(next: WorkspaceChatMode) {
+    try {
+      await workspaceChatApi.setMode(repo, next);
+      setMode(next);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change AI mode.');
+    }
+  }
+
+  async function resetChat() {
+    if (messages.length > 0 && !window.confirm('Start a new AI chat for this repository?')) return;
+    try {
+      await workspaceChatApi.reset(repo);
+      setMessages([]);
+      setLiveText('');
+      setTools([]);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not reset AI chat.');
+    }
+  }
+
+  return (
+    <section className="rw-chat">
+      <div className="rw-chat-toolbar">
+        <span className={`rw-chat-status ${available ? 'ready' : 'unavailable'}`}>
+          {available ? 'Claude connected' : 'Claude unavailable'}
+        </span>
+        <span className="rw-spacer" />
+        <label className="rw-chat-mode" title="Review plans changes. Auto apply lets Claude edit workspace files.">
+          <span>{mode === 'review' ? 'Review' : 'Auto apply'}</span>
+          <input
+            type="checkbox"
+            checked={mode === 'autoApply'}
+            disabled={running}
+            onChange={event => void changeMode(event.target.checked ? 'autoApply' : 'review')}
+          />
+          <i />
+        </label>
+        <button disabled={running} onClick={() => void resetChat()}>New chat</button>
+      </div>
+      {!available && authError && <div className="rw-chat-notice">{authError}</div>}
+      {error && <div className="rw-chat-error">{error}<button onClick={() => setError('')}>×</button></div>}
+      <div className="rw-chat-messages" aria-live="polite">
+        {messages.length === 0 && !running && (
+          <div className="rw-chat-empty">
+            <WorkbenchIcon name="ai" />
+            <strong>Ask Claude about this workspace</strong>
+            <span>Review code, explain Terraform, or request repository changes.</span>
+          </div>
+        )}
+        {messages.map(message => (
+          <article key={message.id} className={`rw-chat-message ${message.role}`}>
+            <header>{message.role === 'user' ? 'You' : 'Claude'}</header>
+            <div>{message.content}</div>
+          </article>
+        ))}
+        {running && (
+          <article className="rw-chat-message assistant live">
+            <header>Claude <span>working</span></header>
+            {tools.map((tool, index) => (
+              <div className="rw-chat-tool" key={`${tool.tool}-${index}`}>
+                <WorkbenchIcon name={tool.tool === 'Edit' || tool.tool === 'Write' ? 'save' : 'terminal'} />
+                <span><strong>{tool.tool}</strong>{tool.summary}</span>
+              </div>
+            ))}
+            <div>{liveText}<i className="rw-chat-cursor" /></div>
+          </article>
+        )}
+        <div ref={endRef} />
+      </div>
+      <div className="rw-chat-compose">
+        <textarea
+          value={draft}
+          disabled={!available}
+          aria-label="Message Claude"
+          placeholder={available ? `Ask about ${repo}…` : 'Claude Code login required'}
+          onChange={event => setDraft(event.target.value)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              void sendMessage();
+            }
+          }}
+        />
+        {running ? (
+          <button className="stop" onClick={() => void workspaceChatApi.cancel(repo).catch(err => {
+            setError(err instanceof Error ? err.message : 'Could not stop response.');
+          })}>Stop</button>
+        ) : (
+          <button disabled={!draft.trim() || !available} onClick={() => void sendMessage()}>Send</button>
+        )}
+        <small>{mode === 'review' ? 'Plans only; workspace writes are blocked.' : 'Claude may edit files in this repository.'}</small>
+      </div>
+    </section>
+  );
+}
+
+type GitOperation = 'rebase' | 'cherry-pick';
+
+function GitOperationsModal({
+  repo, currentBranch, branches, blocked, onClose, onComplete,
+}: {
+  repo: string;
+  currentBranch: string;
+  branches: string[];
+  blocked: string;
+  onClose: () => void;
+  onComplete: () => Promise<void>;
+}) {
+  const [operation, setOperation] = useState<GitOperation>('rebase');
+  const candidates = useMemo(
+    () => branches.filter(item => item !== currentBranch),
+    [branches, currentBranch],
+  );
+  const [selectedBranch, setSelectedBranch] = useState(candidates[0] ?? '');
+  const [commits, setCommits] = useState<GitCommit[]>([]);
+  const [selectedCommits, setSelectedCommits] = useState<string[]>([]);
+  const [loadingCommits, setLoadingCommits] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState('');
+  const [output, setOutput] = useState('');
+
+  useEffect(() => {
+    if (candidates.includes(selectedBranch)) return;
+    setSelectedBranch(candidates[0] ?? '');
+  }, [candidates, selectedBranch]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !running) onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, running]);
+
+  useEffect(() => {
+    if (operation !== 'cherry-pick' || !selectedBranch || !currentBranch) {
+      setCommits([]);
+      setSelectedCommits([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingCommits(true);
+    setError('');
+    repoGit.commits(repo, currentBranch, selectedBranch)
+      .then(result => {
+        if (cancelled) return;
+        setCommits(result);
+        setSelectedCommits([]);
+      })
+      .catch(err => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load commits.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCommits(false);
+      });
+    return () => { cancelled = true; };
+  }, [currentBranch, operation, repo, selectedBranch]);
+
+  async function execute() {
+    if (blocked || !selectedBranch || running) return;
+    if (operation === 'cherry-pick' && selectedCommits.length === 0) return;
+    const action = operation === 'rebase'
+      ? `Rebase ${currentBranch} onto ${selectedBranch}?`
+      : `Cherry-pick ${selectedCommits.length} commit${selectedCommits.length === 1 ? '' : 's'} onto ${currentBranch}?`;
+    if (!window.confirm(action)) return;
+    setRunning(true);
+    setError('');
+    setOutput('');
+    try {
+      const orderedCommits = commits
+        .filter(commit => selectedCommits.includes(commit.sha))
+        .reverse()
+        .map(commit => commit.sha);
+      const result = operation === 'rebase'
+        ? await repoGit.rebase(repo, selectedBranch)
+        : await repoGit.cherryPick(repo, orderedCommits);
+      setOutput((result.output || '').trim());
+      await onComplete();
+      if (result.error) {
+        setError(`${result.error}. Resolve the Git state in the workspace terminal, then refresh.`);
+        return;
+      }
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Git ${operation} failed.`);
+      await onComplete();
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="overlay show rw-git-ops-overlay" onClick={event => {
+      if (event.target === event.currentTarget && !running) onClose();
+    }}>
+      <div className="modal rw-git-ops-modal" role="dialog" aria-modal="true" aria-label="Git operations">
+        <div className="modal-head">Git operations</div>
+        <div className="modal-body">
+          <div className="rw-git-ops-current">Current branch <strong>{currentBranch || 'unknown'}</strong></div>
+          <div className="rw-git-ops-tabs" role="tablist">
+            <button
+              role="tab"
+              aria-selected={operation === 'rebase'}
+              className={operation === 'rebase' ? 'active' : ''}
+              onClick={() => {
+                setOperation('rebase');
+                setError('');
+                setOutput('');
+              }}
+            >Rebase</button>
+            <button
+              role="tab"
+              aria-selected={operation === 'cherry-pick'}
+              className={operation === 'cherry-pick' ? 'active' : ''}
+              onClick={() => {
+                setOperation('cherry-pick');
+                setError('');
+                setOutput('');
+              }}
+            >Cherry-pick</button>
+          </div>
+
+          {blocked && <div className="rw-git-ops-warning">{blocked}</div>}
+          {error && <div className="rw-git-ops-error">{error}</div>}
+
+          <label className="rw-git-ops-label">
+            {operation === 'rebase' ? 'Rebase onto branch' : 'Source branch'}
+            <select
+              aria-label={operation === 'rebase' ? 'Rebase onto branch' : 'Cherry-pick source branch'}
+              value={selectedBranch}
+              disabled={running}
+              onChange={event => setSelectedBranch(event.target.value)}
+            >
+              {candidates.length === 0 && <option value="">No other branches</option>}
+              {candidates.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+
+          {operation === 'rebase' ? (
+            <p className="rw-git-ops-help">
+              Replays commits from <strong>{currentBranch}</strong> on top of <strong>{selectedBranch || 'the selected branch'}</strong>.
+            </p>
+          ) : (
+            <div className="rw-commit-picker">
+              <div className="rw-commit-picker-head">
+                <span>Commits not in {currentBranch}</span>
+                {commits.length > 0 && <button onClick={() => setSelectedCommits(
+                  selectedCommits.length === commits.length ? [] : commits.map(commit => commit.sha),
+                )}>{selectedCommits.length === commits.length ? 'Clear' : 'Select all'}</button>}
+              </div>
+              {loadingCommits ? (
+                <div className="rw-git-ops-empty">Loading commits…</div>
+              ) : commits.length === 0 ? (
+                <div className="rw-git-ops-empty">No commits are available from this branch.</div>
+              ) : commits.map(commit => (
+                <label className="rw-commit-row" key={commit.sha}>
+                  <input
+                    type="checkbox"
+                    checked={selectedCommits.includes(commit.sha)}
+                    disabled={running}
+                    onChange={event => setSelectedCommits(current => event.target.checked
+                      ? [...current, commit.sha]
+                      : current.filter(sha => sha !== commit.sha))}
+                  />
+                  <code>{commit.shortSha}</code>
+                  <span><strong>{commit.message}</strong><small>{commit.author} · {commit.date}</small></span>
+                </label>
+              ))}
+            </div>
+          )}
+          {output && <pre className="rw-git-ops-output">{output}</pre>}
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-normal" disabled={running} onClick={onClose}>Cancel</button>
+          <button
+            className="btn btn-primary"
+            disabled={Boolean(blocked) || !selectedBranch || running ||
+              (operation === 'cherry-pick' && selectedCommits.length === 0)}
+            onClick={() => void execute()}
+          >
+            {running ? 'Running…' : operation === 'rebase' ? 'Rebase branch' : 'Cherry-pick selected'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Workbench({
+  name, active, fullScreen, onToggleFullScreen, onDirtyChange,
+}: {
+  name: string;
+  active: boolean;
+  fullScreen: boolean;
+  onToggleFullScreen: () => void;
+  onDirtyChange: (name: string, dirty: boolean) => void;
+}) {
   const { mode, navigate } = useNav();
-  const [fullScreen, setFullScreen] = useState(false);
+  const initialSession = useMemo<WorkspaceSessionState>(() => {
+    try {
+      return readWorkspaceSession(localStorage.getItem(workspaceSessionKey(name)));
+    } catch {
+      return readWorkspaceSession(null);
+    }
+  }, [name]);
+  const editorLayoutRef = useRef<{ layout: () => void } | null>(null);
   const [rootEntries, setRootEntries] = useState<WorkspaceEntry[]>([]);
-  const [tabs, setTabs] = useState<EditorTab[]>([]);
-  const [activePath, setActivePath] = useState('');
+  const [tabs, setTabs] = useState<EditorTab[]>(() => initialSession.tabs.map(tab => ({
+    ...tab, externalConflict: false,
+  })));
+  const [activePath, setActivePath] = useState(initialSession.activePath);
   const [changedFiles, setChangedFiles] = useState<GitChangedFile[]>([]);
   const [branch, setBranch] = useState('');
   const [branches, setBranches] = useState<string[]>([]);
@@ -340,19 +844,93 @@ function Workbench({ name }: { name: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [gitOperationsOpen, setGitOperationsOpen] = useState(false);
   const [explorerWidth, setExplorerWidth] = useState(250);
   const [diffWidth, setDiffWidth] = useState(initialDiffWidth);
   const [terminalHeight, setTerminalHeight] = useState(250);
   const [sidebarView, setSidebarView] = useState<'explorer' | 'source'>('explorer');
   const [diffVisible, setDiffVisible] = useState(true);
-  const [terminalOpen, setTerminalOpen] = useState(true);
-  const [terminalMaximized, setTerminalMaximized] = useState(false);
-  const [terminalDirectory, setTerminalDirectory] = useState('');
-  const [terminalSession, setTerminalSession] = useState(0);
+  const [rightPanelTab, setRightPanelTab] = useState<'chat' | 'diff'>('chat');
+  const [terminalOpen, setTerminalOpen] = useState(initialSession.terminalOpen);
+  const [terminalMaximized, setTerminalMaximized] = useState(initialSession.terminalMaximized);
+  const [terminalSessions, setTerminalSessions] = useState<TerminalSession[]>(initialSession.terminalSessions);
+  const [activeTerminalId, setActiveTerminalId] = useState(initialSession.activeTerminalId);
+  const nextTerminalId = useRef(Math.max(0, ...initialSession.terminalSessions.map(session => session.id)) + 1);
   const activeTab = tabs.find(tab => tab.path === activePath);
   const dirty = tabs.some(tab => tab.dirty);
   const monacoTheme = mode === 'light' ? 'vs' : 'vs-dark';
   const diffLines = useMemo(() => parseGitDiff(diff), [diff]);
+  const gitOperationBlocked = dirty
+    ? 'Save or discard Monaco editor changes before running Git operations.'
+    : changedFiles.length > 0
+      ? 'Commit, stash, or discard working-tree changes before running Git operations.'
+      : '';
+
+  function openTerminal(directory = '') {
+    const session = { id: nextTerminalId.current, directory };
+    nextTerminalId.current += 1;
+    setTerminalSessions(current => [...current, session]);
+    setActiveTerminalId(session.id);
+    setTerminalOpen(true);
+    setTerminalMaximized(false);
+  }
+
+  useEffect(() => {
+    onDirtyChange(name, dirty);
+  }, [dirty, name, onDirtyChange]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(workspaceSessionKey(name), JSON.stringify({
+        version: 1,
+        tabs: tabs.map(({ externalConflict: _externalConflict, conflictContent: _conflictContent, ...tab }) => tab),
+        activePath,
+        terminalSessions,
+        activeTerminalId,
+        terminalOpen,
+        terminalMaximized,
+      } satisfies WorkspaceSessionState));
+    } catch {
+      /* ignore unavailable or full storage */
+    }
+  }, [
+    activePath, activeTerminalId, name, tabs, terminalMaximized, terminalOpen, terminalSessions,
+  ]);
+
+  useEffect(() => {
+    if (initialSession.tabs.length === 0) return;
+    let cancelled = false;
+    Promise.all(initialSession.tabs.map(async (stored): Promise<EditorTab | null> => {
+      try {
+        const latest = await workspaceApi.file(name, stored.path);
+        if (!stored.dirty) {
+          return { ...latest, savedContent: latest.content, dirty: false, externalConflict: false } satisfies EditorTab;
+        }
+        if (latest.revision === stored.revision) {
+          return { ...stored, externalConflict: false } satisfies EditorTab;
+        }
+        return {
+          ...stored,
+          externalConflict: true,
+          conflictContent: latest.content,
+        } satisfies EditorTab;
+      } catch {
+        return null;
+      }
+    })).then(restored => {
+      if (cancelled) return;
+      const available = restored.filter((tab): tab is EditorTab => tab !== null);
+      setTabs(available);
+      setActivePath(current => available.some(tab => tab.path === current) ? current : available[0]?.path ?? '');
+    });
+    return () => { cancelled = true; };
+  }, [initialSession.tabs, name]);
+
+  useEffect(() => {
+    if (!active) return;
+    const frame = window.requestAnimationFrame(() => editorLayoutRef.current?.layout());
+    return () => window.cancelAnimationFrame(frame);
+  }, [active]);
 
   const updateDiffWidth = useCallback((value: number) => {
     const next = clampDiffWidth(value, typeof window === 'undefined' ? 1440 : window.innerWidth);
@@ -365,7 +943,12 @@ function Workbench({ name }: { name: string }) {
   }, []);
 
   function toggleDiffPanel() {
-    setDiffVisible(visible => !visible);
+    if (diffVisible && rightPanelTab === 'diff') {
+      setDiffVisible(false);
+      return;
+    }
+    setRightPanelTab('diff');
+    setDiffVisible(true);
   }
 
   const refresh = useCallback(async () => {
@@ -473,6 +1056,7 @@ function Workbench({ name }: { name: string }) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (!active) return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
         event.preventDefault();
         void saveTab();
@@ -483,12 +1067,12 @@ function Workbench({ name }: { name: string }) {
         setTerminalMaximized(false);
       }
       if (event.key === 'Escape' && fullScreen) {
-        setFullScreen(false);
+        onToggleFullScreen();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [fullScreen, saveTab]);
+  }, [active, fullScreen, onToggleFullScreen, saveTab]);
 
   async function reloadActive() {
     if (!activeTab) return;
@@ -532,10 +1116,7 @@ function Workbench({ name }: { name: string }) {
     const actions = entry.isDir ? '"terminal", "rename", or "delete"' : '"rename" or "delete"';
     const action = window.prompt(`Enter ${actions}`, entry.isDir ? 'terminal' : 'rename');
     if (action === 'terminal' && entry.isDir) {
-      setTerminalDirectory(entry.path);
-      setTerminalSession(value => value + 1);
-      setTerminalOpen(true);
-      setTerminalMaximized(false);
+      openTerminal(entry.path);
       return;
     }
     if (action === 'rename') {
@@ -579,6 +1160,21 @@ function Workbench({ name }: { name: string }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function refreshAfterGitOperation() {
+    const restored = await Promise.all(tabs.map(async (tab): Promise<EditorTab | null> => {
+      try {
+        const latest = await workspaceApi.file(name, tab.path);
+        return { ...latest, savedContent: latest.content, dirty: false, externalConflict: false };
+      } catch {
+        return null;
+      }
+    }));
+    const available = restored.filter((tab): tab is EditorTab => tab !== null);
+    setTabs(available);
+    setActivePath(current => available.some(tab => tab.path === current) ? current : available[0]?.path ?? '');
+    await refresh();
   }
 
   const changeByPath = useMemo(
@@ -629,7 +1225,7 @@ function Workbench({ name }: { name: string }) {
   } as CSSProperties;
 
   const workbench = (
-    <div className={`rw-workbench rw-theme-${mode}${fullScreen ? ' is-fullscreen' : ''}${terminalMaximized ? ' terminal-maximized' : ''}`} style={layoutStyle}>
+    <div className={`rw-workbench rw-theme-${mode}${terminalMaximized ? ' terminal-maximized' : ''}`} style={layoutStyle}>
       <header className="rw-titlebar">
         <div className="rw-app-mark">tf</div>
         <div className="rw-workbench-name"><strong>{name}</strong><span>Workspace</span></div>
@@ -647,6 +1243,9 @@ function Workbench({ name }: { name: string }) {
           }}>Pull{behind > 0 ? ` (${behind})` : ''}</button>
           <button disabled={busy} onClick={() => void refresh()}><WorkbenchIcon name="refresh" /> Refresh</button>
           <button className={sidebarView === 'source' ? 'active' : ''} onClick={() => setSidebarView('source')}><WorkbenchIcon name="source" /> Changes ({changedFiles.length})</button>
+          <button title="Rebase or cherry-pick" onClick={() => setGitOperationsOpen(true)}>
+            <WorkbenchIcon name="branch" /> Git ops
+          </button>
           <button
             className={diffVisible ? 'active' : ''}
             aria-label="Toggle Git diff"
@@ -656,10 +1255,20 @@ function Workbench({ name }: { name: string }) {
           >
             <WorkbenchIcon name="split" /> Diff
           </button>
+          <button
+            className={diffVisible && rightPanelTab === 'chat' ? 'active' : ''}
+            title="Open AI Chat"
+            onClick={() => {
+              setRightPanelTab('chat');
+              setDiffVisible(true);
+            }}
+          >
+            <WorkbenchIcon name="ai" /> AI
+          </button>
         </div>
         <div className="rw-command-center"><WorkbenchIcon name="search" /><span>{name}</span></div>
         <div className="rw-titlebar-actions">
-          <button className="rw-fullscreen-button" title={fullScreen ? 'Exit full screen' : 'Open full screen'} onClick={() => setFullScreen(value => !value)}>
+          <button className="rw-fullscreen-button" title={fullScreen ? 'Exit full screen' : 'Open full screen'} onClick={onToggleFullScreen}>
             <WorkbenchIcon name={fullScreen ? 'restore' : 'maximize'} /><span>{fullScreen ? 'Exit full screen' : 'Full screen'}</span>
           </button>
         </div>
@@ -791,12 +1400,14 @@ function Workbench({ name }: { name: string }) {
                     <div className="rw-empty">Binary files cannot be displayed.</div>
                   ) : activeTab.externalConflict && activeTab.conflictContent !== undefined ? (
                     <DiffEditor original={activeTab.conflictContent} modified={activeTab.content} language={activeTab.language} theme={monacoTheme}
-                      options={{ readOnly: true, automaticLayout: true, fontFamily: 'var(--tfops-font-mono)', fontSize: 13 }} />
+                      onMount={editor => { editorLayoutRef.current = editor; }}
+                      options={{ readOnly: true, automaticLayout: true, fontFamily: 'var(--tf9-font-mono)', fontSize: 13 }} />
                   ) : (
-                    <Editor path={activeTab.path} value={activeTab.content} language={activeTab.language} theme={monacoTheme}
+                    <Editor path={`${name}/${activeTab.path}`} value={activeTab.content} language={activeTab.language} theme={monacoTheme}
+                      onMount={editor => { editorLayoutRef.current = editor; }}
                       options={{
                         readOnly: activeTab.readOnly, minimap: { enabled: true }, automaticLayout: true,
-                        fontFamily: 'var(--tfops-font-mono)', fontSize: 13, scrollBeyondLastLine: false,
+                        fontFamily: 'var(--tf9-font-mono)', fontSize: 13, scrollBeyondLastLine: false,
                         renderLineHighlight: 'all', smoothScrolling: true, padding: { top: 8 },
                       }}
                       onChange={value => setTabs(current => current.map(tab => tab.path === activeTab.path
@@ -818,30 +1429,42 @@ function Workbench({ name }: { name: string }) {
 
             {diffVisible && (
               <>
-                <div className="rw-resizer rw-resizer-vertical rw-diff-resizer" title="Drag to resize Git diff"
+                <div className="rw-resizer rw-resizer-vertical rw-diff-resizer" title="Drag to resize right panel"
                   onPointerDown={event => startHorizontalResize(event, diffWidth, updateDiffWidth, 1, 220, 900)}
                   onDoubleClick={() => updateDiffWidth(380)} />
-                <aside className="rw-diff">
-                  <div className="rw-panel-head">
-                    <strong>GIT DIFF</strong>
+                <aside className="rw-right-dock">
+                  <div className="rw-dock-tabs">
+                    <button
+                      className={rightPanelTab === 'chat' ? 'active' : ''}
+                      onClick={() => setRightPanelTab('chat')}
+                    ><WorkbenchIcon name="ai" /> AI CHAT</button>
+                    <button
+                      className={rightPanelTab === 'diff' ? 'active' : ''}
+                      onClick={() => setRightPanelTab('diff')}
+                    ><WorkbenchIcon name="split" /> GIT DIFF</button>
                     <span className="rw-diff-size">{diffWidth}px</span>
                     <span className="rw-spacer" />
                     <button aria-label="Narrower" title="Narrower" onClick={() => updateDiffWidth(diffWidth - 80)}>−</button>
                     <button aria-label="Wider" title="Wider" onClick={() => updateDiffWidth(diffWidth + 80)}>＋</button>
-                    <button title="Close Git diff" onClick={() => setDiffVisible(false)}><WorkbenchIcon name="close" /></button>
+                    <button title="Close right panel" onClick={() => setDiffVisible(false)}><WorkbenchIcon name="close" /></button>
                   </div>
-                  <div className="rw-diff-code">
-                    {diff
-                      ? diffLines.map((line, index) => (
-                          <div key={index} className={`rw-diff-line rw-diff-${line.kind}`}>
-                            <span className="rw-diff-number">{index + 1}</span>
-                            <span className="rw-diff-mark">
-                              {line.kind === 'addition' ? '+' : line.kind === 'deletion' ? '-' : ' '}
-                            </span>
-                            <span className="rw-diff-text">{line.text || ' '}</span>
-                          </div>
-                        ))
-                      : <div className="rw-diff-empty">No diff for the selected file.</div>}
+                  <div className="rw-dock-content" hidden={rightPanelTab !== 'chat'}>
+                    <WorkspaceChat repo={name} active={active && rightPanelTab === 'chat'} />
+                  </div>
+                  <div className="rw-dock-content rw-diff" hidden={rightPanelTab !== 'diff'}>
+                    <div className="rw-diff-code">
+                      {diff
+                        ? diffLines.map((line, index) => (
+                            <div key={index} className={`rw-diff-line rw-diff-${line.kind}`}>
+                              <span className="rw-diff-number">{index + 1}</span>
+                              <span className="rw-diff-mark">
+                                {line.kind === 'addition' ? '+' : line.kind === 'deletion' ? '-' : ' '}
+                              </span>
+                              <span className="rw-diff-text">{line.text || ' '}</span>
+                            </div>
+                          ))
+                        : <div className="rw-diff-empty">No diff for the selected file.</div>}
+                    </div>
                   </div>
                 </aside>
               </>
@@ -851,10 +1474,21 @@ function Workbench({ name }: { name: string }) {
           {terminalOpen ? (
             <div className="rw-terminal-wrap" style={{ height: terminalMaximized ? '100%' : terminalHeight, flexBasis: terminalMaximized ? '100%' : terminalHeight }}>
               {!terminalMaximized && <div className="rw-resizer rw-resizer-horizontal" onPointerDown={startTerminalResize} />}
-              <LiveTerminal key={`${terminalDirectory}:${terminalSession}`} repo={name} directory={terminalDirectory} mode={mode} maximized={terminalMaximized} onToggleMaximize={() => setTerminalMaximized(value => !value)} onCollapse={() => {
-                setTerminalOpen(false);
-                setTerminalMaximized(false);
-              }} />
+              <LiveTerminal
+                repo={name}
+                sessions={terminalSessions}
+                activeSessionId={activeTerminalId}
+                mode={mode}
+                active={active}
+                maximized={terminalMaximized}
+                onSelectSession={setActiveTerminalId}
+                onNewSession={() => openTerminal()}
+                onToggleMaximize={() => setTerminalMaximized(value => !value)}
+                onCollapse={() => {
+                  setTerminalOpen(false);
+                  setTerminalMaximized(false);
+                }}
+              />
             </div>
           ) : (
             <button className="rw-open-terminal" onClick={() => setTerminalOpen(true)}><WorkbenchIcon name="terminal" /> Terminal</button>
@@ -881,12 +1515,201 @@ function Workbench({ name }: { name: string }) {
         <span>LF</span>
         <span>{dirty ? '● Unsaved' : '✓ Saved'}</span>
       </footer>
+      {gitOperationsOpen && (
+        <GitOperationsModal
+          repo={name}
+          currentBranch={branch}
+          branches={branches}
+          blocked={gitOperationBlocked}
+          onClose={() => setGitOperationsOpen(false)}
+          onComplete={refreshAfterGitOperation}
+        />
+      )}
     </div>
   );
 
-  return fullScreen ? workbench : <Shell fullWidth><div className="rw-embedded">{workbench}</div></Shell>;
+  return workbench;
+}
+
+function initialTabsState(): WorkspaceTabsState {
+  return { version: 1, openRepositories: [], activeRepository: '' };
+}
+
+async function loadRepositories(): Promise<Repo[]> {
+  const repositories: Repo[] = [];
+  const limit = 500;
+  for (let page = 1; ; page += 1) {
+    const result = await api.get<Paginated<Repo>>(`/api/repos?page=${page}&limit=${limit}`);
+    repositories.push(...result.items);
+    if (repositories.length >= result.total || result.items.length === 0) return repositories;
+  }
 }
 
 export default function RepositoryWorkspace({ name }: { name?: string }) {
-  return name ? <Workbench name={name} /> : <WorkspacePicker />;
+  const { mode, navigate } = useNav();
+  const [repos, setRepos] = useState<Repo[]>([]);
+  const [tabsState, setTabsState] = useState<WorkspaceTabsState>(initialTabsState);
+  const [dirtyByRepo, setDirtyByRepo] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [fullScreen, setFullScreen] = useState(false);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    loadRepositories()
+      .then(result => {
+        setRepos(result.filter(repo => !repo.disabled));
+        setError('');
+      })
+      .catch(err => setError(err instanceof Error ? err.message : 'Could not load repositories.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const enabled = repos.map(repo => repo.name);
+    setTabsState(current => {
+      const saved = initialized.current ? current : readWorkspaceTabs(localStorage.getItem(WORKSPACE_TABS_KEY));
+      initialized.current = true;
+      return normalizeWorkspaceTabs(saved, enabled, name);
+    });
+  }, [loading, name, repos]);
+
+  useEffect(() => {
+    if (!initialized.current) return;
+    try {
+      localStorage.setItem(WORKSPACE_TABS_KEY, JSON.stringify(tabsState));
+    } catch {
+      /* ignore */
+    }
+  }, [tabsState]);
+
+  useEffect(() => {
+    if (!initialized.current || loading) return;
+    if (tabsState.activeRepository !== (name ?? '')) {
+      navigate(tabsState.activeRepository
+        ? { id: 'workspace', name: tabsState.activeRepository }
+        : { id: 'workspace' });
+    }
+  }, [loading, name, navigate, tabsState.activeRepository]);
+
+  const reportDirty = useCallback((repo: string, dirty: boolean) => {
+    setDirtyByRepo(current => current[repo] === dirty ? current : { ...current, [repo]: dirty });
+  }, []);
+
+  function openRepository(repository: string) {
+    setTabsState(current => addWorkspaceRepository(current, repository));
+    setError('');
+    setPickerOpen(false);
+    setQuery('');
+  }
+
+  function activateRepository(repository: string) {
+    setTabsState(current => ({ ...current, activeRepository: repository }));
+  }
+
+  function closeRepository(repository: string) {
+    if (dirtyByRepo[repository] && !window.confirm(`Discard unsaved changes in ${repository}?`)) return;
+    try {
+      localStorage.removeItem(workspaceSessionKey(repository));
+    } catch {
+      /* ignore */
+    }
+    setTabsState(current => closeWorkspaceRepository(current, repository));
+    setDirtyByRepo(current => {
+      const next = { ...current };
+      delete next[repository];
+      return next;
+    });
+  }
+
+  if (loading) return <div className="workspace-loading">Loading workspace…</div>;
+
+  const filteredRepos = repos.filter(repo => repo.name.toLowerCase().includes(query.toLowerCase()));
+  if (tabsState.openRepositories.length === 0) {
+    return (
+      <Shell>
+        <WorkspacePicker repos={repos} error={error} onOpen={openRepository} />
+      </Shell>
+    );
+  }
+
+  return (
+    <Shell fullWidth>
+      <div className={`workspace-host rw-theme-${mode}${fullScreen ? ' is-fullscreen' : ''}`}>
+        <div className="workspace-repo-tabs" role="tablist" aria-label="Open repositories">
+          <div className="workspace-repo-tabs-scroll">
+            {tabsState.openRepositories.map(repository => (
+              <div
+                key={repository}
+                role="tab"
+                aria-selected={tabsState.activeRepository === repository}
+                className={tabsState.activeRepository === repository ? 'active' : ''}
+                title={repository}
+              >
+                <button className="workspace-repo-tab-main" onClick={() => activateRepository(repository)}>
+                  <WorkbenchIcon name="repo" />
+                  <span>{repository}</span>
+                  {dirtyByRepo[repository] && <i className="workspace-repo-dirty" title="Unsaved changes" />}
+                </button>
+                <button
+                  className="workspace-repo-tab-close"
+                  aria-label={`Close ${repository}`}
+                  onClick={() => closeRepository(repository)}
+                >
+                  <WorkbenchIcon name="close" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="workspace-repo-add">
+            <button
+              className="workspace-repo-add-button"
+              title="Open repository"
+              aria-label="Open repository"
+              onClick={() => setPickerOpen(value => !value)}
+            >＋</button>
+            {pickerOpen && (
+              <div className="workspace-repo-picker">
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                  placeholder="Search repositories"
+                  aria-label="Search repositories"
+                />
+                <div>
+                  {filteredRepos.map(repo => (
+                    <button key={repo.name} onClick={() => openRepository(repo.name)}>
+                      <WorkbenchIcon name="repo" />
+                      <span><strong>{repo.name}</strong><small>{repo.path}</small></span>
+                      {tabsState.openRepositories.includes(repo.name) && <b>Open</b>}
+                    </button>
+                  ))}
+                  {filteredRepos.length === 0 && <p>No matching repositories.</p>}
+                </div>
+              </div>
+            )}
+          </div>
+          <span className="workspace-repo-count">{tabsState.openRepositories.length} open</span>
+        </div>
+        {error && <div className="workspace-host-error">{error}<button onClick={() => setError('')}><WorkbenchIcon name="close" /></button></div>}
+        <div className="workspace-panes">
+          {tabsState.openRepositories.map(repository => (
+            <div key={repository} className="workspace-pane" hidden={tabsState.activeRepository !== repository}>
+              <Workbench
+                name={repository}
+                active={tabsState.activeRepository === repository}
+                fullScreen={fullScreen && tabsState.activeRepository === repository}
+                onToggleFullScreen={() => setFullScreen(value => !value)}
+                onDirtyChange={reportDirty}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Shell>
+  );
 }

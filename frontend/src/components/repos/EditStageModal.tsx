@@ -1,6 +1,6 @@
 /**
  * Edit-stage modal — plain JSX port of the prototype's `openEdit` modal
- * (design_handoff_tfops/repos/app.js). Uses the global .overlay/.modal classes.
+ * (design_handoff_tf9/repos/app.js). Uses the global .overlay/.modal classes.
  *
  * Fields: Stage name · Directory (read-only) · AWS profile (select) ·
  * Region (select) · Account ID · Pipeline group (datalist autocomplete) ·
@@ -173,7 +173,7 @@ export default function EditStageModal({
               onChange={e => { setAccount(e.target.value); autoFilled.current.account = false; }}
               placeholder="Optional — verified via STS before runs"
             />
-            <div className="field-hint">When set, tfops checks the AWS account before applying.</div>
+            <div className="field-hint">When set, tf9 checks the AWS account before applying.</div>
           </div>
 
           <div style={{ marginBottom: 16 }}>

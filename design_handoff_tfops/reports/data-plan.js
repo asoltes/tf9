@@ -1,4 +1,4 @@
-// Sample run data for the tfops Plan report — real output from run-0031.
+// Sample run data for the tf9 Plan report — real output from run-0031.
 window.RUN = {
   command: "plan",
   runId: "run-0031",

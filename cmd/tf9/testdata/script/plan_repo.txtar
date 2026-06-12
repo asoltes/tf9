@@ -1,0 +1,15 @@
+# Repo mode: a configured target runs via `tf9 plan -r <repo>`.
+
+exec tf9 config repo add demo $WORK/repo
+exec tf9 config target add dev environments/dev --repo demo --profile e2e-profile
+
+exec tf9 plan -r demo
+stdout 'repo: demo'
+stdout 'ENV: dev'
+stdout 'terraform_data'
+stdout 'Plan:'
+
+-- repo/environments/dev/main.tf --
+resource "terraform_data" "demo" {
+  input = "dev"
+}

@@ -2,7 +2,7 @@
   - generic [ref=e1325]:
     - generic [ref=e1326]:
       - img [ref=e1328]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e1331] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e1332] [cursor=pointer]:
@@ -37,7 +37,7 @@
         - img [ref=e1346]
     - main [ref=e1348]:
       - generic [ref=e1349]:
-        - link "tfops" [ref=e1350] [cursor=pointer]:
+        - link "tf9" [ref=e1350] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e1351]: /
         - link "Settings" [ref=e1352] [cursor=pointer]:
@@ -49,7 +49,7 @@
           - generic [ref=e1358]: CLI Directory to Profile Mappings
           - generic [ref=e1359]:
             - text: Map directory base names to AWS profiles. Used by
-            - code [ref=e1360]: tfops plan --recursive or tfops plan -R --skip prod-euw2
+            - code [ref=e1360]: tf9 plan --recursive or tf9 plan -R --skip prod-euw2
             - text: when scanning child terraform directories from a parent folder. The directory's base name must match a key exactly (e.g.
             - code [ref=e1361]: dev
             - text: ","

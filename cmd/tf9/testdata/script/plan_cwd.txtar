@@ -1,0 +1,12 @@
+# CWD mode: `tf9 plan` runs against the .tf files in the current directory.
+
+cd repo
+exec tf9 plan
+stdout 'Running: terraform plan'
+stdout 'terraform_data'
+stdout 'Plan:'
+
+-- repo/main.tf --
+resource "terraform_data" "demo" {
+  input = "cwd"
+}

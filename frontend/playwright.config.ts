@@ -6,14 +6,15 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,
-  timeout: 30_000,
+  timeout: 60_000,
   expect: {
     timeout: 8_000,
   },
-  reporter: 'line',
+  reporter: [['html', { open: 'never' }], ['line']],
   use: {
     baseURL: `http://127.0.0.1:${port}`,
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
+    video: 'on',
     trace: 'retain-on-failure',
     viewport: { width: 1500, height: 950 },
   },

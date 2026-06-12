@@ -71,9 +71,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ```bash
 # Full build (React frontend → embedded Go binary)
-make build          # outputs ./tfops binary
+make build          # outputs ./tf9 binary
 make build-ui       # rebuild frontend only (faster after Go-only changes)
-make install        # installs to ~/.local/bin/tfops by default
+make install        # installs to ~/.local/bin/tf9 by default
 
 # Development
 make dev            # runs Vite dev server (hot-reload frontend only, port 5173)
@@ -83,25 +83,25 @@ cd frontend && npm run build   # rebuild embedded assets without rebuilding Go
 make demo           # builds and serves with examples/sample-config.yaml at :8080
 
 # Clean
-make clean          # removes ./tfops binary, node_modules, internal/web/dist
+make clean          # removes ./tf9 binary, node_modules, internal/web/dist
 
 # Run tests
 go test ./...
 cd frontend && npx tsc --noEmit   # TypeScript type check
 
 # Run the web UI
-./tfops serve       # http://127.0.0.1:8080 (auto-opens browser)
-./tfops serve --port 9090 --dir ~/reports
+./tf9 serve       # http://127.0.0.1:8080 (auto-opens browser)
+./tf9 serve --port 9090 --dir ~/reports
 
 # CLI usage
-./tfops plan                     # run in CWD if it has .tf files, else scan subdirs
-./tfops plan dev                 # filter targets matching "dev"
-./tfops apply                    # terraform shows its own plan + "Enter a value:" prompt
-./tfops apply prod --force       # apply prod targets, pass -auto-approve (skip prompt)
-./tfops plan --parallel          # run up to four targets concurrently
-./tfops plan -r ctp-infra        # run against registered repo
-./tfops config repo list
-./tfops config target list --repo ctp-infra
+./tf9 plan                     # run in CWD if it has .tf files, else scan subdirs
+./tf9 plan dev                 # filter targets matching "dev"
+./tf9 apply                    # terraform shows its own plan + "Enter a value:" prompt
+./tf9 apply prod --force       # apply prod targets, pass -auto-approve (skip prompt)
+./tf9 plan --parallel          # run up to four targets concurrently
+./tf9 plan -r ctp-infra        # run against registered repo
+./tf9 config repo list
+./tf9 config target list --repo ctp-infra
 ```
 
 ## Demo
@@ -114,22 +114,22 @@ the minimal `.tf` files in `examples/infrastructure/`.
 To try plan runs manually with the example config:
 
 ```bash
-./tfops --config ./examples/sample-config.yaml plan --repo infrastructure
-./tfops --config ./examples/sample-config.yaml serve
+./tf9 --config ./examples/sample-config.yaml plan --repo infrastructure
+./tf9 --config ./examples/sample-config.yaml serve
 ```
 
 ## Architecture
 
-**Two interfaces, one binary.** The `./tfops` CLI and the `tfops serve` web UI both live in the same binary. The web UI is a React SPA compiled by Vite and embedded into `internal/web/dist` via Go's `//go:embed`. The server (`internal/server`) mounts the React bundle at `/` and the REST API at `/api/`.
+**Two interfaces, one binary.** The `./tf9` CLI and the `tf9 serve` web UI both live in the same binary. The web UI is a React SPA compiled by Vite and embedded into `internal/web/dist` via Go's `//go:embed`. The server (`internal/server`) mounts the React bundle at `/` and the REST API at `/api/`.
 
 ### Go packages
 
 | Package | Responsibility |
 |---|---|
-| `cmd/tfops/main.go` | All CLI commands (cobra). `runTerraform` is the entry point for every `terraform *` subcommand. |
+| `cmd/tf9/main.go` | All CLI commands (cobra). `runTerraform` is the entry point for every `terraform *` subcommand. |
 | `internal/runner` | Core execution engine: discovers environment directories, resolves AWS profiles, runs `terraform` processes, captures output, writes HTML reports. Sequential promotion or `--parallel`. |
-| `internal/api` | HTTP handlers for `/api/*` + `RunManager`. The manager owns in-memory run state, streams output via SSE, and persists run history to `~/.config/tfops/runs.json`. |
-| `internal/config` | Reads/writes the shared YAML configuration at `~/.config/tfops/config.yaml`, including repositories and ordered Terraform targets. Migrates legacy config files. |
+| `internal/api` | HTTP handlers for `/api/*` + `RunManager`. The manager owns in-memory run state, streams output via SSE, and persists run history to `~/.config/tf9/runs.json`. |
+| `internal/config` | Reads/writes the shared YAML configuration at `~/.config/tf9/config.yaml`, including repositories and ordered Terraform targets. Migrates legacy config files. |
 | `internal/git` | Thin wrappers around `git` commands: diff, log, worktree, cherry-pick, rebase, merge, pull. |
 | `internal/aws` | AWS SSO session management: checks `aws sts get-caller-identity`, triggers `aws sso login` when expired. |
 | `internal/report` | Generates self-contained HTML plan reports; parses report filenames for the UI. |
@@ -138,10 +138,10 @@ To try plan runs manually with the example config:
 ### Key design constraints
 
 - The React dist (`internal/web/dist/`) must be rebuilt before `go build` when frontend changes. `make build` handles this; `go build` alone will embed the old dist.
-- `runner.Run` is used by both the CLI (`cmd/tfops/main.go`) and the web API (`internal/api/manager.go`). The `Output io.Writer` field distinguishes CLI (nil → stdout) from web (lineWriter → SSE buffer).
+- `runner.Run` is used by both the CLI (`cmd/tf9/main.go`) and the web API (`internal/api/manager.go`). The `Output io.Writer` field distinguishes CLI (nil → stdout) from web (lineWriter → SSE buffer).
 - `safeJoin` in `internal/api/handlers.go` guards all file-path construction against path traversal. Always use it.
 - Never import `@cloudscape-design/components` — the pixel-port intentionally removed that dependency.
-- **CWD mode**: `collectDirs` in `internal/runner/runner.go` checks if `SearchRoot` itself is a valid terraform directory before scanning subdirectories. This lets `tfops plan/apply` work from any terraform module directory without a configured repo.
+- **CWD mode**: `collectDirs` in `internal/runner/runner.go` checks if `SearchRoot` itself is a valid terraform directory before scanning subdirectories. This lets `tf9 plan/apply` work from any terraform module directory without a configured repo.
 - **CLI approval gate**: `runTerraform` does NOT add `-auto-approve` unless `--force` is passed. For interactive CLI runs the runner wires `cmd.Stdin = os.Stdin` so terraform's own `Enter a value:` prompt is shown and handled natively. The web UI path uses `InputCh` + `approvalMonitor` to intercept the same prompt over SSE.
 
 ### Target execution order
@@ -182,7 +182,7 @@ failure. `--parallel` uses at most four workers and is forbidden for
 
 When `AutoApprove` is false and `InputCh` is non-nil (web UI path), the runner
 wraps the output writer in an `approvalMonitor`. The monitor scans the byte
-stream for `"Enter a value:"`, emits the `__TFOPS_APPROVAL__` sentinel line to
+stream for `"Enter a value:"`, emits the `__TF9_APPROVAL__` sentinel line to
 the SSE stream, then blocks on `InputCh` until the frontend sends `"yes"` or
 `"no"`. The value is written directly to terraform's stdin pipe.
 
@@ -192,7 +192,7 @@ terraform's own prompt is handled natively via `Options.Stdin`.
 ### `ApprovalSentinel`
 
 ```go
-const ApprovalSentinel = "__TFOPS_APPROVAL__"
+const ApprovalSentinel = "__TF9_APPROVAL__"
 ```
 
 Emitted as a regular output line. Filtered from display on the frontend
@@ -264,7 +264,7 @@ Each SSE event is a JSON line:
 {"done": true, "success": false}
 ```
 
-The sentinel `__TFOPS_APPROVAL__` is delivered as a regular `line` event and
+The sentinel `__TF9_APPROVAL__` is delivered as a regular `line` event and
 filtered on the frontend before display.
 
 ---
@@ -272,12 +272,12 @@ filtered on the frontend before display.
 ## Frontend (plain React — no Cloudscape)
 
 The UI was pixel-ported off AWS Cloudscape onto a hand-rolled design system that
-matches the original prototype in `design_handoff_tfops/`. All Cloudscape
+matches the original prototype in `design_handoff_tf9/`. All Cloudscape
 component imports have been removed.
 
 - **Framework:** React 18 + TypeScript, built with Vite
 - **UI library:** None — plain JSX + custom CSS (`frontend/src/styles/`)
-- **Theming:** `html[data-theme="dark"|"light"]` attribute; toggled in topnav, persisted to `localStorage` key `tfops-color-mode`. FOUC-prevention script in `index.html` sets the attribute before first paint.
+- **Theming:** `html[data-theme="dark"|"light"]` attribute; toggled in topnav, persisted to `localStorage` key `tf9-color-mode`. FOUC-prevention script in `index.html` sets the attribute before first paint.
 - **State:** Component-local React state only — no Redux/Zustand
 - **Routing:** Hash-based, driven by the `Page` union type in `types.ts`
 - **API:** All calls go through `frontend/src/api.ts` helper wrappers
@@ -341,14 +341,14 @@ Edit tool can corrupt them. Use straight ASCII quotes only.
 
 ---
 
-## Config files (`~/.config/tfops/`)
+## Config files (`~/.config/tf9/`)
 
 | File | Purpose |
 |---|---|
 | `config.yaml` | Repositories and ordered targets with directory, AWS profile, optional account ID/region, and disabled flag |
 | `runs.json` | Persisted run history (last 200, capped at 5000 lines each) |
 | `reports/` | HTML plan report files |
-| `serve.pid` | PID of running `tfops serve` process (killed on next `serve`) |
+| `serve.pid` | PID of running `tf9 serve` process (killed on next `serve`) |
 
 ---
 
@@ -380,7 +380,7 @@ caller **or** logged via `slog` — never silently discarded.
   key-value pairs.
 - Do not log credentials, tokens, or full environment contents — profile names
   and error messages are fine; AWS secret values are not.
-- The application logger is `log/slog` (stdlib). Calls go to `~/.config/tfops/tfops.log`
+- The application logger is `log/slog` (stdlib). Calls go to `~/.config/tf9/tf9.log`
   (server: file + stderr; CLI: file-only). No `fmt.Fprintf(os.Stderr, ...)` for
   internal errors — route everything through slog so it lands in the log file.
 

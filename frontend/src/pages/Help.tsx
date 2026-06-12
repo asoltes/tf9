@@ -96,7 +96,7 @@ export default function Help() {
           <div>
             <div className="page-title">Help</div>
             <div className="page-desc">
-              How tfops is configured and run. The CLI and this web UI share one <code>config.yaml</code>.
+              How tf9 is configured and run. The CLI and this web UI share one <code>config.yaml</code>.
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function Help() {
               <h2>Quick start</h2>
               <div className="lead">Three steps from an empty config to a streamed plan.</div>
               <div className="qstart">
-                <div className="qcard"><div className="qn">1</div><div className="qt">Register a repository</div><div className="qd">Add your infrastructure repo and its path under <b>Repositories</b>, or with <code>tfops config repo add</code>.</div></div>
+                <div className="qcard"><div className="qn">1</div><div className="qt">Register a repository</div><div className="qd">Add your infrastructure repo and its path under <b>Repositories</b>, or with <code>tf9 config repo add</code>.</div></div>
                 <div className="qcard"><div className="qn">2</div><div className="qt">Build a pipeline</div><div className="qd">Group Terraform directories into promotion pipelines and order them (dev → staging → prod).</div></div>
                 <div className="qcard"><div className="qn">3</div><div className="qt">Run</div><div className="qd">Start a <b>plan</b> or <b>apply</b> from <b>New run</b> and watch each target stream live.</div></div>
               </div>
@@ -129,9 +129,11 @@ export default function Help() {
 
             <section className="help-sec" id="config" style={{ marginBottom: 34 }}>
               <h2>Configuration</h2>
-              <div className="lead">Repositories and ordered Terraform targets live in <code>~/.config/tfops/config.yaml</code>. The CLI and web UI read and write the same file.</div>
+              <div className="lead">Repositories and ordered Terraform targets live in <code>~/.config/tf9/config.yaml</code>. The CLI and web UI read and write the same file.</div>
               <CodeBlock>
                 <span className="ck-key">version</span>: 1{'\n'}
+                <span className="ck-key">web</span>:{'\n'}
+                {'  '}<span className="ck-key">saved_plan_apply</span>: true{'\n'}
                 <span className="ck-key">repositories</span>:{'\n'}
                 {'  - '}<span className="ck-key">name</span>: infrastructure{'\n'}
                 {'    '}<span className="ck-key">path</span>: /absolute/path/to/infrastructure{'\n'}
@@ -144,17 +146,18 @@ export default function Help() {
               </CodeBlock>
               <div className="kv"><code>account_id</code><span>· optional — verified against STS before runs.</span></div>
               <div className="kv"><code>disabled</code><span>· optional — skips the target in promotion and parallel runs.</span></div>
+              <div className="kv"><code>web.saved_plan_apply</code><span>· optional — saves successful web plans and requires applies to use the reviewed plan file.</span></div>
             </section>
 
             <section className="help-sec" id="runs" style={{ marginBottom: 34 }}>
               <h2>Terraform runs</h2>
               <div className="lead">Targets run in YAML order by default, stopping on the first apply failure. <code>--parallel</code> uses up to four workers and is rejected for apply and destroy.</div>
               <CodeBlock>
-                <span className="ck-cmd">tfops plan</span> <span className="ck-flag">--repo</span> infrastructure{'\n'}
-                <span className="ck-cmd">tfops plan</span> dev <span className="ck-flag">--repo</span> infrastructure{'\n'}
-                <span className="ck-cmd">tfops apply</span> prod <span className="ck-flag">--repo</span> infrastructure{'\n'}
-                <span className="ck-cmd">tfops plan</span> <span className="ck-flag">--repo</span> infrastructure <span className="ck-flag">--parallel</span>{'\n'}
-                <span className="ck-cmd">tfops state list</span> <span className="ck-flag">--repo</span> infrastructure <span className="ck-flag">--filter</span> dev
+                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">--repo</span> infrastructure{'\n'}
+                <span className="ck-cmd">tf9 plan</span> dev <span className="ck-flag">--repo</span> infrastructure{'\n'}
+                <span className="ck-cmd">tf9 apply</span> prod <span className="ck-flag">--repo</span> infrastructure{'\n'}
+                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">--repo</span> infrastructure <span className="ck-flag">--parallel</span>{'\n'}
+                <span className="ck-cmd">tf9 state list</span> <span className="ck-flag">--repo</span> infrastructure <span className="ck-flag">--filter</span> dev
               </CodeBlock>
             </section>
 
@@ -188,15 +191,15 @@ export default function Help() {
               <CodeBlock>
                 <span className="ck-com"># inside any terraform module directory</span>{'\n'}
                 <span className="ck-cmd">cd</span> ~/my-infra/staging{'\n'}
-                <span className="ck-cmd">tfops plan</span>{'\n'}
-                <span className="ck-cmd">tfops apply</span>{'\n'}
-                <span className="ck-cmd">tfops apply</span> <span className="ck-flag">--force</span>{'\n'}
+                <span className="ck-cmd">tf9 plan</span>{'\n'}
+                <span className="ck-cmd">tf9 apply</span>{'\n'}
+                <span className="ck-cmd">tf9 apply</span> <span className="ck-flag">--force</span>{'\n'}
                 {'\n'}
                 <span className="ck-com"># override the AWS profile</span>{'\n'}
-                <span className="ck-cmd">tfops plan</span> <span className="ck-flag">--profile</span> my-aws-profile
+                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">--profile</span> my-aws-profile
               </CodeBlock>
               <div className="kv">
-                <span>If the current directory has no <code>.tf</code> files, tfops falls back to scanning immediate subdirectories — the original behaviour.</span>
+                <span>If the current directory has no <code>.tf</code> files, tf9 falls back to scanning immediate subdirectories — the original behaviour.</span>
               </div>
             </section>
 
@@ -211,11 +214,11 @@ export default function Help() {
               <CodeBlock>
                 <span className="ck-com"># cd into any parent folder and run across all child tf dirs</span>{'\n'}
                 <span className="ck-cmd">cd</span> ~/my-infra{'\n'}
-                <span className="ck-cmd">tfops plan</span> <span className="ck-flag">-R</span>{'\n'}
-                <span className="ck-cmd">tfops plan</span> <span className="ck-flag">--recursive</span>{'\n'}
+                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">-R</span>{'\n'}
+                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">--recursive</span>{'\n'}
                 {'\n'}
                 <span className="ck-com"># with a profile override for all dirs</span>{'\n'}
-                <span className="ck-cmd">tfops plan</span> <span className="ck-flag">-R</span> <span className="ck-flag">--profile</span> ctp-ecp-dev{'\n'}
+                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">-R</span> <span className="ck-flag">--profile</span> ctp-ecp-dev{'\n'}
                 {'\n'}
                 <span className="ck-com"># --recursive and --repo are mutually exclusive</span>
               </CodeBlock>
@@ -245,23 +248,23 @@ export default function Help() {
               <div className="lead">Manage repositories and targets from the terminal — the web UI edits the same file.</div>
               <CodeBlock>
                 <span className="ck-com"># repositories</span>{'\n'}
-                <span className="ck-cmd">tfops config repo list</span>{'\n'}
-                <span className="ck-cmd">tfops config repo add</span> {'<name> <absolute-path>'}{'\n'}
-                <span className="ck-cmd">tfops config repo remove</span> {'<name>'}{'\n'}
+                <span className="ck-cmd">tf9 config repo list</span>{'\n'}
+                <span className="ck-cmd">tf9 config repo add</span> {'<name> <absolute-path>'}{'\n'}
+                <span className="ck-cmd">tf9 config repo remove</span> {'<name>'}{'\n'}
                 {'\n'}
                 <span className="ck-com"># targets</span>{'\n'}
-                <span className="ck-cmd">tfops config target list</span> <span className="ck-flag">--repo</span> {'<name>'}{'\n'}
-                <span className="ck-cmd">tfops config target add</span> <span className="ck-flag">--repo</span> {'<name> <target> <directory> '}<span className="ck-flag">--profile</span> {'<aws-profile>'}{'\n'}
-                <span className="ck-cmd">tfops config target move</span> <span className="ck-flag">--repo</span> {'<name> <target> '}<span className="ck-flag">--after</span> {'<target>'}{'\n'}
-                <span className="ck-cmd">tfops config target remove</span> <span className="ck-flag">--repo</span> {'<name> <target>'}{'\n'}
+                <span className="ck-cmd">tf9 config target list</span> <span className="ck-flag">--repo</span> {'<name>'}{'\n'}
+                <span className="ck-cmd">tf9 config target add</span> <span className="ck-flag">--repo</span> {'<name> <target> <directory> '}<span className="ck-flag">--profile</span> {'<aws-profile>'}{'\n'}
+                <span className="ck-cmd">tf9 config target move</span> <span className="ck-flag">--repo</span> {'<name> <target> '}<span className="ck-flag">--after</span> {'<target>'}{'\n'}
+                <span className="ck-cmd">tf9 config target remove</span> <span className="ck-flag">--repo</span> {'<name> <target>'}{'\n'}
                 {'\n'}
-                <span className="ck-cmd">tfops serve</span> <span className="ck-flag">--report</span> latest
+                <span className="ck-cmd">tf9 serve</span> <span className="ck-flag">--report</span> latest
               </CodeBlock>
             </section>
 
             <section className="help-sec" id="sensitive" style={{ marginBottom: 20 }}>
               <h2>Sensitive data</h2>
-              <div className="lead">The YAML stores AWS profile names and optional account metadata — never credentials. Authentication stays in the AWS CLI configuration. Reports can contain infrastructure details and are stored outside the repository under <code>~/.config/tfops/reports</code>; review before sharing.</div>
+              <div className="lead">The YAML stores AWS profile names and optional account metadata — never credentials. Authentication stays in the AWS CLI configuration. Reports can contain infrastructure details and are stored outside the repository under <code>~/.config/tf9/reports</code>; review before sharing.</div>
             </section>
           </div>
         </div>

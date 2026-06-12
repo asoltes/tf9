@@ -2,7 +2,7 @@
   - generic [ref=e3]:
     - generic [ref=e4]:
       - img [ref=e6]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e9] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e10] [cursor=pointer]:
@@ -37,7 +37,7 @@
         - img [ref=e36]
     - main [ref=e38]:
       - generic [ref=e39]:
-        - link "tfops" [ref=e40] [cursor=pointer]:
+        - link "tf9" [ref=e40] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e41]: /
         - generic [ref=e42]: Overview
@@ -45,7 +45,7 @@
         - generic [ref=e44]:
           - img [ref=e46]
           - generic [ref=e50]:
-            - heading "tfops" [level=1] [ref=e51]
+            - heading "tf9" [level=1] [ref=e51]
             - paragraph [ref=e52]: Run Terraform across ordered repository targets. A redesigned, themeable interface — explore each surface below. Toggle light / dark from the top-right; it carries across every page.
         - generic [ref=e53]:
           - link "Runs Run history and the live split panel — concurrent parallel terminals, promotion stepper, side/bottom dock. Open Runs" [ref=e54] [cursor=pointer]:

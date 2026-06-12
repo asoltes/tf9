@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { api, repoGit } from '../api';
-import type { Repo, Paginated, GitChangedFile } from '../types';
+import { api, repoGit, costApi } from '../api';
+import type { Repo, Paginated, GitChangedFile, WebSettings } from '../types';
 import { useToast } from './ToastProvider';
 import {
   PRIMARY_COMMANDS,
@@ -82,10 +82,10 @@ function xyClass(xy: string): string {
 
 interface RepoOverride { disabled?: boolean; group?: string }
 
-const GROUP_OVR_KEY = 'tfops-group-overrides';
+const GROUP_OVR_KEY = 'tf9-group-overrides';
 
 function readOverrides(): Record<string, RepoOverride> {
-  try { return JSON.parse(localStorage.getItem('tfops-repo-overrides') || '{}'); }
+  try { return JSON.parse(localStorage.getItem('tf9-repo-overrides') || '{}'); }
   catch { return {}; }
 }
 
@@ -105,9 +105,9 @@ function saveGroupOverride(repoName: string, groupKey: string, disabled: boolean
 
 /**
  * Builds the grouped, filtered target list from the raw repo config.
- * - Disabled targets (via tfops-repo-overrides) are removed.
+ * - Disabled targets (via tf9-repo-overrides) are removed.
  * - The `group` override moves a target into a different pipeline group.
- * - Disabled pipeline groups (via tfops-group-overrides) are shown dimmed with targets unchecked.
+ * - Disabled pipeline groups (via tf9-group-overrides) are shown dimmed with targets unchecked.
  * - Empty groups are hidden.
  * Group order follows first-appearance order.
  */
@@ -164,10 +164,13 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const [profile, setProfile] = useState('');
   const [extra, setExtra] = useState('');
   const [advOpen, setAdvOpen] = useState(false);
+  const [estimateCost, setEstimateCost] = useState(false);
+  const [costTokenSet, setCostTokenSet] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [savedPlanApply, setSavedPlanApply] = useState(false);
 
   const [branches, setBranches] = useState<string[]>([]);
   const [repoStatus, setRepoStatus] = useState<RepoStatus | null>(null);
@@ -190,6 +193,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const isForceUnlock = cmd === 'force-unlock';
   const isImport = cmd === 'import';
   const isAuto = cmd === 'auto';
+  const costEligible = cmd === 'plan' || isApply || isAuto;
   const lockSequential = isApply || isDestroy || isAuto;
   const isMore = !PRIMARY_COMMANDS.includes(cmd as typeof PRIMARY_COMMANDS[number]);
 
@@ -225,6 +229,32 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     return () => { cancelled = true; };
   }, [visible, loadRepoData]);
 
+  // Load Infracost settings so the cost toggle can default to the configured
+  // preference and hide itself when no token is set.
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    costApi.settings()
+      .then(s => {
+        if (cancelled) return;
+        setCostTokenSet(s.tokenConfigured);
+        setEstimateCost(s.tokenConfigured && s.enabledByDefault);
+      })
+      .catch(() => { if (!cancelled) setCostTokenSet(false); });
+    return () => { cancelled = true; };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    api.get<WebSettings>('/api/web/settings')
+      .then(s => {
+        const enabled = !!s.savedPlanApply;
+        setSavedPlanApply(enabled);
+        if (enabled) setCmd(current => current === 'apply' || current === 'auto' ? 'plan' : current);
+      })
+      .catch(() => setSavedPlanApply(false));
+  }, [visible]);
+
   if (!visible) return null;
 
   // ── derived ───────────────────────────────────────────────────────────────
@@ -235,6 +265,11 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
 
   // ── mutators ────────────────────────────────────────────────────────────
   function onSetCmd(id: string) {
+    if (savedPlanApply && (id === 'apply' || id === 'auto')) {
+      setError('Saved-plan apply is enabled. Run Plan, review its output, then use Apply reviewed plan from the run details.');
+      return;
+    }
+    setError('');
     setCmd(id);
     if (id === 'apply' || id === 'destroy' || id === 'auto') setMode('promotion');
     if (id === 'init' || id === 'plan') setMode('parallel');
@@ -440,7 +475,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
       const envF = checked.length && checked.length !== totalTargets
         ? checked.map(t => t.name).join(',') : null;
       const seg = (c: string) => {
-        push('tok-cmd', `tfops ${c}`);
+        push('tok-cmd', `tf9 ${c}`);
         push('tok-flag', '-r'); push('tok-val', repoName);
         if (envF) { push('tok-flag', '--filter'); push('tok-val', envF); }
       };
@@ -453,7 +488,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
       return out.flatMap((node, i) => i === 0 ? [node] : [' ', node]);
     }
 
-    push('tok-cmd', `tfops ${cmd}`);
+    push('tok-cmd', `tf9 ${cmd}`);
     if (checked.length && checked.length !== totalTargets) {
       const names = checked.map(t => t.name);
       if (positional) push('tok-val', names.join(' '));
@@ -479,10 +514,10 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
       const envF = checked.length && checked.length !== totalTargets
         ? ` --filter ${checked.map(t => t.name).join(',')}` : '';
       const aa = autoApprove ? ' --auto-approve' : '';
-      return `tfops init -r ${repoName}${envF} && tfops plan -r ${repoName}${envF} && tfops apply -r ${repoName}${envF}${aa}`;
+      return `tf9 init -r ${repoName}${envF} && tf9 plan -r ${repoName}${envF} && tf9 apply -r ${repoName}${envF}${aa}`;
     }
 
-    const parts: string[] = [`tfops ${cmd}`];
+    const parts: string[] = [`tf9 ${cmd}`];
     if (checked.length && checked.length !== totalTargets) {
       const names = checked.map(t => t.name);
       parts.push(positional ? names.join(' ') : `--filter ${names.join(',')}`);
@@ -544,6 +579,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
         autoApprove: (isApply || isAuto) && autoApprove,
         parallel: mode === 'parallel',
         promotionOrder: mode === 'promotion' ? checked.map(t => t.name) : [],
+        ...(costEligible && estimateCost ? { cost: true } : {}),
         ...(isForceUnlock && lockIds ? { lockIds } : {}),
         ...(isImport && importAddrs && Object.keys(importAddrs).length > 0 ? { importAddrs } : {}),
       });
@@ -857,6 +893,18 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                       <div className="field-hint">Passed through to Terraform.</div>
                     </div>
                   </div>
+                  {costEligible && (
+                    costTokenSet ? (
+                      <div className={`aa-control${estimateCost ? ' on' : ''}`} onClick={() => setEstimateCost(v => !v)}>
+                        <span className={`switch${estimateCost ? ' on' : ''}`} />
+                        <span><span className="aa-t">Estimate cost</span><span className="aa-d">Run Infracost after the plan to show the monthly cost impact.</span></span>
+                      </div>
+                    ) : (
+                      <div className="field-hint">
+                        Cost estimation is off. Add an Infracost token on the Cost page to enable it.
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </div>

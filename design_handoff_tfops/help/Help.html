@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Help · tfops</title>
+<title>Help · tf9</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800&display=swap" rel="stylesheet">
@@ -42,7 +42,7 @@
 <body>
 
 <div class="topnav">
-  <div class="brand"><span style="display:flex;color:#ff9900"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span> tfops</div>
+  <div class="brand"><span style="display:flex;color:#ff9900"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span> tf9</div>
   <div class="tn-sep"></div>
   <a class="tn-item" href="../runs/Runs.html" style="text-decoration:none">Runs</a>
   <a class="tn-item" href="../reports/Reports.html" style="text-decoration:none">Reports</a>
@@ -68,11 +68,11 @@
   </nav>
 
   <main class="content">
-    <div class="crumbs"><a>tfops</a><span class="sep">/</span><span class="cur">Help</span></div>
+    <div class="crumbs"><a>tf9</a><span class="sep">/</span><span class="cur">Help</span></div>
     <div class="page-head">
       <div>
         <div class="page-title">Help</div>
-        <div class="page-desc">How tfops is configured and run. The CLI and this web UI share one <code>config.yaml</code>.</div>
+        <div class="page-desc">How tf9 is configured and run. The CLI and this web UI share one <code>config.yaml</code>.</div>
       </div>
     </div>
 
@@ -91,7 +91,7 @@
           <h2>Quick start</h2>
           <div class="lead">Three steps from an empty config to a streamed plan.</div>
           <div class="qstart">
-            <div class="qcard"><div class="qn">1</div><div class="qt">Register a repository</div><div class="qd">Add your infrastructure repo and its path under <b>Repositories</b>, or with <code>tfops config repo add</code>.</div></div>
+            <div class="qcard"><div class="qn">1</div><div class="qt">Register a repository</div><div class="qd">Add your infrastructure repo and its path under <b>Repositories</b>, or with <code>tf9 config repo add</code>.</div></div>
             <div class="qcard"><div class="qn">2</div><div class="qt">Build a pipeline</div><div class="qd">Group Terraform directories into promotion pipelines and order them (dev → staging → prod).</div></div>
             <div class="qcard"><div class="qn">3</div><div class="qt">Run</div><div class="qd">Start a <b>plan</b> or <b>apply</b> from <b>New run</b> and watch each target stream live.</div></div>
           </div>
@@ -99,7 +99,7 @@
 
         <section class="help-sec" id="config" style="margin-bottom:34px">
           <h2>Configuration</h2>
-          <div class="lead">Repositories and ordered Terraform targets live in <code>~/.config/tfops/config.yaml</code>. The CLI and web UI read and write the same file.</div>
+          <div class="lead">Repositories and ordered Terraform targets live in <code>~/.config/tf9/config.yaml</code>. The CLI and web UI read and write the same file.</div>
           <div class="codeblock">
             <button class="cb-copy">copy</button>
             <pre><span class="ck-key">version</span>: 1
@@ -122,11 +122,11 @@
           <div class="lead">Targets run in YAML order by default, stopping on the first apply failure. <code>--parallel</code> uses up to four workers and is rejected for apply and destroy.</div>
           <div class="codeblock">
             <button class="cb-copy">copy</button>
-            <pre><span class="ck-cmd">tfops plan</span> <span class="ck-flag">--repo</span> infrastructure
-<span class="ck-cmd">tfops plan</span> dev <span class="ck-flag">--repo</span> infrastructure
-<span class="ck-cmd">tfops apply</span> prod <span class="ck-flag">--repo</span> infrastructure
-<span class="ck-cmd">tfops plan</span> <span class="ck-flag">--repo</span> infrastructure <span class="ck-flag">--parallel</span>
-<span class="ck-cmd">tfops state list</span> <span class="ck-flag">--repo</span> infrastructure <span class="ck-flag">--filter</span> dev</pre>
+            <pre><span class="ck-cmd">tf9 plan</span> <span class="ck-flag">--repo</span> infrastructure
+<span class="ck-cmd">tf9 plan</span> dev <span class="ck-flag">--repo</span> infrastructure
+<span class="ck-cmd">tf9 apply</span> prod <span class="ck-flag">--repo</span> infrastructure
+<span class="ck-cmd">tf9 plan</span> <span class="ck-flag">--repo</span> infrastructure <span class="ck-flag">--parallel</span>
+<span class="ck-cmd">tf9 state list</span> <span class="ck-flag">--repo</span> infrastructure <span class="ck-flag">--filter</span> dev</pre>
           </div>
         </section>
 
@@ -136,23 +136,23 @@
           <div class="codeblock">
             <button class="cb-copy">copy</button>
             <pre><span class="ck-com"># repositories</span>
-<span class="ck-cmd">tfops config repo list</span>
-<span class="ck-cmd">tfops config repo add</span> &lt;name&gt; &lt;absolute-path&gt;
-<span class="ck-cmd">tfops config repo remove</span> &lt;name&gt;
+<span class="ck-cmd">tf9 config repo list</span>
+<span class="ck-cmd">tf9 config repo add</span> &lt;name&gt; &lt;absolute-path&gt;
+<span class="ck-cmd">tf9 config repo remove</span> &lt;name&gt;
 
 <span class="ck-com"># targets</span>
-<span class="ck-cmd">tfops config target list</span> <span class="ck-flag">--repo</span> &lt;name&gt;
-<span class="ck-cmd">tfops config target add</span> <span class="ck-flag">--repo</span> &lt;name&gt; &lt;target&gt; &lt;directory&gt; <span class="ck-flag">--profile</span> &lt;aws-profile&gt;
-<span class="ck-cmd">tfops config target move</span> <span class="ck-flag">--repo</span> &lt;name&gt; &lt;target&gt; <span class="ck-flag">--after</span> &lt;target&gt;
-<span class="ck-cmd">tfops config target remove</span> <span class="ck-flag">--repo</span> &lt;name&gt; &lt;target&gt;
+<span class="ck-cmd">tf9 config target list</span> <span class="ck-flag">--repo</span> &lt;name&gt;
+<span class="ck-cmd">tf9 config target add</span> <span class="ck-flag">--repo</span> &lt;name&gt; &lt;target&gt; &lt;directory&gt; <span class="ck-flag">--profile</span> &lt;aws-profile&gt;
+<span class="ck-cmd">tf9 config target move</span> <span class="ck-flag">--repo</span> &lt;name&gt; &lt;target&gt; <span class="ck-flag">--after</span> &lt;target&gt;
+<span class="ck-cmd">tf9 config target remove</span> <span class="ck-flag">--repo</span> &lt;name&gt; &lt;target&gt;
 
-<span class="ck-cmd">tfops serve</span> <span class="ck-flag">--report</span> latest</pre>
+<span class="ck-cmd">tf9 serve</span> <span class="ck-flag">--report</span> latest</pre>
           </div>
         </section>
 
         <section class="help-sec" id="sensitive" style="margin-bottom:20px">
           <h2>Sensitive data</h2>
-          <div class="lead">The YAML stores AWS profile names and optional account metadata — never credentials. Authentication stays in the AWS CLI configuration. Reports can contain infrastructure details and are stored outside the repository under <code>~/.config/tfops/reports</code>; review before sharing.</div>
+          <div class="lead">The YAML stores AWS profile names and optional account metadata — never credentials. Authentication stays in the AWS CLI configuration. Reports can contain infrastructure details and are stored outside the repository under <code>~/.config/tf9/reports</code>; review before sharing.</div>
         </section>
       </div>
     </div>

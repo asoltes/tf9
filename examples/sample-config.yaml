@@ -1,4 +1,6 @@
 version: 1
+web:
+  saved_plan_apply: true
 repositories:
   - name: infrastructure
     path: /home/andres/tf-companion/examples/infrastructure
@@ -12,7 +14,7 @@ repositories:
         aws_profile: example-prod
         region: eu-west-2
 
-# Global directory → AWS profile mappings. Used by `tfops plan --recursive` (-R):
+# Global directory → AWS profile mappings. Used by `tf9 plan --recursive` (-R):
 # cd into a parent folder and run across all child terraform dirs, each with the
 # configured profile. Slice order = execution order. --profile overrides all rows.
 # profile_mappings:

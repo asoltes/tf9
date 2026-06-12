@@ -40,7 +40,7 @@ export function lineClass(line: string): string {
   if (/^~ /.test(t)) return 'tl-chg';
   if (/^#\s/.test(t)) return 'tl-dim';
   if (/^Plan:/.test(t)) return 'tl-plan';
-  if (/^(Apply complete|No changes|Destroy complete)/.test(t)) return 'tl-ok';
+  if (/^(Apply complete|No changes|Destroy complete)|^\[APPROVED\]/.test(t)) return 'tl-ok';
   if (/^Error|^\[FAILED\]/.test(t)) return 'tl-err';
   if (/^data\.|: (Creating|Creation complete|Refreshing|Still)/.test(t)) return 'tl-data';
   if (/Acquiring state lock|Reading\.\.\./.test(t)) return 'tl-dim';

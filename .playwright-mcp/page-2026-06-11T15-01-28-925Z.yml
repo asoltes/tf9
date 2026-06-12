@@ -2,7 +2,7 @@
   - generic [ref=e1461]:
     - generic [ref=e1462]:
       - img [ref=e1464]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e1467] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e1468] [cursor=pointer]:
@@ -37,7 +37,7 @@
         - img [ref=e1482]
     - main [ref=e1484]:
       - generic [ref=e1485]:
-        - link "tfops" [ref=e1486] [cursor=pointer]:
+        - link "tf9" [ref=e1486] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e1487]: /
         - generic [ref=e1488]: Help
@@ -45,7 +45,7 @@
         - generic [ref=e1491]:
           - generic [ref=e1492]: Help
           - generic [ref=e1493]:
-            - text: How tfops is configured and run. The CLI and this web UI share one
+            - text: How tf9 is configured and run. The CLI and this web UI share one
             - code [ref=e1494]: config.yaml
             - text: .
         - generic [ref=e1495]:
@@ -77,7 +77,7 @@
                   - generic [ref=e1513]: Register a repository
                   - generic [ref=e1514]:
                     - text: Add your infrastructure repo and its path under Repositories, or with
-                    - code [ref=e1515]: tfops config repo add
+                    - code [ref=e1515]: tf9 config repo add
                     - text: .
                 - generic [ref=e1516]:
                   - generic [ref=e1517]: "2"
@@ -91,7 +91,7 @@
               - heading "Configuration" [level=2] [ref=e1525]
               - generic [ref=e1526]:
                 - text: Repositories and ordered Terraform targets live in
-                - code [ref=e1527]: ~/.config/tfops/config.yaml
+                - code [ref=e1527]: ~/.config/tf9/config.yaml
                 - text: . The CLI and web UI read and write the same file.
               - generic [ref=e1528]:
                 - button "copy" [ref=e1529] [cursor=pointer]:
@@ -114,7 +114,7 @@
                 - button "copy" [ref=e1545] [cursor=pointer]:
                   - img [ref=e1546]
                   - text: copy
-                - generic [ref=e1549]: tfops plan --repo infrastructure tfops plan dev --repo infrastructure tfops apply prod --repo infrastructure tfops plan --repo infrastructure --parallel tfops state list --repo infrastructure --filter dev
+                - generic [ref=e1549]: tf9 plan --repo infrastructure tf9 plan dev --repo infrastructure tf9 apply prod --repo infrastructure tf9 plan --repo infrastructure --parallel tf9 state list --repo infrastructure --filter dev
             - generic [ref=e1550]:
               - heading "Approval gate" [level=2] [ref=e1551]
               - generic [ref=e1552]:
@@ -149,11 +149,11 @@
                 - button "copy" [ref=e1574] [cursor=pointer]:
                   - img [ref=e1575]
                   - text: copy
-                - generic [ref=e1578]: "# inside any terraform module directory cd ~/my-infra/staging tfops plan tfops apply tfops apply --force # override the AWS profile tfops plan --profile my-aws-profile"
+                - generic [ref=e1578]: "# inside any terraform module directory cd ~/my-infra/staging tf9 plan tf9 apply tf9 apply --force # override the AWS profile tf9 plan --profile my-aws-profile"
               - generic [ref=e1580]:
                 - text: If the current directory has no
                 - code [ref=e1581]: .tf
-                - text: files, tfops falls back to scanning immediate subdirectories — the original behaviour.
+                - text: files, tf9 falls back to scanning immediate subdirectories — the original behaviour.
             - generic [ref=e1582]:
               - heading "Recursive mode" [level=2] [ref=e1583]
               - generic [ref=e1584]:
@@ -165,7 +165,7 @@
                 - button "copy" [ref=e1588] [cursor=pointer]:
                   - img [ref=e1589]
                   - text: copy
-                - generic [ref=e1592]: "# cd into any parent folder and run across all child tf dirs cd ~/my-infra tfops plan -R tfops plan --recursive # with a profile override for all dirs tfops plan -R --profile ctp-ecp-dev # --recursive and --repo are mutually exclusive"
+                - generic [ref=e1592]: "# cd into any parent folder and run across all child tf dirs cd ~/my-infra tf9 plan -R tf9 plan --recursive # with a profile override for all dirs tf9 plan -R --profile ctp-ecp-dev # --recursive and --repo are mutually exclusive"
               - generic [ref=e1593]:
                 - code [ref=e1594]: profile_mappings
                 - generic [ref=e1595]:
@@ -186,12 +186,12 @@
                 - button "copy" [ref=e1608] [cursor=pointer]:
                   - img [ref=e1609]
                   - text: copy
-                - generic [ref=e1612]: "# repositories tfops config repo list tfops config repo add <name> <absolute-path> tfops config repo remove <name> # targets tfops config target list --repo <name> tfops config target add --repo <name> <target> <directory> --profile <aws-profile> tfops config target move --repo <name> <target> --after <target> tfops config target remove --repo <name> <target> tfops serve --report latest"
+                - generic [ref=e1612]: "# repositories tf9 config repo list tf9 config repo add <name> <absolute-path> tf9 config repo remove <name> # targets tf9 config target list --repo <name> tf9 config target add --repo <name> <target> <directory> --profile <aws-profile> tf9 config target move --repo <name> <target> --after <target> tf9 config target remove --repo <name> <target> tf9 serve --report latest"
             - generic [ref=e1613]:
               - heading "Sensitive data" [level=2] [ref=e1614]
               - generic [ref=e1615]:
                 - text: The YAML stores AWS profile names and optional account metadata — never credentials. Authentication stays in the AWS CLI configuration. Reports can contain infrastructure details and are stored outside the repository under
-                - code [ref=e1616]: ~/.config/tfops/reports
+                - code [ref=e1616]: ~/.config/tf9/reports
                 - text: ; review before sharing.
       - generic:
         - img

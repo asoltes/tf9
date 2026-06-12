@@ -1,0 +1,28 @@
+# Target filtering: positional filter, --nonprod, and the mutually-exclusive guard.
+
+exec tf9 config repo add demo $WORK/repo
+exec tf9 config target add dev environments/dev --repo demo --profile p
+exec tf9 config target add prod environments/prod --repo demo --profile p
+
+# Positional filter selects a single target.
+exec tf9 plan dev -r demo
+stdout 'ENV: dev'
+! stdout 'ENV: prod'
+
+# --nonprod skips targets whose name starts with "prod".
+exec tf9 plan --nonprod -r demo
+stdout 'ENV: dev'
+! stdout 'ENV: prod'
+
+# Positional filter together with --filter is rejected.
+! exec tf9 plan dev --filter dev -r demo
+stderr 'not both'
+
+-- repo/environments/dev/main.tf --
+resource "terraform_data" "d" {
+  input = "dev"
+}
+-- repo/environments/prod/main.tf --
+resource "terraform_data" "p" {
+  input = "prod"
+}

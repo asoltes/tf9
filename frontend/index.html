@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>tfops</title>
+    <title>tf9</title>
+    <meta name="theme-color" content="#17152b" />
+    <link rel="icon" type="image/svg+xml" href="/tf9-mark.svg" />
+    <link rel="apple-touch-icon" href="/tf9-mark.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -11,10 +14,10 @@
       rel="stylesheet"
     />
     <script>
-      /* tfops theme init — runs in <head> before paint to avoid FOUC */
+      /* tf9 theme init — runs in <head> before paint to avoid FOUC */
       (function () {
         try {
-          var stored = localStorage.getItem('tfops-color-mode');
+          var stored = localStorage.getItem('tf9-color-mode');
           var preferred = window.matchMedia('(prefers-color-scheme: dark)').matches
             ? 'dark'
             : 'light';

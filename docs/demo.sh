@@ -3,7 +3,7 @@
 # Run via: asciinema rec docs/demo.cast --command "bash docs/demo.sh"
 set -e
 
-TFOPS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/tfops"
+TF9="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/tf9"
 CFG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/examples/sample-config.yaml"
 PROFILE="ctp-loadtest-euw2"
 DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/examples/infrastructure/environments/dev"
@@ -29,24 +29,24 @@ clear
 sleep 0.5
 
 # ── Section 1: version / help ───────────────────────────────────────────────
-type_cmd "tfops --help"
-"$TFOPS" --help
+type_cmd "tf9 --help"
+"$TF9" --help
 echo
 sleep 1
 
 # ── Section 2: list configured repos ────────────────────────────────────────
 printf '\033[2m# list registered repositories\033[0m\n'
 sleep 0.4
-type_cmd "tfops --config ./examples/sample-config.yaml config repo list"
-"$TFOPS" --config "$CFG" config repo list
+type_cmd "tf9 --config ./examples/sample-config.yaml config repo list"
+"$TF9" --config "$CFG" config repo list
 echo
 sleep 1
 
 # ── Section 3: plan a registered repo (all targets) ─────────────────────────
 printf '\033[2m# plan all targets in promotion order\033[0m\n'
 sleep 0.4
-type_cmd "tfops --config ./examples/sample-config.yaml plan --repo infrastructure --profile $PROFILE"
-"$TFOPS" --config "$CFG" plan --repo infrastructure --profile "$PROFILE"
+type_cmd "tf9 --config ./examples/sample-config.yaml plan --repo infrastructure --profile $PROFILE"
+"$TF9" --config "$CFG" plan --repo infrastructure --profile "$PROFILE"
 echo
 sleep 1.5
 
@@ -57,7 +57,7 @@ type_cmd "cd examples/infrastructure/environments/dev"
 cd "$DEV_DIR"
 sleep 0.3
 
-type_cmd "tfops plan --profile $PROFILE"
-"$TFOPS" plan --profile "$PROFILE"
+type_cmd "tf9 plan --profile $PROFILE"
+"$TF9" plan --profile "$PROFILE"
 echo
 sleep 1

@@ -1,6 +1,6 @@
-/* tfops — global theme controller (load in <head> to avoid flash) */
+/* tf9 — global theme controller (load in <head> to avoid flash) */
 (function () {
-  var KEY = "tfops-color-mode";
+  var KEY = "tf9-color-mode";
   function get() { try { return localStorage.getItem(KEY) === "dark" ? "dark" : "light"; } catch (e) { return "light"; } }
   function apply(t) {
     document.documentElement.setAttribute("data-theme", t);
@@ -15,15 +15,15 @@
     var t = get();
     document.querySelectorAll("[data-theme-btn]").forEach(function (b) { b.innerHTML = t === "dark" ? SUN : MOON; b.title = t === "dark" ? "Switch to light mode" : "Switch to dark mode"; });
   }
-  window.tfopsToggleTheme = function () {
+  window.tf9ToggleTheme = function () {
     var next = get() === "dark" ? "light" : "dark";
     try { localStorage.setItem(KEY, next); } catch (e) {}
     apply(next); paintButtons();
-    document.querySelectorAll("iframe").forEach(function (f) { try { f.contentWindow.postMessage({ tfopsTheme: next }, "*"); } catch (e) {} });
+    document.querySelectorAll("iframe").forEach(function (f) { try { f.contentWindow.postMessage({ tf9Theme: next }, "*"); } catch (e) {} });
   };
   function init() {
     paintButtons();
-    document.querySelectorAll("[data-theme-btn]").forEach(function (b) { b.addEventListener("click", window.tfopsToggleTheme); });
+    document.querySelectorAll("[data-theme-btn]").forEach(function (b) { b.addEventListener("click", window.tf9ToggleTheme); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

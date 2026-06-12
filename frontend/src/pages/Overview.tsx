@@ -122,7 +122,7 @@ export default function Overview(_props: OverviewProps) {
             </svg>
           </div>
           <div>
-            <h1>tfops</h1>
+            <h1>tf9</h1>
             <p>
               Run Terraform across ordered repository targets. A redesigned, themeable interface —
               explore each surface below. Toggle light / dark from the top-right; it carries across

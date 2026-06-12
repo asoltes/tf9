@@ -2,7 +2,7 @@
   - generic [ref=e3060]:
     - generic [ref=e3061]:
       - img [ref=e3063]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e3066] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e3067] [cursor=pointer]:
@@ -33,7 +33,7 @@
         - img [ref=e3090]
     - main [ref=e3092]:
       - generic [ref=e3093]:
-        - link "tfops" [ref=e3094] [cursor=pointer]:
+        - link "tf9" [ref=e3094] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e3095]: /
         - link "Reports" [ref=e3096] [cursor=pointer]:
@@ -48,7 +48,7 @@
               - generic [ref=e3109]:
                 - text: Terraform Plan
                 - generic [ref=e3110]: plan
-              - generic [ref=e3113]: "#tfops-apply-20260604-104812.html"
+              - generic [ref=e3113]: "#tf9-apply-20260604-104812.html"
           - generic [ref=e3114]:
             - button "Back to Reports" [ref=e3115] [cursor=pointer]:
               - img [ref=e3116]

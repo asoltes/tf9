@@ -1,0 +1,16 @@
+# Help text and removed-command guidance.
+
+exec tf9 --help
+stdout 'serve'
+stdout 'config'
+
+exec tf9 config --help
+stdout 'repo'
+stdout 'target'
+
+exec tf9 serve --help
+stdout 'port'
+
+# Legacy commands were removed and point at the new config subcommands.
+! exec tf9 add-repo
+stderr 'was removed; use tf9 config'

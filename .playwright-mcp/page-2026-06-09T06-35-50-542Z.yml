@@ -2,7 +2,7 @@
   - generic [ref=e3]:
     - generic [ref=e4]:
       - img [ref=e6]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e9] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e10] [cursor=pointer]:
@@ -33,7 +33,7 @@
         - img [ref=e33]
     - main [ref=e35]:
       - generic [ref=e36]:
-        - link "tfops" [ref=e37] [cursor=pointer]:
+        - link "tf9" [ref=e37] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e38]: /
         - link "Reports" [ref=e39] [cursor=pointer]:
@@ -49,7 +49,7 @@
                 - text: Terraform Apply
                 - generic [ref=e53]: apply
               - generic [ref=e55]:
-                - generic [ref=e61]: "#tfops-apply-20260604-104812.html"
+                - generic [ref=e61]: "#tf9-apply-20260604-104812.html"
                 - generic [ref=e62]: Jun 4, 2026, 06:48 PM
           - generic [ref=e63]:
             - button "Back to Reports" [ref=e64] [cursor=pointer]:

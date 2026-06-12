@@ -1,0 +1,17 @@
+# `apply --force` auto-approves; `apply --parallel` is rejected.
+
+exec tf9 config repo add demo $WORK/repo
+exec tf9 config target add dev environments/dev --repo demo --profile e2e-profile
+
+# --force adds -auto-approve, so apply completes without an interactive prompt.
+exec tf9 apply --force -r demo
+stdout 'Apply complete'
+
+# Parallel apply is forbidden — apply must run sequentially.
+! exec tf9 apply --parallel -r demo
+stderr 'parallel execution is not allowed'
+
+-- repo/environments/dev/main.tf --
+resource "terraform_data" "d" {
+  input = "dev"
+}

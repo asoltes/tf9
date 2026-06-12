@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/andres/tfops/internal/config"
+	"github.com/andres/tf9/internal/config"
 	"github.com/gorilla/websocket"
 )
 

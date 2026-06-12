@@ -270,6 +270,16 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
           {result.profile && <span className="env-pr">{result.profile}</span>}
           <span className="env-meta" />
           {nums}
+          {result.cost && (
+            <span className="env-cost" style={{ marginLeft: 10, color: 'var(--amber)', fontSize: 12.5 }}>
+              {result.cost.currency} {result.cost.totalMonthly.toFixed(2)}/mo
+              {result.cost.hasDiff && (
+                <span style={{ color: result.cost.diffMonthly > 0 ? 'var(--amber)' : result.cost.diffMonthly < 0 ? 'var(--green)' : 'var(--rv-faint)', marginLeft: 4 }}>
+                  ({result.cost.diffMonthly >= 0 ? '+' : ''}{result.cost.diffMonthly.toFixed(2)})
+                </span>
+              )}
+            </span>
+          )}
         </div>
         <span className={`sb ${s.cls}`}><span className="d" />{s.label}</span>
         <span className="chevron">{I.chevron}</span>

@@ -3,6 +3,9 @@ package runner
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -17,10 +20,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/andres/tfops/internal/aws"
-	"github.com/andres/tfops/internal/config"
-	"github.com/andres/tfops/internal/report"
+	"github.com/andres/tf9/internal/aws"
+	"github.com/andres/tf9/internal/config"
+	"github.com/andres/tf9/internal/report"
 )
+
+// ErrApprovalDenied indicates that Terraform reached its approval prompt and
+// the user explicitly declined the apply or destroy operation.
+var ErrApprovalDenied = errors.New("terraform approval denied")
 
 // Options configures a terraform run.
 // ImportSpec holds the resource address and ID required by `terraform import`.
@@ -54,17 +61,24 @@ type Options struct {
 	OnProcStart     func(pid int)         // called with each terraform child PID (process-group leader)
 	SkipApply       map[string]bool       // env labels whose apply is skipped (no plan changes); auto mode
 	Stdin           io.Reader             // if set, wired to terraform's stdin (CLI interactive mode)
+	Cost            bool                  // run infracost cost estimation after each target succeeds
+	InfracostKey    string                // Infracost API key (passed via env to infracost, never logged)
+	Currency        string                // currency code for cost estimates (default USD)
+	SavePlanDir     string                // directory for per-target terraform plan -out files
+	ApplyPlanFiles  map[string]string     // target label → reviewed plan path for terraform apply
 }
 
 // ApprovalSentinel is emitted as a line to the output stream when terraform
 // is waiting for interactive approval. The frontend detects this and shows
 // an inline approval prompt.
-const ApprovalSentinel = "__TFOPS_APPROVAL__"
+const ApprovalSentinel = "__TF9_APPROVAL__"
 
 // ApprovalClearSentinel is emitted when terraform is no longer blocked on the
 // approval prompt (input received or the run was cancelled). The frontend uses
 // it to hide the approval bar reliably.
-const ApprovalClearSentinel = "__TFOPS_APPROVAL_CLEAR__"
+const ApprovalClearSentinel = "__TF9_APPROVAL_CLEAR__"
+
+const approvalAcceptedLine = "  [APPROVED] Approval accepted."
 
 // buildArgs assembles the terraform argument list for a single target.
 //
@@ -139,6 +153,9 @@ func (m *approvalMonitor) Write(p []byte) (int, error) {
 		select {
 		case input := <-m.inputCh:
 			m.stdinW.Write([]byte(input + "\n")) //nolint:errcheck
+			if strings.TrimSpace(input) == "yes" {
+				m.out.Write([]byte("\n" + approvalAcceptedLine + "\n")) //nolint:errcheck
+			}
 		case <-m.ctx.Done():
 		}
 		m.stdinW.Close() //nolint:errcheck
@@ -193,6 +210,7 @@ type envResult struct {
 	failed  bool
 	summary *planSummary
 	output  string
+	cost    *report.CostEstimate
 }
 
 type planSummary struct {
@@ -351,6 +369,7 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 	runAt := time.Now().UTC()
 	var results []envResult
 	var failed []string
+	var deniedTarget string
 	ctx := opts.ctx()
 
 	// force-unlock always runs sequentially regardless of the Parallel flag.
@@ -396,6 +415,47 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 		if skip {
 			fmt.Fprintf(out, "==> Skipping %s (no lock id / import spec provided)\n", env)
 			continue
+		}
+		savedPlanFile := ""
+		if opts.TfCommand == "plan" {
+			savedPlanFile = SavedPlanFilePath(opts.SavePlanDir, env)
+			if savedPlanFile != "" {
+				if err := os.MkdirAll(filepath.Dir(savedPlanFile), 0o700); err != nil {
+					return nil, "", fmt.Errorf("create saved plan directory for %s: %w", env, err)
+				}
+				args = append(args, "-out="+savedPlanFile)
+			}
+		} else if opts.TfCommand == "apply" {
+			savedPlanFile = opts.ApplyPlanFiles[env]
+			if savedPlanFile != "" {
+				if _, err := os.Stat(savedPlanFile); err != nil {
+					return nil, "", fmt.Errorf("reviewed plan for %s is unavailable: %w", env, err)
+				}
+				args = []string{"apply", "-input=false", savedPlanFile}
+			}
+		}
+
+		// When cost estimation is requested, capture a plan to a temp file so
+		// infracost can compute the cost diff from it afterwards.
+		//   - plan:    add -out to the plan we're already running.
+		//   - destroy: generate a separate destroy plan BEFORE teardown (while the
+		//     resources still exist) so infracost reflects cost falling to ~$0
+		//     with a negative diff. A directory breakdown can't show this because
+		//     infracost parses the (unchanged) HCL, not the deployed state.
+		costPlanFile := ""
+		if opts.Cost && opts.TfCommand == "plan" {
+			costPlanFile = savedPlanFile
+			if costPlanFile == "" {
+				costPlanFile = costPlanPath()
+				args = append(args, "-out="+costPlanFile)
+			}
+		} else if opts.Cost && opts.TfCommand == "destroy" {
+			costPlanFile = costPlanPath()
+			if err := generateDestroyPlan(ctx, dir, meta, costPlanFile); err != nil {
+				fmt.Fprintf(out, "  [WARN] could not capture destroy plan for cost: %v\n", err)
+				slog.Warn("destroy cost plan failed", "env", env, "err", err)
+				costPlanFile = ""
+			}
 		}
 
 		fmt.Fprintln(out, "════════════════════════════════════════")
@@ -502,7 +562,7 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 			stdinWriteEnd.Close()
 		}
 		if usedForeground {
-			// Reclaim the terminal foreground so Ctrl+C reaches tfops (not the
+			// Reclaim the terminal foreground so Ctrl+C reaches tf9 (not the
 			// now-dead terraform process group) if the user wants to abort further
 			// targets.
 			restoreTerminalForeground()
@@ -512,8 +572,27 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 
 		res := envResult{env: env, profile: profile, output: tw.capture.String()}
 		res.summary = summary
+		if exitCode == 0 && opts.Stdin != nil && approvalPromptShown(res.output) {
+			fmt.Fprintln(out, approvalAcceptedLine)
+		}
 
 		if exitCode != 0 {
+			if costPlanFile != "" && costPlanFile != savedPlanFile {
+				if err := os.Remove(costPlanFile); err != nil && !os.IsNotExist(err) {
+					slog.Debug("could not remove cost plan file", "file", costPlanFile, "err", err)
+				}
+			}
+			if approvalWasDenied(tw.capture.String()) {
+				fmt.Fprintf(out, "  [DENIED] %s\n", env)
+				results = append(results, res)
+				deniedTarget = env
+				if opts.ReportDir != "-" {
+					writeLiveReport(results, opts, runAt)
+				}
+				fmt.Fprintln(out)
+				fmt.Fprintf(out, "  Stopping promotion — approval denied for %s.\n", env)
+				break
+			}
 			fmt.Fprintf(out, "  [FAILED] %s\n", env)
 			failed = append(failed, env)
 			res.failed = true
@@ -527,6 +606,24 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 				break
 			}
 		} else {
+			if opts.Cost && summary != nil && !summary.noChanges {
+				if cost, cerr := runInfracost(ctx, dir, costPlanFile, meta, opts); cerr != nil {
+					fmt.Fprintf(out, "  [WARN] cost estimation failed for %s: %v\n", env, cerr)
+					slog.Warn("infracost failed", "env", env, "err", cerr)
+				} else {
+					res.cost = cost
+					fmt.Fprintf(out, "  Cost: %s %.2f/mo", cost.Currency, cost.TotalMonthly)
+					if cost.HasDiff {
+						fmt.Fprintf(out, " (%+.2f)", cost.DiffMonthly)
+					}
+					fmt.Fprintln(out)
+				}
+			}
+			if costPlanFile != "" && costPlanFile != savedPlanFile {
+				if err := os.Remove(costPlanFile); err != nil && !os.IsNotExist(err) {
+					slog.Debug("could not remove cost plan file", "file", costPlanFile, "err", err)
+				}
+			}
 			results = append(results, res)
 			if opts.ReportDir != "-" {
 				writeLiveReport(results, opts, runAt)
@@ -564,11 +661,24 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 	if len(failed) > 0 {
 		return final, reportFilename, fmt.Errorf("FAILED: %s", strings.Join(failed, " "))
 	}
+	if deniedTarget != "" {
+		return final, reportFilename, fmt.Errorf("%w: %s", ErrApprovalDenied, deniedTarget)
+	}
 	return final, reportFilename, nil
 }
 
+func approvalWasDenied(output string) bool {
+	clean := reANSI.ReplaceAllString(output, "")
+	return strings.Contains(clean, "Apply cancelled.") || strings.Contains(clean, "Destroy cancelled.")
+}
+
+func approvalPromptShown(output string) bool {
+	clean := reANSI.ReplaceAllString(output, "")
+	return strings.Contains(clean, "Enter a value:")
+}
+
 func liveFilename(cmd string) string {
-	return "tfops-" + sanitizeCmd(cmd) + "-live.html"
+	return "tf9-" + sanitizeCmd(cmd) + "-live.html"
 }
 
 func sanitizeCmd(cmd string) string {
@@ -596,6 +706,7 @@ func toReportResults(results []envResult) []report.EnvResult {
 			Profile: r.profile,
 			Failed:  r.failed,
 			Output:  r.output,
+			Cost:    r.cost,
 		}
 		if r.summary != nil {
 			rr[i].Add = r.summary.add
@@ -737,7 +848,7 @@ func collectDirs(opts Options) ([]string, map[string]targetMeta, error) {
 	var dirs []string
 
 	// If SearchRoot itself is a Terraform directory, use it directly rather
-	// than scanning its children. This lets `tfops plan` work from inside any
+	// than scanning its children. This lets `tf9 plan` work from inside any
 	// terraform module without a configured repo.
 	// --recursive bypasses this so subdirectories are always scanned.
 	if !opts.Recursive && isValidTfDir(opts.SearchRoot) {
@@ -909,6 +1020,33 @@ func runParallel(
 				ch <- slot{idx: idx, result: envResult{env: env, profile: profile}}
 				return
 			}
+			savedPlanFile := ""
+			if opts.TfCommand == "plan" {
+				savedPlanFile = SavedPlanFilePath(opts.SavePlanDir, env)
+				if savedPlanFile != "" {
+					if err := os.MkdirAll(filepath.Dir(savedPlanFile), 0o700); err != nil {
+						fmt.Fprintf(prefixedOut, "[FAILED] create saved plan directory: %v\n", err)
+						ch <- slot{idx: idx, result: envResult{env: env, profile: meta.profile, failed: true}}
+						return
+					}
+					args = append(args, "-out="+savedPlanFile)
+				}
+			}
+			costPlanFile := ""
+			if opts.Cost && opts.TfCommand == "plan" {
+				costPlanFile = savedPlanFile
+				if costPlanFile == "" {
+					costPlanFile = costPlanPath()
+					args = append(args, "-out="+costPlanFile)
+				}
+				defer func() {
+					if costPlanFile != savedPlanFile {
+						if err := os.Remove(costPlanFile); err != nil && !os.IsNotExist(err) {
+							slog.Debug("could not remove cost plan file", "file", costPlanFile, "err", err)
+						}
+					}
+				}()
+			}
 			cmd := exec.CommandContext(ctx, "terraform", args...)
 			cmd.Dir = dir
 			cmd.Env = terraformEnv(meta)
@@ -938,6 +1076,18 @@ func runParallel(
 			if exitCode != 0 {
 				fmt.Fprintf(prefixedOut, "[FAILED] %s\n", env)
 				res.failed = true
+			} else if opts.Cost && summary != nil && !summary.noChanges {
+				if cost, cerr := runInfracost(ctx, dir, costPlanFile, meta, opts); cerr != nil {
+					fmt.Fprintf(prefixedOut, "[WARN] cost estimation failed for %s: %v\n", env, cerr)
+					slog.Warn("infracost failed", "env", env, "err", cerr)
+				} else {
+					res.cost = cost
+					fmt.Fprintf(prefixedOut, "Cost: %s %.2f/mo", cost.Currency, cost.TotalMonthly)
+					if cost.HasDiff {
+						fmt.Fprintf(prefixedOut, " (%+.2f)", cost.DiffMonthly)
+					}
+					fmt.Fprintln(prefixedOut)
+				}
 			}
 
 			ch <- slot{idx: idx, result: res}
@@ -963,6 +1113,21 @@ func runParallel(
 		}
 	}
 	return results, failed
+}
+
+// SavedPlanFilePath returns the collision-resistant plan filename for a target.
+func SavedPlanFilePath(dir, target string) string {
+	if dir == "" {
+		return ""
+	}
+	safe := strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_' || r == '.' {
+			return r
+		}
+		return '_'
+	}, target)
+	sum := sha256.Sum256([]byte(target))
+	return filepath.Join(dir, fmt.Sprintf("%s-%x.tfplan", safe, sum[:6]))
 }
 
 func resolvedMeta(meta targetMeta, override string) targetMeta {
@@ -995,6 +1160,170 @@ func ensureSessions(ctx context.Context, dirs []string, metaFor map[string]targe
 		}
 	}
 	return nil
+}
+
+// costPlanPath returns a unique temp path for a captured terraform plan file.
+func costPlanPath() string {
+	f, err := os.CreateTemp("", "tf9-cost-*.tfplan")
+	if err != nil {
+		return filepath.Join(os.TempDir(), fmt.Sprintf("tf9-cost-%d.tfplan", time.Now().UnixNano()))
+	}
+	name := f.Name()
+	f.Close()
+	return name
+}
+
+// generateDestroyPlan writes a destroy plan to outFile so infracost can price
+// the teardown. It must run while the resources still exist (before the actual
+// destroy) so the plan's prior state is the full deployment and infracost shows
+// the cost falling toward zero.
+func generateDestroyPlan(ctx context.Context, dir string, meta targetMeta, outFile string) error {
+	cmd := exec.CommandContext(ctx, "terraform", "plan", "-destroy", "-input=false", "-out="+outFile)
+	cmd.Dir = dir
+	cmd.Env = terraformEnv(meta)
+	if _, err := cmd.Output(); err != nil {
+		return infracostErr(err)
+	}
+	return nil
+}
+
+// runInfracost computes a cost estimate for a target. When planFile is set, the
+// plan is converted to JSON and infracost reports the cost diff; otherwise it
+// runs a directory breakdown for the total monthly cost. The API key is passed
+// only via the child environment and is never logged.
+func runInfracost(ctx context.Context, dir, planFile string, meta targetMeta, opts Options) (*report.CostEstimate, error) {
+	apiKey := opts.InfracostKey
+	if apiKey == "" {
+		apiKey = os.Getenv("INFRACOST_API_KEY")
+	}
+	if apiKey == "" {
+		return nil, fmt.Errorf("no infracost api key configured")
+	}
+	currency := opts.Currency
+	if currency == "" {
+		currency = "USD"
+	}
+
+	inputPath := dir
+	hasDiff := false
+	if planFile != "" {
+		jsonFile, err := os.CreateTemp("", "tf9-cost-*.json")
+		if err != nil {
+			return nil, fmt.Errorf("create plan json temp: %w", err)
+		}
+		jsonPath := jsonFile.Name()
+		defer func() {
+			if rerr := os.Remove(jsonPath); rerr != nil && !os.IsNotExist(rerr) {
+				slog.Debug("could not remove plan json temp", "file", jsonPath, "err", rerr)
+			}
+		}()
+		show := exec.CommandContext(ctx, "terraform", "show", "-json", planFile)
+		show.Dir = dir
+		show.Env = terraformEnv(meta)
+		showOut, err := show.Output()
+		if err != nil {
+			jsonFile.Close()
+			return nil, fmt.Errorf("terraform show -json: %w", infracostErr(err))
+		}
+		if _, err := jsonFile.Write(showOut); err != nil {
+			jsonFile.Close()
+			return nil, fmt.Errorf("write plan json: %w", err)
+		}
+		jsonFile.Close()
+		inputPath = jsonPath
+		hasDiff = true
+	}
+
+	ic := exec.CommandContext(ctx, "infracost", "breakdown", "--path", inputPath, "--format", "json")
+	ic.Dir = dir
+	ic.Env = append(os.Environ(), "INFRACOST_API_KEY="+apiKey, "INFRACOST_CURRENCY="+currency)
+	icOut, err := ic.Output()
+	if err != nil {
+		return nil, fmt.Errorf("infracost breakdown: %w", infracostErr(err))
+	}
+
+	var parsed struct {
+		Currency             string `json:"currency"`
+		TotalMonthlyCost     string `json:"totalMonthlyCost"`
+		DiffTotalMonthlyCost string `json:"diffTotalMonthlyCost"`
+		Projects             []struct {
+			Breakdown struct {
+				Resources []struct {
+					Name        string  `json:"name"`
+					MonthlyCost *string `json:"monthlyCost"`
+				} `json:"resources"`
+			} `json:"breakdown"`
+		} `json:"projects"`
+	}
+	if err := json.Unmarshal(icOut, &parsed); err != nil {
+		return nil, fmt.Errorf("parse infracost output: %w", err)
+	}
+	cur := parsed.Currency
+	if cur == "" {
+		cur = currency
+	}
+
+	var resources []report.CostResource
+	for _, p := range parsed.Projects {
+		for _, r := range p.Breakdown.Resources {
+			mc := 0.0
+			if r.MonthlyCost != nil {
+				mc = parseMoney(*r.MonthlyCost)
+			}
+			resources = append(resources, report.CostResource{
+				Name:        r.Name,
+				Type:        resourceType(r.Name),
+				MonthlyCost: mc,
+			})
+		}
+	}
+	// Highest-cost first so the UI's "top resources" view is meaningful, and cap
+	// the list to keep report sidecars small.
+	sort.Slice(resources, func(i, j int) bool { return resources[i].MonthlyCost > resources[j].MonthlyCost })
+	if len(resources) > 200 {
+		resources = resources[:200]
+	}
+
+	return &report.CostEstimate{
+		Currency:      cur,
+		TotalMonthly:  parseMoney(parsed.TotalMonthlyCost),
+		DiffMonthly:   parseMoney(parsed.DiffTotalMonthlyCost),
+		HasDiff:       hasDiff,
+		ResourceCount: len(resources),
+		Resources:     resources,
+	}, nil
+}
+
+// resourceType extracts the terraform resource type from an Infracost resource
+// address (e.g. "module.vpc.aws_subnet.private[0]" → "aws_subnet"). The type is
+// the dot-segment immediately before the resource name.
+func resourceType(name string) string {
+	if name == "" {
+		return ""
+	}
+	// Drop any trailing index like [0] or ["a"].
+	if i := strings.IndexByte(name, '['); i >= 0 {
+		name = name[:i]
+	}
+	parts := strings.Split(name, ".")
+	if len(parts) >= 2 {
+		return parts[len(parts)-2]
+	}
+	return parts[0]
+}
+
+// infracostErr surfaces captured stderr from a failed exec so warnings are
+// actionable (api key issues, missing binary, etc.).
+func infracostErr(err error) error {
+	if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
+		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(ee.Stderr)))
+	}
+	return err
+}
+
+func parseMoney(s string) float64 {
+	f, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	return f
 }
 
 func terraformEnv(meta targetMeta) []string {

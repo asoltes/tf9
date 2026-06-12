@@ -10,6 +10,7 @@ import Repos from './pages/Repos';
 import ConfigYaml from './pages/ConfigYaml';
 import ReportsPage from './pages/Reports';
 import ReportViewer from './pages/ReportViewer';
+import CostPage from './pages/Cost';
 import LogsPage from './pages/Logs';
 import Help from './pages/Help';
 import Overview from './pages/Overview';
@@ -17,7 +18,7 @@ import ProfileMappingsPage from './pages/ProfileMappings';
 
 const RepositoryWorkspace = lazy(() => import('./pages/RepositoryWorkspace'));
 
-const MODE_KEY = 'tfops-color-mode';
+const MODE_KEY = 'tf9-color-mode';
 type Mode = 'light' | 'dark' | 'dim';
 
 function getInitialMode(): Mode {
@@ -58,6 +59,7 @@ function PageContent({
     case 'profile-mappings':  return <ProfileMappingsPage />;
     case 'reports':           return <ReportsPage />;
     case 'report':   return <ReportViewer name={page.name} mode={mode} />;
+    case 'cost':     return <CostPage />;
     case 'logs':     return <LogsPage />;
     case 'help':     return <Help />;
   }
@@ -77,6 +79,7 @@ function parseHash(raw: string): Page {
     case 'config':            return { id: 'config' };
     case 'profile-mappings':  return { id: 'profile-mappings' };
     case 'reports':           return { id: 'reports' };
+    case 'cost':              return { id: 'cost' };
     case 'logs':              return { id: 'logs' };
     case 'help':              return { id: 'help' };
     default:                  return { id: 'overview' };

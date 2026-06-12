@@ -1,5 +1,5 @@
 /* =========================================================================
-   tfops · Repositories — interactive Cloudscape prototype
+   tf9 · Repositories — interactive Cloudscape prototype
    Promotion pipeline (drag-to-reorder) + repo list + browse.
    ========================================================================= */
 (function () {
@@ -118,7 +118,7 @@
   function activeTargets(r) { return r.targets.filter(function (t) { return !t.disabled; }); }
 
   /* ---- localStorage: disabled + group overrides ------------------------- */
-  var OVR_KEY = "tfops-repo-overrides";
+  var OVR_KEY = "tf9-repo-overrides";
   function saveOverrides() {
     try {
       var d = {};
@@ -437,7 +437,7 @@
         field("AWS profile", sel("f_profile", PROFILES, t.aws_profile, true)) +
         field("Region", sel("f_region", REGIONS, t.region, true)) +
       "</div>" +
-      field("Expected account ID", '<input class="inp mono" id="f_acct" value="' + esc(t.account_id || "") + '" placeholder="Optional — verified via STS before runs">', "When set, tfops checks the AWS account before applying.") +
+      field("Expected account ID", '<input class="inp mono" id="f_acct" value="' + esc(t.account_id || "") + '" placeholder="Optional — verified via STS before runs">', "When set, tf9 checks the AWS account before applying.") +
       field("Pipeline group", '<input class="inp mono" id="f_group" list="f_grp_list" value="' + esc(t.group || groupKey(t)) + '" placeholder="e.g. environments"><datalist id="f_grp_list">' + Array.from(new Set(repo().targets.map(function(x){return groupKey(x);}))).map(function(g){return '<option value="'+esc(g)+'">';}).join("") + "</datalist>", "Override which pipeline group this stage belongs to. Changing this moves it in the New Run Modal.") +
       '<label style="display:flex;align-items:center;gap:9px;margin-top:4px;cursor:pointer"><span class="switch' + (t.gated ? " on" : "") + '" id="f_gate"></span><span><b style="font-size:13px">Require manual approval</b><div class="field-hint" style="margin:0">Pause the promotion before this stage until approved.</div></span></label>';
     $("#editModal").classList.add("show");

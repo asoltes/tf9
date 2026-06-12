@@ -1,5 +1,5 @@
 /* ===========================================================================
-   tfops report — shared renderer + interactions
+   tf9 report — shared renderer + interactions
    Driven by window.RUN. One script for plan / apply / destroy.
    =========================================================================== */
 (function () {
@@ -374,7 +374,7 @@
     var cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
     var next = cur === "light" ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("tfops-color-mode", next); } catch (e) {}
+    try { localStorage.setItem("tf9-color-mode", next); } catch (e) {}
     applyThemeIcon();
   }
 
@@ -423,7 +423,7 @@
 
     // theme sync when embedded in the SPA iframe
     window.addEventListener("message", function (e) {
-      if (e.data && e.data.tfopsTheme) { document.documentElement.setAttribute("data-theme", e.data.tfopsTheme); applyThemeIcon(); }
+      if (e.data && e.data.tf9Theme) { document.documentElement.setAttribute("data-theme", e.data.tf9Theme); applyThemeIcon(); }
     });
   }
 

@@ -2,7 +2,7 @@
   - generic [ref=e739]:
     - generic [ref=e740]:
       - img [ref=e742]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e745] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e746] [cursor=pointer]:
@@ -37,7 +37,7 @@
         - img [ref=e772]
     - main [ref=e774]:
       - generic [ref=e775]:
-        - link "tfops" [ref=e776] [cursor=pointer]:
+        - link "tf9" [ref=e776] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e777]: /
         - link "Settings" [ref=e778] [cursor=pointer]:
@@ -51,7 +51,7 @@
             - generic [ref=e784]: (0)
           - generic [ref=e785]:
             - text: Repositories and their ordered Terraform targets, stored in
-            - code [ref=e786]: ~/.config/tfops/config.yaml
+            - code [ref=e786]: ~/.config/tf9/config.yaml
             - text: . Apply and destroy run targets top-to-bottom and stop on the first failure.
         - button "Add repository" [ref=e787] [cursor=pointer]:
           - img [ref=e789]

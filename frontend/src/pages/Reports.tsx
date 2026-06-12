@@ -34,8 +34,8 @@ function badgeColor(cmd: string): string {
 
 /** Derive a short run identifier from the report filename timestamp. */
 function runId(name: string): string {
-  // tfops-plan-20260602-153045.html → 20260602-153045 ; tfops-apply-live.html → live
-  const m = name.replace(/^tfops-/, '').replace(/\.html$/, '');
+  // tf9-plan-20260602-153045.html → 20260602-153045 ; tf9-apply-live.html → live
+  const m = name.replace(/^tf9-/, '').replace(/\.html$/, '');
   const parts = m.split('-');
   if (parts.length >= 3) return parts.slice(1).join('-');
   return parts.slice(1).join('-') || m;
@@ -112,6 +112,24 @@ export default function ReportsPage() {
 
   const list = useMemo(() => filterByCommand(reports, filter), [reports, filter]);
 
+  // Cost roll-up across the loaded reports (reports are newest-first). The latest
+  // apply reflects deployed cost; the latest plan carries a projected change.
+  const cost = useMemo(() => {
+    const withCost = reports.filter(r => r.hasCost);
+    if (withCost.length === 0) return null;
+    const latestApply = withCost.find(r => r.command === 'apply');
+    const latestPlan = withCost.find(r => r.command === 'plan');
+    const anchor = latestApply ?? withCost[0];
+    return {
+      count: withCost.length,
+      currency: anchor.currency ?? 'USD',
+      monthly: anchor.totalMonthly ?? 0,
+      anchorCmd: anchor.command,
+      annual: (anchor.totalMonthly ?? 0) * 12,
+      change: latestPlan ? (latestPlan.diffMonthly ?? 0) : null,
+    };
+  }, [reports]);
+
   const open = (name: string) => navigate({ id: 'report', name });
 
   const FILTERS: { key: string; label: string }[] = [
@@ -179,6 +197,11 @@ export default function ReportsPage() {
               <ChangeBar add={r.add} change={r.change} destroy={r.destroy} />
               <div className="rh-card-stats">
                 {statSpan(r.add, '+')} {statSpan(r.change, '~')} {statSpan(r.destroy, '-')}
+                {r.hasCost && (
+                  <span style={{ color: 'var(--amber)', marginLeft: 'auto' }}>
+                    {r.currency} {(r.totalMonthly ?? 0).toFixed(2)}/mo
+                  </span>
+                )}
               </div>
               <div className="rh-card-meta">
                 <div className="rh-card-targets">
@@ -207,6 +230,7 @@ export default function ReportsPage() {
               <th className="num">Destroy</th>
               <th>Distribution</th>
               <th className="num">Envs</th>
+              <th className="num">Monthly Cost</th>
               <th>Date</th>
               <th>Status</th>
             </tr>
@@ -233,6 +257,11 @@ export default function ReportsPage() {
                     </span>
                   </td>
                   <td className="num">{r.envs}</td>
+                  <td className="num">
+                    {r.hasCost
+                      ? <span style={{ color: 'var(--amber)' }}>{r.currency} {(r.totalMonthly ?? 0).toFixed(2)}</span>
+                      : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                  </td>
                   <td><span className="date">{relTime(r.runAt)}</span></td>
                   <td>
                     <span className={`st ${status}`}>
@@ -261,6 +290,29 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
+
+        {cost && (
+          <div className="rh-cost-cards">
+            <div className="rh-cost-card amber">
+              <div className="rh-cost-val">{cost.currency} {cost.monthly.toFixed(2)}</div>
+              <div className="rh-cost-lbl">{cost.anchorCmd === 'apply' ? 'deployed monthly cost' : 'latest monthly cost'}</div>
+            </div>
+            <div className="rh-cost-card blue">
+              <div className="rh-cost-val">{cost.currency} {cost.annual.toFixed(2)}</div>
+              <div className="rh-cost-lbl">projected annual cost</div>
+            </div>
+            <div className={`rh-cost-card ${cost.change == null ? '' : cost.change > 0 ? 'red' : 'green'}`}>
+              <div className="rh-cost-val">
+                {cost.change == null ? '—' : `${cost.change >= 0 ? '+' : ''}${cost.currency} ${cost.change.toFixed(2)}`}
+              </div>
+              <div className="rh-cost-lbl">latest plan cost change</div>
+            </div>
+            <div className="rh-cost-card">
+              <div className="rh-cost-val">{cost.count}</div>
+              <div className="rh-cost-lbl">cost-tracked reports</div>
+            </div>
+          </div>
+        )}
 
         <div className="rh-toolbar">
           <div className="rh-filters">

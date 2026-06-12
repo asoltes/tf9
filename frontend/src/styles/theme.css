@@ -1,5 +1,5 @@
 /* =========================================================================
-   tfops — global light/dark theme layer
+   tf9 — global light/dark theme layer
    Base stylesheets are authored light (chrome) + dark (terminals).
    This sheet flips them based on html[data-theme]:
      • dark  → re-tokenize chrome + override light surfaces

@@ -1,4 +1,4 @@
-# Design: Verbatim pixel-port of the tfops prototype
+# Design: Verbatim pixel-port of the tf9 prototype
 
 **Date:** 2026-06-08
 **Branch:** `feat/prototype-pixel-port`
@@ -7,12 +7,12 @@
 ## Goal
 
 Replace the current Cloudscape-React presentation layer with a 1:1 visual
-reproduction of the prototype in `design_handoff_tfops/`, while keeping every
+reproduction of the prototype in `design_handoff_tf9/`, while keeping every
 page wired to the **real Go backend** (`/api/*`, live SSE, real
 `config.yaml` / run history). The prototype's mock `data-*.js` files and
 localStorage simulations are **visual/behavioral reference only — not shipped**
 (except where the prototype intentionally uses localStorage as a real contract:
-`tfops-color-mode`, `tfops-repo-overrides`).
+`tf9-color-mode`, `tf9-repo-overrides`).
 
 ## Two locked decisions
 
@@ -27,17 +27,17 @@ localStorage simulations are **visual/behavioral reference only — not shipped*
 ## Architecture
 
 ### Foundation (shared — must land first)
-- Copy `design_handoff_tfops/cloudscape.css` and `theme.css` **verbatim** into
+- Copy `design_handoff_tf9/cloudscape.css` and `theme.css` **verbatim** into
   `frontend/src/styles/`. These define every token (`--bg-layout`,
   `--container`, `--radius-c`, `--shadow-c`, terminal tokens…) and base classes
   (`.topnav`, `.sidenav`, `.btn`, `.badge`, `.table`, `.crumbs`, …).
 - Add Open Sans (Google Fonts) in `index.html`.
 - Add the FOUC-preventing theme init (`theme.js` logic) inline in
-  `index.html` `<head>` — reads `tfops-color-mode` before paint, sets
+  `index.html` `<head>` — reads `tf9-color-mode` before paint, sets
   `html[data-theme]`. Default follows `prefers-color-scheme`.
 - Remove `@cloudscape-design/global-styles` import from `main.tsx`.
 - Rewrite `Shell.tsx` + `nav.tsx` as plain JSX matching the prototype topnav
-  (40px dark `#0f1b2a` bar: brand SVG `#ff9900` + "tfops", Runs/Reports links,
+  (40px dark `#0f1b2a` bar: brand SVG `#ff9900` + "tf9", Runs/Reports links,
   theme toggle, STS badge, user email) and 280px sidenav (Overview, Runs,
   Settings → Repositories/Config YAML, Reports, Help). Hash routing preserved
   per the `Page` union in `types.ts`.
@@ -74,16 +74,16 @@ co-located and imported per page. **Data stays real** — keep the existing
   dropdown; apply/destroy force Promotion and hide Parallel; per-target Lock ID
   inputs for `force-unlock` (CLI `--lock-ids dev:abc,staging:def`); sticky CLI
   preview rail with token highlighting (cmd=blue, flag=grey, value=green);
-  disabled targets filtered out via `tfops-repo-overrides`.
+  disabled targets filtered out via `tf9-repo-overrides`.
 - **Repositories:** pipeline swim-lanes grouped by `group` (default = first dir
   segment) + table view toggle; drag-to-reorder stages; enable/disable toggle +
-  group override persisted to `tfops-repo-overrides` localStorage
+  group override persisted to `tf9-repo-overrides` localStorage
   (`{ "repo:env": { "disabled": bool, "group": "" } }`); edit modal with
   group datalist autocomplete.
 - **Config YAML editor:** gutter, syntax highlight, current-line, validation +
   problems pane, copy button.
 - **Toasts:** slide-up, auto-dismiss 1.9s.
-- **Theme toggle:** `html[data-theme]` swap persisted to `tfops-color-mode`.
+- **Theme toggle:** `html[data-theme]` swap persisted to `tf9-color-mode`.
 
 ## Execution plan (phased)
 

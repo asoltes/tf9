@@ -1,6 +1,6 @@
 /* =========================================================================
    Cloudscape-flavored design tokens & components (visual-refresh accurate)
-   Scoped to the tfops prototype. Open Sans, AWS squid-ink chrome, #0972d3.
+   Scoped to the tf9 prototype. Open Sans, AWS squid-ink chrome, #0972d3.
    ========================================================================= */
 
 :root{
@@ -52,21 +52,21 @@ a:hover{text-decoration:underline}
 
 /* ── Top navigation (AWS console chrome) ────────────────────────────────── */
 .topnav{
-  height:40px;background:var(--nav-bg);color:#fff;display:flex;align-items:center;
+  height:56px;background:var(--nav-bg);color:#fff;display:flex;align-items:center;
   padding:0 20px;gap:18px;position:sticky;top:0;z-index:1000;
 }
-.topnav .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;color:#fff}
-.topnav .brand svg{width:20px;height:20px;color:#ff9900}
+.topnav .brand{display:flex;align-items:center;height:56px}
+.topnav .brand img{display:block;width:174px;height:54px}
 .topnav .tn-sep{width:1px;height:20px;background:#2f3e51}
-.topnav .tn-item{color:#d5dbdb;font-size:13px;display:flex;align-items:center;gap:6px;padding:0 8px;height:40px;line-height:40px;cursor:pointer}
+.topnav .tn-item{color:#d5dbdb;font-size:13px;display:flex;align-items:center;gap:6px;padding:0 8px;height:56px;line-height:56px;cursor:pointer}
 .topnav .tn-item:hover{background:var(--nav-bg-2);color:#fff}
 .topnav .tn-spacer{flex:1}
 .topnav .tn-right{display:flex;align-items:center;gap:2px}
 .topnav svg{width:16px;height:16px}
 
 /* ── Layout: side nav + content ─────────────────────────────────────────── */
-.layout{display:flex;min-height:calc(100vh - 40px)}
-.sidenav{width:220px;flex-shrink:0;background:var(--container);border-right:1px solid var(--divider);position:sticky;top:40px;align-self:start;height:calc(100vh - 40px);overflow:hidden;display:flex;flex-direction:column;transition:width .18s ease}
+.layout{display:flex;min-height:calc(100vh - 56px)}
+.sidenav{width:220px;flex-shrink:0;background:var(--container);border-right:1px solid var(--divider);position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);overflow:hidden;display:flex;flex-direction:column;transition:width .18s ease}
 .nav-collapsed .sidenav{width:36px;border-right-color:var(--divider)}
 .sidenav .nav-links{flex:1;overflow:hidden;padding:20px 0;opacity:1;transition:opacity .12s ease}
 .nav-collapsed .sidenav .nav-links{opacity:0;pointer-events:none}

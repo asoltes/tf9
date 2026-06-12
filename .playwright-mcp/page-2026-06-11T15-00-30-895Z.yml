@@ -2,7 +2,7 @@
   - generic [ref=e114]:
     - generic [ref=e115]:
       - img [ref=e117]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e120] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e121] [cursor=pointer]:
@@ -340,7 +340,7 @@
                   - generic [ref=e539]:
                     - generic [ref=e540]:
                       - generic [ref=e541]: M
-                      - generic [ref=e542]: cmd/tfops/main.go
+                      - generic [ref=e542]: cmd/tf9/main.go
                     - generic [ref=e543]:
                       - generic [ref=e544]: M
                       - generic [ref=e545]: docs/screenshots/01-overview.png
@@ -463,7 +463,7 @@
             - generic [ref=e720]:
               - generic [ref=e721]: Command
               - generic [ref=e722]:
-                - generic [ref=e723]: tfops init -r infrastructure && tfops plan -r infrastructure && tfops apply -r infrastructure
+                - generic [ref=e723]: tf9 init -r infrastructure && tf9 plan -r infrastructure && tf9 apply -r infrastructure
                 - button "Copy" [ref=e724] [cursor=pointer]:
                   - img [ref=e725]
             - generic [ref=e728]:

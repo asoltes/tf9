@@ -1,0 +1,22 @@
+# Repository add / list / remove lifecycle through config.yaml.
+
+exec tf9 config repo add demo $WORK/repo
+stdout 'Added repository demo'
+
+exec tf9 config repo list
+stdout 'demo'
+
+# Duplicate registration is rejected.
+! exec tf9 config repo add demo $WORK/repo
+stderr 'already registered'
+
+# Removing an unknown repo errors.
+! exec tf9 config repo remove ghost
+stderr 'not found'
+
+exec tf9 config repo remove demo
+exec tf9 config repo list
+! stdout 'demo'
+
+-- repo/main.tf --
+terraform {}

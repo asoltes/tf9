@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/andres/tfops/internal/config"
+	"github.com/andres/tf9/internal/config"
 )
 
 func testHandler(t *testing.T) http.Handler {

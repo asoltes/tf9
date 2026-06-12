@@ -1,4 +1,4 @@
-// Sample run data for the tfops Apply report.
+// Sample run data for the tf9 Apply report.
 window.RUN = {
   command: "apply",
   runId: "run-0032",

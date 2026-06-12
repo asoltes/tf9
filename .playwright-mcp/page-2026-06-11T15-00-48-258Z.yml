@@ -2,7 +2,7 @@
   - generic [ref=e845]:
     - generic [ref=e846]:
       - img [ref=e848]
-      - text: tfops
+      - text: tf9
     - link "Runs" [ref=e851] [cursor=pointer]:
       - /url: "#runs"
     - link "Reports" [ref=e852] [cursor=pointer]:
@@ -37,7 +37,7 @@
         - img [ref=e878]
     - main [ref=e880]:
       - generic [ref=e881]:
-        - link "tfops" [ref=e882] [cursor=pointer]:
+        - link "tf9" [ref=e882] [cursor=pointer]:
           - /url: "#overview"
         - generic [ref=e883]: /
         - link "Settings" [ref=e884] [cursor=pointer]:
@@ -93,8 +93,8 @@
                   - generic [ref=e970]: "24"
                   - generic [ref=e971]: "25"
                 - generic [ref=e917]:
-                  - generic: "version: 1 repositories: - name: infrastructure path: /home/andres/tf-companion/examples/infrastructure targets: - name: dev directory: environments/dev aws_profile: example-dev region: eu-west-2 - name: prod directory: environments/prod aws_profile: example-prod region: eu-west-2 # Global directory → AWS profile mappings. Used by `tfops plan --recursive` (-R): # cd into a parent folder and run across all child terraform dirs, each with the # configured profile. Slice order = execution order. --profile overrides all rows. # profile_mappings: # - dir: dev # profile: ctp-ecp-dev # - dir: qa # profile: ctp-ecp-qa # - dir: prod # profile: ctp-ecp-prod"
-                  - textbox [ref=e918]: "version: 1 repositories: - name: infrastructure path: /home/andres/tf-companion/examples/infrastructure targets: - name: dev directory: environments/dev aws_profile: example-dev region: eu-west-2 - name: prod directory: environments/prod aws_profile: example-prod region: eu-west-2 # Global directory → AWS profile mappings. Used by `tfops plan --recursive` (-R): # cd into a parent folder and run across all child terraform dirs, each with the # configured profile. Slice order = execution order. --profile overrides all rows. # profile_mappings: # - dir: dev # profile: ctp-ecp-dev # - dir: qa # profile: ctp-ecp-qa # - dir: prod # profile: ctp-ecp-prod"
+                  - generic: "version: 1 repositories: - name: infrastructure path: /home/andres/tf-companion/examples/infrastructure targets: - name: dev directory: environments/dev aws_profile: example-dev region: eu-west-2 - name: prod directory: environments/prod aws_profile: example-prod region: eu-west-2 # Global directory → AWS profile mappings. Used by `tf9 plan --recursive` (-R): # cd into a parent folder and run across all child terraform dirs, each with the # configured profile. Slice order = execution order. --profile overrides all rows. # profile_mappings: # - dir: dev # profile: ctp-ecp-dev # - dir: qa # profile: ctp-ecp-qa # - dir: prod # profile: ctp-ecp-prod"
+                  - textbox [ref=e918]: "version: 1 repositories: - name: infrastructure path: /home/andres/tf-companion/examples/infrastructure targets: - name: dev directory: environments/dev aws_profile: example-dev region: eu-west-2 - name: prod directory: environments/prod aws_profile: example-prod region: eu-west-2 # Global directory → AWS profile mappings. Used by `tf9 plan --recursive` (-R): # cd into a parent folder and run across all child terraform dirs, each with the # configured profile. Slice order = execution order. --profile overrides all rows. # profile_mappings: # - dir: dev # profile: ctp-ecp-dev # - dir: qa # profile: ctp-ecp-qa # - dir: prod # profile: ctp-ecp-prod"
               - generic [ref=e919]:
                 - generic [ref=e920] [cursor=pointer]:
                   - generic [ref=e922]:
@@ -114,6 +114,6 @@
               - button "Format document" [ref=e943] [cursor=pointer]:
                 - img [ref=e945]
                 - text: Format document
-              - generic [ref=e946]: Validated against the tfops schema · Tab inserts 2 spaces · ⌘S to save
+              - generic [ref=e946]: Validated against the tf9 schema · Tab inserts 2 spaces · ⌘S to save
       - generic:
         - img

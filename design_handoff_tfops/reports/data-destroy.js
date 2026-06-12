@@ -1,4 +1,4 @@
-// Sample run data for the tfops Destroy report — includes a failed env.
+// Sample run data for the tf9 Destroy report — includes a failed env.
 window.RUN = {
   command: "destroy",
   runId: "run-0033",

@@ -17,6 +17,23 @@ export interface RunRequest {
   promotionOrder: string[];
   lockIds?: Record<string, string>;
   importAddrs?: Record<string, ImportSpec>;
+  cost?: boolean;
+  planRunId?: string;
+}
+
+export interface CostResource {
+  name: string;
+  type: string;
+  monthlyCost: number;
+}
+
+export interface CostEstimate {
+  currency: string;
+  totalMonthly: number;
+  diffMonthly: number;
+  hasDiff: boolean;
+  resourceCount?: number;
+  resources?: CostResource[];
 }
 
 export interface Run {
@@ -37,6 +54,11 @@ export interface Run {
   add?: number;
   change?: number;
   destroy?: number;
+  savedPlanReady?: boolean;
+}
+
+export interface WebSettings {
+  savedPlanApply: boolean;
 }
 
 export interface Repo {
@@ -85,6 +107,10 @@ export interface Report {
   destroy: number;
   envs: number;
   failed: number;
+  hasCost?: boolean;
+  currency?: string;
+  totalMonthly?: number;
+  diffMonthly?: number;
 }
 
 export interface ReportEnvResult {
@@ -96,6 +122,7 @@ export interface ReportEnvResult {
   change: number;
   destroy: number;
   output: string;
+  cost?: CostEstimate;
 }
 
 export interface ReportData {
@@ -108,6 +135,109 @@ export interface ReportData {
   envs: number;
   failed: number;
   results?: ReportEnvResult[];
+  hasCost?: boolean;
+  currency?: string;
+  totalMonthly?: number;
+  diffMonthly?: number;
+}
+
+export interface InfracostSettings {
+  enabledByDefault: boolean;
+  currency: string;
+  tokenConfigured: boolean;
+}
+
+export interface CostSummaryItem {
+  report: string;
+  runAt: string;
+  currency: string;
+  totalMonthly: number;
+  resourceCount: number;
+}
+
+export interface CostServiceRow {
+  type: string;
+  count: number;
+  monthlyCost: number;
+}
+
+export interface CostDetail {
+  report: string;
+  runAt: string;
+  currency: string;
+  totalMonthly: number;
+  resourceCount: number;
+  resources: CostResource[];
+  byService: CostServiceRow[];
+}
+
+export interface CostSummary {
+  items: CostSummaryItem[];
+  latest: CostDetail | null;
+}
+
+// ── Breakdown scans (infracost breakdown across configured repo targets) ──
+export interface CostTarget {
+  repo: string;
+  target: string;
+  group: string;
+  directory: string;
+  currency: string;
+  totalMonthly: number;
+  resourceCount: number;
+  resources?: CostResource[];
+  error?: string;
+}
+
+export interface CostScan {
+  runAt: string;
+  currency: string;
+  totalMonthly: number;
+  targets: CostTarget[];
+}
+
+export interface CostTargetDiff {
+  repo: string;
+  target: string;
+  group: string;
+  oldMonthly: number;
+  newMonthly: number;
+  change: number;
+  status: 'added' | 'removed' | 'increased' | 'decreased' | 'unchanged';
+}
+
+export interface CostResourceDiff {
+  repo: string;
+  target: string;
+  name: string;
+  type: string;
+  oldMonthly: number;
+  newMonthly: number;
+  change: number;
+  status: 'added' | 'removed' | 'increased' | 'decreased';
+}
+
+export interface CostScanDiff {
+  oldRunAt?: string;
+  newRunAt: string;
+  currency: string;
+  oldTotal: number;
+  newTotal: number;
+  change: number;
+  targets: CostTargetDiff[];
+  resources: CostResourceDiff[];
+}
+
+export interface CostScanResult {
+  scan: CostScan | null;
+  diff: CostScanDiff | null;
+}
+
+export interface CostScanHistoryItem {
+  runAt: string;
+  currency: string;
+  totalMonthly: number;
+  targets: number;
 }
 
 export interface Paginated<T> {
@@ -126,6 +256,7 @@ export type Page =
   | { id: 'profile-mappings' }
   | { id: 'reports' }
   | { id: 'report'; name: string }
+  | { id: 'cost' }
   | { id: 'logs' }
   | { id: 'help' };
 
@@ -172,4 +303,32 @@ export interface WorkspaceFile {
   language: string;
   readOnly: boolean;
   binary: boolean;
+}
+
+export type WorkspaceChatMode = 'review' | 'autoApply';
+
+export interface WorkspaceChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+}
+
+export interface WorkspaceChatState {
+  available: boolean;
+  authError?: string;
+  mode: WorkspaceChatMode;
+  messages: WorkspaceChatMessage[];
+  running: boolean;
+  activeTurnId?: string;
+}
+
+export interface WorkspaceChatEvent {
+  type: 'delta' | 'tool' | 'status' | 'error' | 'done';
+  delta?: string;
+  message?: string;
+  tool?: string;
+  summary?: string;
+  status?: string;
+  metadata?: Record<string, unknown>;
 }

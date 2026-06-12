@@ -1,5 +1,5 @@
 /**
- * Inline SVG icon set ported verbatim from design_handoff_tfops/repos/app.js.
+ * Inline SVG icon set ported verbatim from design_handoff_tf9/repos/app.js.
  * Each icon is a plain JSX <svg> matching the prototype's exact paths so the
  * Repositories page renders pixel-identically.
  */

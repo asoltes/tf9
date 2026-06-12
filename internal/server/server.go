@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/andres/tfops/internal/api"
-	"github.com/andres/tfops/internal/applog"
-	"github.com/andres/tfops/internal/config"
-	"github.com/andres/tfops/internal/report"
-	"github.com/andres/tfops/internal/web"
+	"github.com/andres/tf9/internal/api"
+	"github.com/andres/tf9/internal/applog"
+	"github.com/andres/tf9/internal/config"
+	"github.com/andres/tf9/internal/report"
+	"github.com/andres/tf9/internal/web"
 )
 
 type reportEntry struct {
@@ -32,13 +32,13 @@ type reportEntry struct {
 
 func pidFile() string {
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "tfops", "serve.pid")
+		return filepath.Join(xdg, "tf9", "serve.pid")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "tfops", "serve.pid")
+	return filepath.Join(home, ".config", "tf9", "serve.pid")
 }
 
-// killPreviousServer kills a previously started tfops server recorded in the PID file.
+// killPreviousServer kills a previously started tf9 server recorded in the PID file.
 func killPreviousServer() {
 	pf := pidFile()
 	data, err := os.ReadFile(pf)
@@ -62,8 +62,8 @@ func killPreviousServer() {
 		return
 	}
 	if err := proc.Kill(); err == nil {
-		fmt.Printf("  Stopped previous tfops server (pid %d)\n", pid)
-		slog.Info("stopped previous tfops server", "pid", pid)
+		fmt.Printf("  Stopped previous tf9 server (pid %d)\n", pid)
+		slog.Info("stopped previous tf9 server", "pid", pid)
 		time.Sleep(100 * time.Millisecond)
 	} else {
 		slog.Debug("could not kill previous server (likely already gone)", "pid", pid, "err", err)
@@ -85,7 +85,7 @@ func freePort(requested int) int {
 	return requested
 }
 
-// Serve starts the tfops web server (report browser + full web UI).
+// Serve starts the tf9 web server (report browser + full web UI).
 // openPath, if non-empty, navigates the browser to that path (when autoOpen is true).
 // autoOpen controls whether the system browser is launched automatically.
 func Serve(dir string, port int, openPath string, autoOpen bool, mgr *api.RunManager) error {
@@ -117,7 +117,7 @@ func Serve(dir string, port int, openPath string, autoOpen bool, mgr *api.RunMan
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	base := fmt.Sprintf("http://%s", addr)
-	fmt.Printf("  tfops report server\n")
+	fmt.Printf("  tf9 report server\n")
 	fmt.Printf("  Serving:  %s\n", absDir)
 	fmt.Printf("  URL:      %s\n", base)
 	fmt.Printf("  Logs:     %s\n\n", config.LogFile())
@@ -218,7 +218,7 @@ func snapshot(dir, target string) string {
 		entries, _ := os.ReadDir(dir)
 		var parts []string
 		for _, e := range entries {
-			if strings.HasPrefix(e.Name(), "tfops-plan-") && strings.HasSuffix(e.Name(), ".html") {
+			if strings.HasPrefix(e.Name(), "tf9-plan-") && strings.HasSuffix(e.Name(), ".html") {
 				info, _ := e.Info()
 				parts = append(parts, fmt.Sprintf("%s=%d", e.Name(), info.ModTime().UnixNano()))
 			}
@@ -258,7 +258,7 @@ func listReports(dir string) ([]reportEntry, error) {
 	}
 	var reports []reportEntry
 	for _, e := range entries {
-		if e.IsDir() || !strings.HasPrefix(e.Name(), "tfops-") || !strings.HasSuffix(e.Name(), ".html") {
+		if e.IsDir() || !strings.HasPrefix(e.Name(), "tf9-") || !strings.HasSuffix(e.Name(), ".html") {
 			continue
 		}
 		info, _ := e.Info()
@@ -292,7 +292,7 @@ var indexTmpl = template.Must(template.New("index").Funcs(template.FuncMap{
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>tfops — Plan Reports</title>
+<title>tf9 — Plan Reports</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:#0d1117;color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
@@ -326,7 +326,7 @@ tr:hover td{background:#1c2128}
   <div class="wrap">
     <div class="hdr-title">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-      tfops · Plan Reports
+      tf9 · Plan Reports
     </div>
     <div class="dir">{{.Dir}}</div>
   </div>
@@ -336,7 +336,7 @@ tr:hover td{background:#1c2128}
   <div class="empty">
     <div class="empty-icon">📭</div>
     <div>No plan reports found.</div>
-    <div style="color:#484f58;margin-top:8px;font-size:12px">Run <code style="background:#21262d;padding:2px 6px;border-radius:4px">tfops plan</code> to generate one.</div>
+    <div style="color:#484f58;margin-top:8px;font-size:12px">Run <code style="background:#21262d;padding:2px 6px;border-radius:4px">tf9 plan</code> to generate one.</div>
   </div>
   {{else}}
   <div class="tbl-wrap">
@@ -360,7 +360,7 @@ tr:hover td{background:#1c2128}
   </div>
   {{end}}
 </main>
-<footer class="ftr wrap">tfops report server</footer>
+<footer class="ftr wrap">tf9 report server</footer>
 <script>
 // Auto-refresh index when reports are added/removed/updated
 const es = new EventSource('/events?watch=.');

@@ -213,9 +213,10 @@ interface Props {
   onDockChange: (d: Dock) => void;
   onStatusChange?: () => void;
   onRerun?: (run: Run) => void;
+  onApplyPlan?: (run: Run) => void;
 }
 
-export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatusChange, onRerun }: Props) {
+export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatusChange, onRerun, onApplyPlan }: Props) {
   const { navigate } = useNav();
   const toast = useToast();
   const [parallelView, setParallelView] = useState<ParallelView>('grid');
@@ -233,6 +234,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const [rctExpanded, setRctExpanded] = useState<Record<string, string | null>>({});
   const spSearchInputRef = useRef<HTMLInputElement>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmApplyPlan, setConfirmApplyPlan] = useState(false);
   const [confirmKill, setConfirmKill] = useState(false);
   const [retryOpen, setRetryOpen] = useState(false);
   const [approvalPending, setApprovalPending] = useState(false);
@@ -879,6 +881,20 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   return (
     <>
       <ConfirmModal
+        visible={confirmApplyPlan}
+        header="Apply reviewed plan"
+        confirmLabel="Apply saved plan"
+        cancelLabel="Keep reviewing"
+        onCancel={() => setConfirmApplyPlan(false)}
+        onConfirm={() => {
+          setConfirmApplyPlan(false);
+          if (run && onApplyPlan) onApplyPlan(run);
+        }}
+      >
+        Apply the exact Terraform plan saved by {run?.id}? Target selection and plan arguments are locked to the reviewed run.
+      </ConfirmModal>
+
+      <ConfirmModal
         visible={confirmCancel}
         header="Cancel run"
         confirmLabel="Cancel run"
@@ -942,6 +958,9 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                       </>
                     ) : (
                       <>
+                        {onApplyPlan && run.request?.command === 'plan' && run.status === 'success' && run.savedPlanReady && (
+                          <button className="btn btn-primary btn-sm" onClick={() => setConfirmApplyPlan(true)}>{I.check}Apply reviewed plan</button>
+                        )}
                         {onRerun && fail > 0 && (
                       <button className="btn btn-danger-outline btn-sm" onClick={retryFailed} title={`Re-run ${fail} failed target${fail === 1 ? '' : 's'}`}>
                         {I.retry}Retry failed

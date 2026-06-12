@@ -65,7 +65,33 @@ test('opens a selected directory in a new terminal session', async ({ page }) =>
   });
   await page.locator('.rw-tree-row', { hasText: 'modules' }).click({ button: 'right' });
 
-  const terminal = page.locator('.rw-terminal-host');
-  await expect(terminal).toContainText('/tmp/tfops-playwright/repo/modules');
-  await expect(page.locator('.rw-terminal-shell')).toHaveText('modules');
+  const terminal = page.locator('.rw-terminal-host:not([hidden])');
+  await expect(terminal).toContainText('/tmp/tf9-playwright/repo/modules');
+  await expect(page.locator('.rw-terminal-session-tab.active .rw-terminal-shell')).toHaveText('modules 2');
+});
+
+test('keeps multiple terminal sessions open and independently usable', async ({ page }) => {
+  await page.goto('/#workspace/e2e-repo');
+  await expect(page.locator('.rw-workbench')).toBeVisible();
+
+  const terminalHosts = page.locator('.rw-terminal-host');
+  const terminalTabs = page.locator('.rw-terminal-session-tab');
+  await expect(terminalHosts).toHaveCount(1);
+
+  await terminalHosts.first().getByRole('textbox', { name: 'Terminal input' }).fill('echo first-session-marker');
+  await terminalHosts.first().getByRole('textbox', { name: 'Terminal input' }).press('Enter');
+  await expect(terminalHosts.first()).toContainText('first-session-marker');
+
+  await page.getByRole('button', { name: 'New terminal' }).click();
+  await expect(terminalHosts).toHaveCount(2);
+  await expect(terminalTabs).toHaveCount(2);
+
+  const activeTerminal = page.locator('.rw-terminal-host:not([hidden])');
+  await activeTerminal.getByRole('textbox', { name: 'Terminal input' }).fill('echo second-session-marker');
+  await activeTerminal.getByRole('textbox', { name: 'Terminal input' }).press('Enter');
+  await expect(activeTerminal).toContainText('second-session-marker');
+
+  await terminalTabs.first().click();
+  await expect(page.locator('.rw-terminal-host:not([hidden])')).toContainText('first-session-marker');
+  await expect(page.locator('.rw-terminal-host:not([hidden])')).not.toContainText('second-session-marker');
 });

@@ -16,10 +16,46 @@ func useTestConfig(t *testing.T) string {
 	return path
 }
 
+func TestDefaultPathsUseTF9Identity(t *testing.T) {
+	SetPath("")
+	t.Cleanup(func() { SetPath("") })
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("TF9_CONFIG", "")
+
+	wantDir := filepath.Join(os.Getenv("XDG_CONFIG_HOME"), "tf9")
+	if got := ConfigPath(); got != filepath.Join(wantDir, "config.yaml") {
+		t.Fatalf("ConfigPath() = %q, want %q", got, filepath.Join(wantDir, "config.yaml"))
+	}
+	if got := RunsFile(); got != filepath.Join(wantDir, "runs.json") {
+		t.Fatalf("RunsFile() = %q, want %q", got, filepath.Join(wantDir, "runs.json"))
+	}
+	if got := LogFile(); got != filepath.Join(wantDir, "tf9.log") {
+		t.Fatalf("LogFile() = %q, want %q", got, filepath.Join(wantDir, "tf9.log"))
+	}
+	if got := DefaultReportDir(); got != filepath.Join(wantDir, "reports") {
+		t.Fatalf("DefaultReportDir() = %q, want %q", got, filepath.Join(wantDir, "reports"))
+	}
+	if got := SavedPlanDir(); got != filepath.Join(wantDir, "plans") {
+		t.Fatalf("SavedPlanDir() = %q, want %q", got, filepath.Join(wantDir, "plans"))
+	}
+}
+
+func TestTF9ConfigEnvironmentOverride(t *testing.T) {
+	SetPath("")
+	t.Cleanup(func() { SetPath("") })
+	want := filepath.Join(t.TempDir(), "team.yaml")
+	t.Setenv("TF9_CONFIG", want)
+
+	if got := ConfigPath(); got != want {
+		t.Fatalf("ConfigPath() = %q, want %q", got, want)
+	}
+}
+
 func TestSaveAndLoad(t *testing.T) {
 	path := useTestConfig(t)
 	want := Config{
 		Version: 1,
+		Web:     WebConfig{SavedPlanApply: true},
 		Repositories: []Repository{{
 			Name: "infra",
 			Path: "/work/infra",
@@ -38,6 +74,9 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 	if len(got.Repositories) != 1 || got.Repositories[0].Targets[0].AWSProfile != "company-dev" {
 		t.Fatalf("unexpected config: %#v", got)
+	}
+	if !got.Web.SavedPlanApply {
+		t.Fatal("web.saved_plan_apply did not round-trip")
 	}
 	info, err := os.Stat(path)
 	if err != nil {

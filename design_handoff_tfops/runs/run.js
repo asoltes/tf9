@@ -76,7 +76,7 @@
 
   function buildGroups() {
     var _ovr = {};
-    try { _ovr = JSON.parse(localStorage.getItem("tfops-repo-overrides") || "{}"); } catch(e) {}
+    try { _ovr = JSON.parse(localStorage.getItem("tf9-repo-overrides") || "{}"); } catch(e) {}
     S.groups = repo().groups.map(function (g) {
       return { key: g.key, collapsed: false,
         targets: g.targets
@@ -286,7 +286,7 @@
   function cliPreview() {
     var checked = checkedTargets();
     var positional = ["plan", "apply", "destroy"].indexOf(S.cmd) !== -1;
-    var parts = ['<span class="tok-cmd">tfops ' + esc(S.cmd) + "</span>"];
+    var parts = ['<span class="tok-cmd">tf9 ' + esc(S.cmd) + "</span>"];
     if (checked.length && checked.length !== totalTargets()) {
       var names = checked.map(function (t) { return t.name; });
       if (positional) parts.push('<span class="tok-val">' + names.join(" ") + "</span>");

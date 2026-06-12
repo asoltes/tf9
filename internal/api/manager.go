@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -14,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/andres/tfops/internal/config"
-	"github.com/andres/tfops/internal/report"
-	"github.com/andres/tfops/internal/runner"
+	"github.com/andres/tf9/internal/config"
+	"github.com/andres/tf9/internal/report"
+	"github.com/andres/tf9/internal/runner"
 )
 
 type RunStatus string
@@ -31,29 +32,32 @@ const (
 
 // RunRequest holds the parameters for a terraform run submitted via the web UI.
 type RunRequest struct {
-	Repo           string            `json:"repo"`
-	Command        string            `json:"command"`
-	ExtraArgs      []string          `json:"extraArgs"`
-	EnvFilter      string            `json:"envFilter"`
-	Profile        string            `json:"profile"`
-	NonprodOnly    bool              `json:"nonprodOnly"`
-	AutoApprove    bool              `json:"autoApprove"`
-	Parallel       bool              `json:"parallel"`
-	PromotionOrder []string          `json:"promotionOrder,omitempty"`
+	Repo           string                       `json:"repo"`
+	Command        string                       `json:"command"`
+	ExtraArgs      []string                     `json:"extraArgs"`
+	EnvFilter      string                       `json:"envFilter"`
+	Profile        string                       `json:"profile"`
+	NonprodOnly    bool                         `json:"nonprodOnly"`
+	AutoApprove    bool                         `json:"autoApprove"`
+	Parallel       bool                         `json:"parallel"`
+	PromotionOrder []string                     `json:"promotionOrder,omitempty"`
 	LockIDs        map[string]string            `json:"lockIds,omitempty"`
 	ImportAddrs    map[string]runner.ImportSpec `json:"importAddrs,omitempty"`
+	Cost           bool                         `json:"cost,omitempty"`
+	PlanRunID      string                       `json:"planRunId,omitempty"`
 }
 
 // Run represents a single terraform execution.
 type Run struct {
-	ID         string             `json:"id"`
-	StartedAt  time.Time          `json:"startedAt"`
-	FinishedAt *time.Time         `json:"finishedAt,omitempty"`
-	Status     RunStatus          `json:"status"`
-	Request    RunRequest         `json:"request"`
-	ReportPath string             `json:"reportPath,omitempty"`
-	Results    []report.EnvResult `json:"results,omitempty"`
-	GitBranch  string             `json:"gitBranch,omitempty"`
+	ID             string             `json:"id"`
+	StartedAt      time.Time          `json:"startedAt"`
+	FinishedAt     *time.Time         `json:"finishedAt,omitempty"`
+	Status         RunStatus          `json:"status"`
+	Request        RunRequest         `json:"request"`
+	ReportPath     string             `json:"reportPath,omitempty"`
+	Results        []report.EnvResult `json:"results,omitempty"`
+	GitBranch      string             `json:"gitBranch,omitempty"`
+	SavedPlanReady bool               `json:"savedPlanReady,omitempty"`
 
 	AwaitingInput bool `json:"awaitingInput"` // true while terraform is blocked on the approval prompt
 
@@ -61,9 +65,9 @@ type Run struct {
 	lines   []string
 	cancel  context.CancelFunc
 	inputCh chan string // receives "yes"/"no" from the frontend when terraform prompts
-	denied  bool       // set when the user explicitly sends "no" to the approval gate
-	forced  bool       // set by ForceKill so the goroutine's finish logic does not override status
-	pgid    int        // current terraform process-group leader PID, for force-kill
+	denied  bool        // set when the user explicitly sends "no" to the approval gate
+	forced  bool        // set by ForceKill so the goroutine's finish logic does not override status
+	pgid    int         // current terraform process-group leader PID, for force-kill
 }
 
 // setAwaiting records whether terraform is currently blocked on the approval gate.
@@ -150,15 +154,16 @@ func (w *lineWriter) Write(p []byte) (int, error) {
 
 // runRecord is the on-disk representation of a finished Run.
 type runRecord struct {
-	ID         string             `json:"id"`
-	StartedAt  time.Time          `json:"startedAt"`
-	FinishedAt *time.Time         `json:"finishedAt,omitempty"`
-	Status     RunStatus          `json:"status"`
-	Request    RunRequest         `json:"request"`
-	ReportPath string             `json:"reportPath,omitempty"`
-	Results    []report.EnvResult `json:"results,omitempty"`
-	Lines      []string           `json:"lines,omitempty"`
-	GitBranch  string             `json:"gitBranch,omitempty"`
+	ID             string             `json:"id"`
+	StartedAt      time.Time          `json:"startedAt"`
+	FinishedAt     *time.Time         `json:"finishedAt,omitempty"`
+	Status         RunStatus          `json:"status"`
+	Request        RunRequest         `json:"request"`
+	ReportPath     string             `json:"reportPath,omitempty"`
+	Results        []report.EnvResult `json:"results,omitempty"`
+	Lines          []string           `json:"lines,omitempty"`
+	GitBranch      string             `json:"gitBranch,omitempty"`
+	SavedPlanReady bool               `json:"savedPlanReady,omitempty"`
 }
 
 const (
@@ -209,16 +214,17 @@ func (m *RunManager) loadFromDisk() {
 			}
 		}
 		run := &Run{
-			ID:         rec.ID,
-			StartedAt:  rec.StartedAt,
-			FinishedAt: finishedAt,
-			Status:     status,
-			Request:    rec.Request,
-			ReportPath: rec.ReportPath,
-			Results:    rec.Results,
-			GitBranch:  rec.GitBranch,
-			lines:      rec.Lines,
-			cancel:     func() {}, // no-op for restored runs
+			ID:             rec.ID,
+			StartedAt:      rec.StartedAt,
+			FinishedAt:     finishedAt,
+			Status:         status,
+			Request:        rec.Request,
+			ReportPath:     rec.ReportPath,
+			Results:        rec.Results,
+			GitBranch:      rec.GitBranch,
+			SavedPlanReady: rec.SavedPlanReady,
+			lines:          rec.Lines,
+			cancel:         func() {}, // no-op for restored runs
 		}
 		m.runs = append(m.runs, run)
 	}
@@ -244,15 +250,16 @@ func (m *RunManager) persist() {
 			lines = lines[len(lines)-maxPersistedLines:]
 		}
 		rec := runRecord{
-			ID:         r.ID,
-			StartedAt:  r.StartedAt,
-			FinishedAt: r.FinishedAt,
-			Status:     r.Status,
-			Request:    r.Request,
-			ReportPath: r.ReportPath,
-			Results:    r.Results,
-			GitBranch:  r.GitBranch,
-			Lines:      lines,
+			ID:             r.ID,
+			StartedAt:      r.StartedAt,
+			FinishedAt:     r.FinishedAt,
+			Status:         r.Status,
+			Request:        r.Request,
+			ReportPath:     r.ReportPath,
+			Results:        r.Results,
+			GitBranch:      r.GitBranch,
+			SavedPlanReady: r.SavedPlanReady,
+			Lines:          lines,
 		}
 		r.mu.RUnlock()
 		records = append(records, rec)
@@ -289,6 +296,16 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 	m.runs = append(m.runs, run)
 	m.mu.Unlock()
 
+	savePlanDir := ""
+	applyPlanFiles := map[string]string{}
+	if req.Command == "plan" {
+		savePlanDir = filepath.Join(config.SavedPlanDir(), id)
+	} else if req.Command == "apply" && req.PlanRunID != "" {
+		for _, target := range resolveTargetDirs(req) {
+			applyPlanFiles[target] = savedPlanPath(req.PlanRunID, target)
+		}
+	}
+
 	slog.Info("run started", "id", id, "command", req.Command, "repo", req.Repo, "envFilter", req.EnvFilter, "parallel", req.Parallel)
 
 	go func() {
@@ -309,6 +326,9 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 		}()
 		lw := &lineWriter{run: run}
 		tfArgs := append([]string{}, req.ExtraArgs...)
+		if req.Command == "apply" && req.PlanRunID != "" {
+			run.appendLine("  [APPROVED] Reviewed plan approved for apply.")
+		}
 
 		// Create an input channel when interactive approval is needed.
 		needsInteractive := (req.Command == "apply" || req.Command == "destroy" || req.Command == "auto") && !req.AutoApprove
@@ -333,6 +353,23 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 
 		run.GitBranch = gitBranch(searchRoot)
 
+		// Resolve Infracost settings when cost estimation is requested. A missing
+		// key is non-fatal: warn into the stream and run without cost.
+		costEnabled := req.Cost
+		var infracostKey, infracostCurrency string
+		if costEnabled {
+			ic, icErr := config.LoadInfracost()
+			if icErr != nil {
+				slog.Warn("could not load infracost settings", "err", icErr)
+			}
+			infracostKey = ic.APIKey
+			infracostCurrency = ic.Currency
+			if infracostKey == "" {
+				costEnabled = false
+				run.appendLine("[WARN] cost estimation requested but no Infracost API key is configured — running without cost.")
+			}
+		}
+
 		baseOpts := runner.Options{
 			SearchRoot:      searchRoot,
 			RepoLabel:       repoLabel,
@@ -351,6 +388,11 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 			AutoApprove:     req.AutoApprove,
 			OnApprovalWait:  run.setAwaiting,
 			OnProcStart:     run.setPgid,
+			Cost:            costEnabled,
+			InfracostKey:    infracostKey,
+			Currency:        infracostCurrency,
+			SavePlanDir:     savePlanDir,
+			ApplyPlanFiles:  applyPlanFiles,
 		}
 
 		var results []report.EnvResult
@@ -423,13 +465,19 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 				InputCh:         inputCh,
 				OnApprovalWait:  run.setAwaiting,
 				OnProcStart:     run.setPgid,
+				Cost:            costEnabled,
+				InfracostKey:    infracostKey,
+				Currency:        infracostCurrency,
+				SavePlanDir:     savePlanDir,
+				ApplyPlanFiles:  applyPlanFiles,
 			})
 		}
 
 		if lw.buf != "" {
 			run.appendLine(lw.buf)
 		}
-		if err != nil && ctx.Err() == nil {
+		approvalDenied := errors.Is(err, runner.ErrApprovalDenied)
+		if err != nil && ctx.Err() == nil && !approvalDenied {
 			run.appendLine("  [ERROR] " + err.Error())
 		}
 
@@ -444,20 +492,23 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 			if ctx.Err() != nil {
 				run.Status = StatusCancelled
 			} else if err != nil {
-				if run.denied {
+				if run.denied || approvalDenied {
 					run.Status = StatusDenied
 				} else {
 					run.Status = StatusFailed
 				}
 			} else {
 				run.Status = StatusSuccess
+				if req.Command == "plan" && len(results) > 0 {
+					run.SavedPlanReady = true
+				}
 			}
 		}
 		finalStatus := run.Status
 		run.mu.Unlock()
 
 		logFinish := slog.Info
-		if err != nil {
+		if err != nil && !approvalDenied {
 			logFinish = slog.Warn
 		}
 		logFinish("run finished", "id", id, "command", req.Command, "status", finalStatus,
@@ -467,6 +518,52 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 	}()
 
 	return run, nil
+}
+
+func savedPlanPath(runID, target string) string {
+	return runner.SavedPlanFilePath(filepath.Join(config.SavedPlanDir(), runID), target)
+}
+
+// PrepareReviewedApply validates and replaces an apply request with the exact
+// target selection and execution metadata from a successful reviewed plan.
+func (m *RunManager) PrepareReviewedApply(req RunRequest) (RunRequest, error) {
+	if req.PlanRunID == "" {
+		return req, fmt.Errorf("apply requires planRunId; review a successful plan and use Apply reviewed plan")
+	}
+	planRun, ok := m.Get(req.PlanRunID)
+	if !ok {
+		return req, fmt.Errorf("reviewed plan run %q was not found", req.PlanRunID)
+	}
+	planRun.mu.RLock()
+	defer planRun.mu.RUnlock()
+	if planRun.Status != StatusSuccess || planRun.Request.Command != "plan" || !planRun.SavedPlanReady {
+		return req, fmt.Errorf("run %q does not have a successful saved plan", req.PlanRunID)
+	}
+	targets := make([]string, 0, len(planRun.Results))
+	for _, result := range planRun.Results {
+		if result.Failed {
+			continue
+		}
+		targets = append(targets, result.Env)
+	}
+	if len(targets) == 0 {
+		return req, fmt.Errorf("run %q has no saved plan targets", req.PlanRunID)
+	}
+	for _, target := range targets {
+		if _, err := os.Stat(savedPlanPath(planRun.ID, target)); err != nil {
+			return req, fmt.Errorf("saved plan for target %q is unavailable: %w", target, err)
+		}
+	}
+	prepared := planRun.Request
+	prepared.Command = "apply"
+	prepared.PlanRunID = planRun.ID
+	prepared.EnvFilter = strings.Join(targets, ",")
+	prepared.PromotionOrder = targets
+	prepared.ExtraArgs = nil
+	prepared.Parallel = false
+	prepared.AutoApprove = true
+	prepared.Cost = false
+	return prepared, nil
 }
 
 // errString renders err for logging, empty when nil.

@@ -1,11 +1,11 @@
 /**
- * Repositories page — verbatim pixel-port of design_handoff_tfops/repos/
+ * Repositories page — verbatim pixel-port of design_handoff_tf9/repos/
  * (Repositories.html + app.js), wired to the real Go backend.
  *
  * - Repo list, targets, browse + reorder/edit persist through the existing
  *   `/api/repos` config endpoints.
  * - Per-target `disabled` + `group` overrides persist to localStorage under
- *   `tfops-repo-overrides` ({ "repo:env": { disabled, group } }), matching the
+ *   `tf9-repo-overrides` ({ "repo:env": { disabled, group } }), matching the
  *   README contract that the New Run modal reads.
  *
  * All @cloudscape-design/components usage has been removed; markup uses the
@@ -25,8 +25,8 @@ import {
 } from '../components/repos/repoModel';
 import EditStageModal from '../components/repos/EditStageModal';
 
-const OVR_KEY = 'tfops-repo-overrides';
-const GROUP_OVR_KEY = 'tfops-group-overrides';
+const OVR_KEY = 'tf9-repo-overrides';
+const GROUP_OVR_KEY = 'tf9-group-overrides';
 
 type TargetWithGate = RepoTarget & { gated?: boolean };
 
@@ -991,7 +991,7 @@ export default function Repos() {
         <div>
           <div className="page-title">Repositories <span className="counter">({repos.length})</span></div>
           <div className="page-desc">
-            Repositories and their ordered Terraform targets, stored in <code>~/.config/tfops/config.yaml</code>.
+            Repositories and their ordered Terraform targets, stored in <code>~/.config/tf9/config.yaml</code>.
             Apply and destroy run targets top-to-bottom and stop on the first failure.
           </div>
         </div>

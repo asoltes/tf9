@@ -236,6 +236,9 @@ describe('sectionTerminalStatus', () => {
   it('failure beats everything', () => {
     expect(sectionTerminalStatus(['Plan: 1 to add, 0 to change, 0 to destroy', '[FAILED] dev'], 'apply')).toBe('fail');
   });
+  it('recognizes an explicitly denied approval', () => {
+    expect(sectionTerminalStatus(['Apply cancelled.', '[DENIED] dev'], 'apply')).toBe('denied');
+  });
 });
 
 // ── Approval gate state — Bug 3 regression tests ─────────────────────────────

@@ -47,7 +47,7 @@ type workspaceFile struct {
 	Binary   bool   `json:"binary"`
 }
 
-func handleRepoWorkspace(w http.ResponseWriter, r *http.Request, name, action string) {
+func handleRepoWorkspace(w http.ResponseWriter, r *http.Request, name, action string, chatManager *workspaceChatManager) {
 	switch action {
 	case "tree":
 		if r.Method != http.MethodGet {
@@ -89,7 +89,13 @@ func handleRepoWorkspace(w http.ResponseWriter, r *http.Request, name, action st
 		workspaceEvents(w, r, name)
 	case "terminal":
 		workspaceTerminal(w, r, name)
+	case "chat":
+		handleRepoWorkspaceChat(w, r, name, "", chatManager)
 	default:
+		if strings.HasPrefix(action, "chat/") {
+			handleRepoWorkspaceChat(w, r, name, strings.TrimPrefix(action, "chat/"), chatManager)
+			return
+		}
 		http.NotFound(w, r)
 	}
 }
@@ -326,7 +332,7 @@ func workspaceSaveFile(w http.ResponseWriter, r *http.Request, name string) {
 		jsonErr(w, "too_large", "file exceeds the 2 MiB editable limit", http.StatusRequestEntityTooLarge)
 		return
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".tfops-save-*")
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".tf9-save-*")
 	if err != nil {
 		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
 		return

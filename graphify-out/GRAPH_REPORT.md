@@ -86,9 +86,9 @@
 - `RunManager` --shares_data_with--> `runs.json Persisted Run History`  [EXTRACTED]
   internal/api/manager.go → CLAUDE.md
 - `CLI Approval Gate (Native Terraform Prompt)` --references--> `runTerraform()`  [EXTRACTED]
-  CLAUDE.md → cmd/tfops/main.go
-- `runTerraform()` --conceptually_related_to--> `cmd/tfops/main.go CLI Commands Package`  [EXTRACTED]
-  cmd/tfops/main.go → CLAUDE.md
+  CLAUDE.md → cmd/tf9/main.go
+- `runTerraform()` --conceptually_related_to--> `cmd/tf9/main.go CLI Commands Package`  [EXTRACTED]
+  cmd/tf9/main.go → CLAUDE.md
 - `safeJoin()` --conceptually_related_to--> `internal/api HTTP Handlers and RunManager`  [EXTRACTED]
   internal/api/handlers.go → CLAUDE.md
 - `RunManager` --conceptually_related_to--> `internal/api HTTP Handlers and RunManager`  [EXTRACTED]
@@ -98,15 +98,15 @@
 - None detected.
 
 ## Hyperedges (group relationships)
-- **Terraform Approval Gate Flow (CLI and Web)** — claude_cli_approval_gate, readme_native_approval_gate, readme_web_approval_gate, tfops_main_runterraform, runner_runner_run [EXTRACTED 0.90]
+- **Terraform Approval Gate Flow (CLI and Web)** — claude_cli_approval_gate, readme_native_approval_gate, readme_web_approval_gate, tf9_main_runterraform, runner_runner_run [EXTRACTED 0.90]
 - **Web UI Run Lifecycle** — readme_new_run_modal, api_manager_runmanager, claude_sse_streaming, readme_split_panel_terminal, readme_run_statuses, readme_retry_failed [INFERRED 0.85]
 - **Graphify Two-Track Extraction Pipeline** — graphify_skill_ast_extraction, graphify_skill_semantic_extraction, graphify_skill_extraction_cache, references_extraction_spec_subagent_prompt, references_extraction_spec_node_id_format [EXTRACTED 0.90]
-- **tfops Dark/Light Theming System** — design_handoff_tfops_readme_dark_light_mode, design_handoff_tfops_readme_design_tokens, design_handoff_tfops_readme_terminal_tokens, design_handoff_tfops_theme_js, design_handoff_tfops_theme_css, design_handoff_tfops_cloudscape_css [EXTRACTED 1.00]
-- **Live Run Monitoring Experience (Runs page)** — design_handoff_tfops_readme_split_panel, design_handoff_tfops_readme_fullscreen_modal, design_handoff_tfops_readme_terminal_tokens, design_handoff_tfops_readme_promotion_mode [EXTRACTED 1.00]
-- **Shared Report Rendering System (plan/apply/destroy)** — reports_apply_report_page, reports_report_js, reports_report_css, reports_data_apply_js, design_handoff_tfops_readme_report_pages [EXTRACTED 1.00]
+- **tf9 Dark/Light Theming System** — design_handoff_tf9_readme_dark_light_mode, design_handoff_tf9_readme_design_tokens, design_handoff_tf9_readme_terminal_tokens, design_handoff_tf9_theme_js, design_handoff_tf9_theme_css, design_handoff_tf9_cloudscape_css [EXTRACTED 1.00]
+- **Live Run Monitoring Experience (Runs page)** — design_handoff_tf9_readme_split_panel, design_handoff_tf9_readme_fullscreen_modal, design_handoff_tf9_readme_terminal_tokens, design_handoff_tf9_readme_promotion_mode [EXTRACTED 1.00]
+- **Shared Report Rendering System (plan/apply/destroy)** — reports_apply_report_page, reports_report_js, reports_report_css, reports_data_apply_js, design_handoff_tf9_readme_report_pages [EXTRACTED 1.00]
 - **Design Handoff Prototype Page Suite** — reports_destroy_report, reports_plan_report, reports_reports, repos_repositories, runs_new_run_modal, runs_runs [EXTRACTED 1.00]
-- **tfops-color-mode Theme Persistence Contract** — specs_2026_06_08_prototype_pixel_port_design_fouc_theme_init, frontend_index, reports_plan_report, reports_destroy_report, reports_tfops_plan_20260609_070026, reports_tfops_plan_20260609_070051, reports_tfops_plan_20260609_070126 [INFERRED 0.95]
-- **tfops UI Redesign Spec Lineage (redesign -> parity -> pixel-port)** — specs_2026_06_07_tfops_ui_redesign, specs_2026_06_07_tfops_ui_prototype_parity_design, specs_2026_06_08_prototype_pixel_port_design [INFERRED 0.95]
+- **tf9-color-mode Theme Persistence Contract** — specs_2026_06_08_prototype_pixel_port_design_fouc_theme_init, frontend_index, reports_plan_report, reports_destroy_report, reports_tf9_plan_20260609_070026, reports_tf9_plan_20260609_070051, reports_tf9_plan_20260609_070126 [INFERRED 0.95]
+- **tf9 UI Redesign Spec Lineage (redesign -> parity -> pixel-port)** — specs_2026_06_07_tf9_ui_redesign, specs_2026_06_07_tf9_ui_prototype_parity_design, specs_2026_06_08_prototype_pixel_port_design [INFERRED 0.95]
 
 ## Communities (64 total, 10 thin omitted)
 
@@ -148,7 +148,7 @@ Nodes (34): buildGroups(), COMMON, Group, I, Mode, Props, readGroupOverrides(), 
 
 ### Community 9 - "Examples and Prototype Reports"
 Cohesion: 0.09
-Nodes (35): Examples README, Example tfops Config (sample-config.yaml), frontend/index.html SPA Entry, Example Infrastructure Repo README, Destroy Report Prototype Page, Plan Report Prototype Page, Reports History Prototype Page, add (+27 more)
+Nodes (35): Examples README, Example tf9 Config (sample-config.yaml), frontend/index.html SPA Entry, Example Infrastructure Repo README, Destroy Report Prototype Page, Plan Report Prototype Page, Reports History Prototype Page, add (+27 more)
 
 ### Community 10 - "Prototype New Run Modal JS"
 Cohesion: 0.18
@@ -208,7 +208,7 @@ Nodes (16): $(), cmdBadge(), esc(), filtered(), init(), relTime(), renderCards()
 
 ### Community 24 - "CLI Demo Recording"
 Cohesion: 0.18
-Nodes (15): AWS Profile Override (--profile ctp-loadtest-euw2), tfops config repo list Command, CWD Mode (Plan From Any Terraform Directory), tfops --help Output, HTML Plan Report Output, infrastructure Example Repo (2 Targets), tfops plan Command, Plan Summary Table (ENVIRONMENT/ADD/CHANGE/DESTROY/STATUS) (+7 more)
+Nodes (15): AWS Profile Override (--profile ctp-loadtest-euw2), tf9 config repo list Command, CWD Mode (Plan From Any Terraform Directory), tf9 --help Output, HTML Plan Report Output, infrastructure Example Repo (2 Targets), tf9 plan Command, Plan Summary Table (ENVIRONMENT/ADD/CHANGE/DESTROY/STATUS) (+7 more)
 
 ### Community 25 - "HTML Report Generator"
 Cohesion: 0.23
@@ -216,7 +216,7 @@ Nodes (15): HTML, EnvResult, Time, EnvResult, Options, ansiStyle(), ansiToHTML()
 
 ### Community 26 - "Reports Page Screenshot"
 Cohesion: 0.15
-Nodes (16): Breadcrumb Navigation (tfops / Reports), Cards/List View Toggle, Dark Theme UI, Environment Count Chips (N envs / N failed), Operation Filter Tabs (All/Plan/Apply/Destroy), Operation Type Badges (init/plan), Relative Time Labels (4m ago, 2h ago), Report Card Grid (+8 more)
+Nodes (16): Breadcrumb Navigation (tf9 / Reports), Cards/List View Toggle, Dark Theme UI, Environment Count Chips (N envs / N failed), Operation Filter Tabs (All/Plan/Apply/Destroy), Operation Type Badges (init/plan), Relative Time Labels (4m ago, 2h ago), Report Card Grid (+8 more)
 
 ### Community 27 - "Report Helper Utilities"
 Cohesion: 0.21
@@ -232,15 +232,15 @@ Nodes (15): CLI-Originated Run (run-cli- prefix), Dark Theme UI, Live Target Out
 
 ### Community 30 - "New Run Modal Screenshot"
 Cohesion: 0.16
-Nodes (15): Branch Selector with Up-to-date Indicator, CLI Command Preview (tfops init -r ecp-infra-tf), Command Selector (init/plan/apply/destroy), Dark Theme UI, More Commands Dropdown, New Run Modal Screenshot, Parallel Mode (up to four targets at once), Promotion Mode (sequential, stop on first failure) (+7 more)
+Nodes (15): Branch Selector with Up-to-date Indicator, CLI Command Preview (tf9 init -r ecp-infra-tf), Command Selector (init/plan/apply/destroy), Dark Theme UI, More Commands Dropdown, New Run Modal Screenshot, Parallel Mode (up to four targets at once), Promotion Mode (sequential, stop on first failure) (+7 more)
 
 ### Community 31 - "Overview Page Screenshot"
 Cohesion: 0.20
-Nodes (14): AWS SSO Authentication Status, Card Grid Layout, Config YAML Editor, Dark/Light Theme Toggle, Help Page, New Run Flow, Overview Page (tfops Web UI), Promotion Pipeline (+6 more)
+Nodes (14): AWS SSO Authentication Status, Card Grid Layout, Config YAML Editor, Dark/Light Theme Toggle, Help Page, New Run Flow, Overview Page (tf9 Web UI), Promotion Pipeline (+6 more)
 
 ### Community 32 - "Config Editor Screenshot"
 Cohesion: 0.19
-Nodes (14): Per-Target AWS Profile and Region Mapping, Shared Config File (~/.config/tfops/config.yaml), Config YAML Editor Page (tfops Web UI), Dark Theme Mode, Disabled Target Flag (fix-prod-euw2 disabled: true), ecp-infra-tf Repository Entry, No-Credentials-In-Config Policy, Reload and Save Actions (+6 more)
+Nodes (14): Per-Target AWS Profile and Region Mapping, Shared Config File (~/.config/tf9/config.yaml), Config YAML Editor Page (tf9 Web UI), Dark Theme Mode, Disabled Target Flag (fix-prod-euw2 disabled: true), ecp-infra-tf Repository Entry, No-Credentials-In-Config Policy, Reload and Save Actions (+6 more)
 
 ### Community 33 - "AWS SSO Session"
 Cohesion: 0.27
@@ -264,7 +264,7 @@ Nodes (9): ConfigYaml(), esc(), highlightHtml(), hlLine(), hlVal(), I, Problem, 
 
 ### Community 38 - "Repositories Page Screenshot"
 Cohesion: 0.22
-Nodes (11): Add Repository Action, All Repositories Table, AWS Profiles (ctp-dev-euw2, ctp-qa-euw2, ctp-loadtest-euw2), Config YAML (~/.config/tfops/config.yaml), Dark Theme UI, ecp-infra-tf Repository, Promotion Pipeline, Repositories Page (+3 more)
+Nodes (11): Add Repository Action, All Repositories Table, AWS Profiles (ctp-dev-euw2, ctp-qa-euw2, ctp-loadtest-euw2), Config YAML (~/.config/tf9/config.yaml), Dark Theme UI, ecp-infra-tf Repository, Promotion Pipeline, Repositories Page (+3 more)
 
 ### Community 39 - "Sample Plan Report Data"
 Cohesion: 0.20

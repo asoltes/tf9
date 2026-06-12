@@ -11,7 +11,7 @@ export default function ProfileMappingsPage() {
             <div className="page-title">CLI Directory to Profile Mappings</div>
             <div className="page-desc">
               Map directory base names to AWS profiles. Used by{' '}
-              <code>tfops plan --recursive or tfops plan -R --skip prod-euw2</code>{' '}
+              <code>tf9 plan --recursive or tf9 plan -R --skip prod-euw2</code>{' '}
               when scanning child terraform directories from a parent folder.
               The directory's base name must match a key exactly (e.g. <code>dev</code>, <code>qa</code>, <code>prod</code>).
               Overridden by <code>--profile</code>.

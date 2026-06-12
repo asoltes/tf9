@@ -1,5 +1,5 @@
 /* ===========================================================================
-   tfops report viewer — scoped port of report.css.
+   tf9 report viewer — scoped port of report.css.
    Everything is scoped under .report-viewer so the prototype's generic class
    names (.card, .term, .verdict, .env-block, …) never collide with other SPA
    pages. The report area carries its own token set (GitHub-flavored) which is

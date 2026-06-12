@@ -1,9 +1,9 @@
 // Package applog configures the process-wide structured logger.
 //
 // Logs are written to both stderr (so they show in the terminal running
-// `tfops serve`) and a persistent file under the config dir so a hang or
+// `tf9 serve`) and a persistent file under the config dir so a hang or
 // crash can be diagnosed after the fact. The level is read from config.yaml
-// (log_level) and can be overridden by TFOPS_LOG_LEVEL; it is also adjustable
+// (log_level) and can be overridden by TF9_LOG_LEVEL; it is also adjustable
 // at runtime via SetLevel without restarting the process.
 package applog
 
@@ -13,7 +13,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/andres/tfops/internal/config"
+	"github.com/andres/tf9/internal/config"
 )
 
 // maxLogBytes caps the log file size. On Init, if the existing file exceeds
@@ -65,10 +65,10 @@ func initWith(console bool) {
 	slog.SetDefault(slog.New(handler))
 }
 
-// resolveLevel picks the level: TFOPS_LOG_LEVEL env wins, then config.yaml's
+// resolveLevel picks the level: TF9_LOG_LEVEL env wins, then config.yaml's
 // log_level, then INFO.
 func resolveLevel() slog.Level {
-	if env := os.Getenv("TFOPS_LOG_LEVEL"); strings.TrimSpace(env) != "" {
+	if env := os.Getenv("TF9_LOG_LEVEL"); strings.TrimSpace(env) != "" {
 		if lvl, ok := parseLevel(env); ok {
 			return lvl
 		}

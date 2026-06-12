@@ -1,0 +1,42 @@
+# Target add / list (table + json) / move / remove.
+
+exec tf9 config repo add demo $WORK/repo
+
+exec tf9 config target add dev environments/dev --repo demo --profile p-dev
+exec tf9 config target add prod environments/prod --repo demo --profile p-prod
+
+exec tf9 config target list --repo demo
+stdout 'NAME'
+stdout 'dev'
+stdout 'prod'
+
+# JSON output is valid and includes both targets.
+exec tf9 config target list --repo demo -o json
+stdout '"name": "dev"'
+stdout '"name": "prod"'
+
+# Move prod to the front, then it lists before dev.
+exec tf9 config target move prod --repo demo
+exec tf9 config target list --repo demo -o json
+stdout '(?s)"name": "prod".*"name": "dev"'
+
+# Adding a target without the required profile fails.
+! exec tf9 config target add qa environments/qa --repo demo
+stderr 'profile'
+
+# Remove dev; only prod remains.
+exec tf9 config target remove dev --repo demo
+exec tf9 config target list --repo demo
+! stdout 'dev'
+stdout 'prod'
+
+# Unknown repo errors.
+! exec tf9 config target list --repo ghost
+stderr 'not found'
+
+-- repo/environments/dev/main.tf --
+terraform {}
+-- repo/environments/prod/main.tf --
+terraform {}
+-- repo/environments/qa/main.tf --
+terraform {}

@@ -5,7 +5,7 @@ import StsBadge from './components/StsBadge';
 
 /**
  * Plain-JSX application shell, a verbatim port of the prototype's topnav +
- * sidenav + crumbs + content layout (design_handoff_tfops/). Cloudscape's
+ * sidenav + crumbs + content layout (design_handoff_tf9/). Cloudscape's
  * AppLayout/TopNavigation/SideNavigation are intentionally dropped here.
  *
  * The split-panel props are retained on the interface for source compatibility
@@ -45,40 +45,42 @@ const SETTINGS_LINKS: SideLink[] = [
 
 const SECONDARY_LINKS: SideLink[] = [
   { id: 'reports', text: 'Reports', href: '#reports' },
+  { id: 'cost', text: 'Cost', href: '#cost' },
   { id: 'logs', text: 'Logs', href: '#logs' },
   { id: 'help', text: 'Help', href: '#help' },
 ];
 
 const CRUMBS: Record<Page['id'], { text: string; page: Page | null }[]> = {
-  overview: [{ text: 'tfops', page: { id: 'overview' } }, { text: 'Overview', page: null }],
-  runs: [{ text: 'tfops', page: { id: 'overview' } }, { text: 'Runs', page: null }],
+  overview: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Overview', page: null }],
+  runs: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Runs', page: null }],
   repos: [
-    { text: 'tfops', page: { id: 'overview' } },
+    { text: 'tf9', page: { id: 'overview' } },
     { text: 'Settings', page: { id: 'repos' } },
     { text: 'Repositories', page: null },
   ],
   workspace: [
-    { text: 'tfops', page: { id: 'overview' } },
+    { text: 'tf9', page: { id: 'overview' } },
     { text: 'Workspace', page: null },
   ],
   config: [
-    { text: 'tfops', page: { id: 'overview' } },
+    { text: 'tf9', page: { id: 'overview' } },
     { text: 'Settings', page: { id: 'repos' } },
     { text: 'Config YAML', page: null },
   ],
-  reports: [{ text: 'tfops', page: { id: 'overview' } }, { text: 'Reports', page: null }],
+  reports: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Reports', page: null }],
   report: [
-    { text: 'tfops', page: { id: 'overview' } },
+    { text: 'tf9', page: { id: 'overview' } },
     { text: 'Reports', page: { id: 'reports' } },
     { text: 'View', page: null },
   ],
   'profile-mappings': [
-    { text: 'tfops', page: { id: 'overview' } },
+    { text: 'tf9', page: { id: 'overview' } },
     { text: 'Settings', page: { id: 'repos' } },
     { text: 'CLI Directory to Profile Mappings', page: null },
   ],
-  logs: [{ text: 'tfops', page: { id: 'overview' } }, { text: 'Logs', page: null }],
-  help: [{ text: 'tfops', page: { id: 'overview' } }, { text: 'Help', page: null }],
+  cost: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Cost', page: null }],
+  logs: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Logs', page: null }],
+  help: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Help', page: null }],
 };
 
 const ICON_SUN = (
@@ -115,13 +117,13 @@ export default function Shell({ children, fullWidth = false }: ShellProps) {
   const { page, navigate, mode, toggleTheme, userEmail } = useNav();
 
   const [navCollapsed, setNavCollapsed] = React.useState<boolean>(() => {
-    return typeof localStorage !== 'undefined' && localStorage.getItem('tfops-nav-collapsed') === '1';
+    return typeof localStorage !== 'undefined' && localStorage.getItem('tf9-nav-collapsed') === '1';
   });
   function toggleNav() {
     setNavCollapsed(prev => {
       const next = !prev;
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('tfops-nav-collapsed', next ? '1' : '0');
+        localStorage.setItem('tf9-nav-collapsed', next ? '1' : '0');
       }
       return next;
     });
@@ -146,18 +148,13 @@ export default function Shell({ children, fullWidth = false }: ShellProps) {
     );
   }
 
-  const crumbs = CRUMBS[page.id] ?? [{ text: 'tfops', page: { id: 'overview' } as Page }];
+  const crumbs = CRUMBS[page.id] ?? [{ text: 'tf9', page: { id: 'overview' } as Page }];
 
   return (
     <>
       <div className="topnav">
-        <div className="brand">
-          <span style={{ display: 'flex', color: '#ff9900' }}>
-            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-              <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </span>{' '}
-          tfops
+        <div className="brand" aria-label="tf9">
+          <img src="/tf9-logo.svg" alt="tf9" />
         </div>
         <div className="tn-sep" />
         <a

@@ -6,7 +6,7 @@ import './ConfigYaml.css';
 /* =========================================================================
    Config YAML — code editor logic, ported from config/editor.js.
    Syntax highlight + line numbers + current line + schema validation,
-   wired to the REAL ~/.config/tfops/config.yaml via configApi.
+   wired to the REAL ~/.config/tf9/config.yaml via configApi.
    ========================================================================= */
 
 const LINE_H = 21; // --ed-lh
@@ -79,9 +79,17 @@ function validate(value: string): Problem[] {
   const lines = value.split('\n');
   const probs: Problem[] = [];
   const repoNames: Record<string, boolean> = {};
+  const rootKeys = new Set(['version', 'web', 'repositories', 'profile_mappings', 'sts_profile', 'log_level']);
   lines.forEach((ln, i) => {
     const lead = (ln.match(/^[ \t]*/) as RegExpMatchArray)[0];
     if (lead.indexOf('\t') >= 0) probs.push({ line: i + 1, sev: 'err', msg: 'YAML does not allow tabs for indentation — use spaces.' });
+    const root = ln.match(/^([A-Za-z0-9_.-]+):/);
+    if (root && !rootKeys.has(root[1])) {
+      probs.push({ line: i + 1, sev: 'err', msg: `Unsupported top-level field "${root[1]}". Remove legacy or unrelated configuration.` });
+    }
+    if (/^    groups:/.test(ln)) {
+      probs.push({ line: i + 1, sev: 'err', msg: 'Repository-level "groups" is unsupported. Define each target group with its "group" field.' });
+    }
     const ai = ln.match(/^\s*account_id:\s*(\d{6,})\s*(#.*)?$/);
     if (ai) probs.push({ line: i + 1, sev: 'warn', msg: 'Quote account_id ("' + ai[1] + '") to preserve leading zeros.' });
     const rn = ln.match(/^  - name:\s*(\S+)/);
@@ -112,7 +120,7 @@ function validate(value: string): Problem[] {
 }
 
 export default function ConfigYaml() {
-  const [path, setPath] = useState('~/.config/tfops/config.yaml');
+  const [path, setPath] = useState('~/.config/tf9/config.yaml');
   const [content, setContent] = useState('');
   const [saved, setSaved] = useState('');
   const [revision, setRevision] = useState('');
@@ -415,7 +423,7 @@ export default function ConfigYaml() {
                 <span style={{ display: 'flex' }} dangerouslySetInnerHTML={{ __html: I.format }} />Format document
               </button>
               <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                Validated against the tfops schema · Tab inserts 2 spaces · ⌘S to save
+                Validated against the tf9 schema · Tab inserts 2 spaces · ⌘S to save
               </span>
             </div>
           </div>

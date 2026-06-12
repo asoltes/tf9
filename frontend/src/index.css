@@ -13,14 +13,14 @@ body {
    * Monospace font stack — used for code, IDs, terminal output, paths.
    * Ordered: macOS native → Windows native → Linux/generic fallbacks.
    */
-  --tfops-font-mono: "Monaco", "Menlo", "Consolas", "Courier New",
+  --tf9-font-mono: "Monaco", "Menlo", "Consolas", "Courier New",
     ui-monospace, monospace;
 }
 
 /* ── Global code element ─────────────────────────────────────────── */
 
 code {
-  font-family: var(--tfops-font-mono);
+  font-family: var(--tf9-font-mono);
   font-size: 0.875em;
   /* Prevent code from looking bigger than surrounding text */
   line-height: inherit;
@@ -29,27 +29,27 @@ code {
 /* ── Run status animations ───────────────────────────────────────── */
 
 /* Pulsing dot for in-progress runs / targets */
-@keyframes tfops-pulse {
+@keyframes tf9-pulse {
   0%   { opacity: 1;    transform: scale(1); }
   50%  { opacity: 0.35; transform: scale(0.78); }
   100% { opacity: 1;    transform: scale(1); }
 }
 
-.tfops-pulse-dot {
+.tf9-pulse-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  animation: tfops-pulse 1.1s ease-in-out infinite;
+  animation: tf9-pulse 1.1s ease-in-out infinite;
 }
 
 /* Animated striped fill for a running progress segment */
-@keyframes tfops-stripe {
+@keyframes tf9-stripe {
   0%   { background-position: 0 0; }
   100% { background-position: 28px 0; }
 }
 
-.tfops-progress-running {
+.tf9-progress-running {
   background-image: linear-gradient(
     45deg,
     rgba(255, 255, 255, 0.28) 25%,
@@ -61,5 +61,5 @@ code {
     transparent
   );
   background-size: 28px 28px;
-  animation: tfops-stripe 0.8s linear infinite;
+  animation: tf9-stripe 0.8s linear infinite;
 }

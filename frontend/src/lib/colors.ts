@@ -1,5 +1,5 @@
 /**
- * Shared color helpers for tfops UI.
+ * Shared color helpers for tf9 UI.
  * Pure, dependency-free, synchronous utilities.
  */
 

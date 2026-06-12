@@ -1,8 +1,8 @@
-# Handoff: tfops — Terraform Operations UI
+# Handoff: tf9 — Terraform Operations UI
 
 ## Overview
 
-**tfops** is a desktop web application for running and monitoring Terraform operations across multiple repositories, environments, and AWS profiles. It provides a Cloudscape-flavored (AWS console style) interface for:
+**tf9** is a desktop web application for running and monitoring Terraform operations across multiple repositories, environments, and AWS profiles. It provides a Cloudscape-flavored (AWS console style) interface for:
 
 - Triggering Terraform runs (init, plan, apply, destroy + more commands)
 - Streaming live terminal output per environment in a split-panel view
@@ -92,7 +92,7 @@ Every page uses this shell:
 ```
 
 - **Topnav**: height 40px, sticky `top:0`, `z-index:1000`, dark (`#0f1b2a`)
-  - Left: brand logo (terraform SVG in `#ff9900` + "tfops" text, font-weight 700)
+  - Left: brand logo (terraform SVG in `#ff9900` + "tf9" text, font-weight 700)
   - Middle: nav links (`Runs`, `Reports`)
   - Right: dark/light toggle → STS auth badge → user email
 - **Sidenav**: 280px wide, `background:var(--container)`, `border-right:1px solid var(--divider)`, sticky, full viewport height minus topnav
@@ -225,7 +225,7 @@ Shows the assembled `terraform` command with syntax highlighting:
 - Editable extra flags input
 
 #### Disabled Targets
-Targets disabled in Repositories (`tfops-repo-overrides` in localStorage) are filtered out and do not appear in the New Run Modal. Empty groups are hidden.
+Targets disabled in Repositories (`tf9-repo-overrides` in localStorage) are filtered out and do not appear in the New Run Modal. Empty groups are hidden.
 
 ---
 
@@ -292,7 +292,7 @@ Same data in a sortable table with up/down arrow buttons for reordering. Shows O
 Fields: Stage name · Directory (read-only) · AWS profile (select) · Region (select) · Account ID · **Pipeline group** (text input with datalist autocomplete of existing groups — changing this moves the stage to a different pipeline) · Require manual approval (toggle).
 
 #### Enable/Disable Persistence
-The `disabled` state and `group` override for each target are persisted to `localStorage` under key `tfops-repo-overrides` as:
+The `disabled` state and `group` override for each target are persisted to `localStorage` under key `tf9-repo-overrides` as:
 ```json
 {
   "infrastructure:dev": { "disabled": false, "group": "" },
@@ -305,7 +305,7 @@ The New Run Modal reads this key on load and filters out disabled targets.
 
 ### 7. Config YAML (`config/Config YAML.html`)
 
-YAML editor page showing the generated `~/.config/tfops/config.yaml` based on repository and target configuration. Uses a code editor with syntax highlighting and a copy button.
+YAML editor page showing the generated `~/.config/tf9/config.yaml` based on repository and target configuration. Uses a code editor with syntax highlighting and a copy button.
 
 ---
 
@@ -324,7 +324,7 @@ Documentation/reference page with sections on configuration format, CLI usage, a
 - `ok` (authenticated) — green dot with glow + "Authenticated"
 - `fail` (unauthenticated) — red dot + "Unauthenticated"
 
-**Persistence**: state stored in `localStorage` under `tfops-sts-auth`  
+**Persistence**: state stored in `localStorage` under `tf9-sts-auth`  
 **Click to toggle**: prototype behavior — real implementation calls AWS STS `GetCallerIdentity`
 
 **Visual spec**:
@@ -361,7 +361,7 @@ All component colors use CSS custom properties (defined in `cloudscape.css` and 
 Implementation:
 ```js
 // theme.js (runs in <head> to prevent flash)
-var key = "tfops-color-mode";
+var key = "tf9-color-mode";
 var stored = localStorage.getItem(key);
 var preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 document.documentElement.setAttribute("data-theme", stored || preferred);
@@ -417,9 +417,9 @@ help/
 Paste this into Claude Code in your repository:
 
 ```
-I have a high-fidelity HTML/CSS/JS prototype of a Terraform operations UI called "tfops". 
-The design handoff package is in the `design_handoff_tfops/` folder — start by reading 
-`design_handoff_tfops/README.md` for full specs, then reference the HTML files in that folder 
+I have a high-fidelity HTML/CSS/JS prototype of a Terraform operations UI called "tf9". 
+The design handoff package is in the `design_handoff_tf9/` folder — start by reading 
+`design_handoff_tf9/README.md` for full specs, then reference the HTML files in that folder 
 as visual + behavioral references.
 
 Please implement this UI in our codebase using our existing framework and component libraries. 

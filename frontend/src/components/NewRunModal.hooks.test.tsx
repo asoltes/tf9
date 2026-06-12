@@ -6,6 +6,13 @@ import { createRoot } from 'react-dom/client';
 // Isolate the component from the network so the test exercises only render/hooks.
 vi.mock('../api', () => ({
   api: { get: vi.fn().mockResolvedValue({ items: [] }), post: vi.fn() },
+  costApi: {
+    settings: vi.fn().mockResolvedValue({
+      tokenConfigured: false,
+      enabledByDefault: false,
+      currency: 'USD',
+    }),
+  },
   repoGit: {
     branches: vi.fn().mockResolvedValue([]),
     status: vi.fn().mockResolvedValue(null),
