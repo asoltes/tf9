@@ -1,8 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Shell from '../Shell';
 import RunSplitPanel from '../components/RunSplitPanel';
 import NewRunModal from '../components/NewRunModal';
+import DateRangePicker from '../components/DateRangePicker';
 import { api } from '../api';
+import {
+  emptyFilters, isEmptyFilters, parseHashQuery, toHashQuery, toQuery,
+  type RunFilters,
+} from '../lib/runFilters';
 import type { Run, RunStatus, Paginated } from '../types';
 import './Runs.css';
 
@@ -89,7 +94,81 @@ function runTargets(r: Run): string[] {
   return r.envFilter?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
 }
 
-export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
+const BASE_COMMANDS = ['plan', 'apply', 'destroy'];
+
+/** Multi-select command filter: checkbox dropdown with an "all" state. */
+function CommandFilter({
+  options, selected, onChange,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (commands: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  function toggle(cmd: string) {
+    onChange(selected.includes(cmd) ? selected.filter(c => c !== cmd) : [...selected, cmd]);
+  }
+
+  const label = selected.length === 0
+    ? 'All commands'
+    : selected.length === 1 ? `Command: ${selected[0]}` : `Commands: ${selected.length}`;
+
+  return (
+    <div className="cmdf" ref={rootRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`cmdf-trigger${selected.length > 0 ? ' has-value' : ''}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen(o => !o)}
+      >
+        {label}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+      </button>
+      {open && (
+        <div
+          className="cmdf-pop"
+          role="group"
+          aria-label="Filter by command"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); triggerRef.current?.focus(); }
+          }}
+        >
+          <label className="cmdf-opt">
+            <input
+              type="checkbox"
+              checked={selected.length === 0}
+              onChange={() => onChange([])}
+            />
+            All commands
+          </label>
+          <div className="cmdf-sep" />
+          {options.map(cmd => (
+            <label key={cmd} className="cmdf-opt">
+              <input type="checkbox" checked={selected.includes(cmd)} onChange={() => toggle(cmd)} />
+              <span className={`badge ${cmdBadgeClass(cmd)}`}>{cmd}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean; filterQuery?: string }) {
   const [runs, setRuns] = useState<Run[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -97,6 +176,18 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newRunOpen, setNewRunOpen] = useState(false);
+  const [filters, setFilters] = useState<RunFilters>(() => parseHashQuery(filterQuery ?? ''));
+
+  // Filter changes reset to page 1 and are mirrored into the hash so refresh
+  // and back/forward keep them. replaceState avoids a hashchange re-render.
+  const applyFilters = useCallback((f: RunFilters) => {
+    setFilters(f);
+    setPage(1);
+    window.history.replaceState(null, '', `#runs${toHashQuery(f)}`);
+  }, []);
+
+  // Deep-link / external hash change (e.g. dashboard tiles).
+  useEffect(() => { setFilters(parseHashQuery(filterQuery ?? '')); setPage(1); }, [filterQuery]);
 
   // Opened via the Overview "New run" card / #runs/new deep-link.
   useEffect(() => { if (openNewRun) setNewRunOpen(true); }, [openNewRun]);
@@ -116,7 +207,8 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
 
   const loadRuns = useCallback(() => {
     setError(null);
-    return api.get<Paginated<Run>>(`/api/runs?page=${page}&limit=${PAGE_SIZE}`)
+    const filterQs = toQuery(filters);
+    return api.get<Paginated<Run>>(`/api/runs?page=${page}&limit=${PAGE_SIZE}${filterQs ? `&${filterQs}` : ''}`)
       .then(res => {
         setRuns(res?.items || []);
         setTotal(res?.total || 0);
@@ -126,7 +218,7 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
         setError(e instanceof Error ? e.message : 'Failed to load runs.');
         setLoading(false);
       });
-  }, [page]);
+  }, [page, filters]);
 
   useEffect(() => { loadRuns(); }, [loadRuns]);
 
@@ -213,6 +305,20 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
     setSelectedId(res.id);
   }
 
+  // Commands offered in the filter: the standard verbs plus anything present
+  // in real run data or already selected (so a chip never becomes unremovable).
+  const commandOptions = useMemo(() => {
+    const set = new Set(BASE_COMMANDS);
+    filters.commands.forEach(c => set.add(c));
+    runs.forEach(r => { const c = r.command || r.request?.command; if (c) set.add(c); });
+    return Array.from(set);
+  }, [runs, filters.commands]);
+
+  const filtersActive = !isEmptyFilters(filters);
+  const dateChip = filters.from && filters.to
+    ? (filters.from === filters.to ? filters.from : `${filters.from} – ${filters.to}`)
+    : filters.from ? `from ${filters.from}` : filters.to ? `until ${filters.to}` : null;
+
   async function onRunCreated(runId: string) {
     setNewRunOpen(false);
     if (window.location.hash === '#runs/new') {
@@ -229,13 +335,56 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
         <div className="runs-topbar">
           <div className="runs-head">
             <div>
-              <div className="page-title">Runs <span className="counter">{loading ? '' : `(${total})`}</span></div>
+              <div className="page-title">Run History <span className="counter">{loading ? '' : `(${total})`}</span></div>
               <div className="page-desc">Terraform runs across your repositories. Select a run to stream its output.</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button className="btn btn-icon" title="Refresh" style={{ border: '1px solid var(--border)', width: 34, height: 34 }} onClick={loadRuns}>{ICON_REFRESH}</button>
+              <button className="btn btn-icon" title="Refresh" aria-label="Refresh run history" style={{ border: '1px solid var(--border)', width: 34, height: 34 }} onClick={loadRuns}>{ICON_REFRESH}</button>
               <button className="btn btn-primary" onClick={() => setNewRunOpen(true)}>{ICON_PLUS}New run</button>
             </div>
+          </div>
+
+          <div className="runs-filterbar" role="region" aria-label="Run history filters">
+            <DateRangePicker
+              from={filters.from}
+              to={filters.to}
+              onChange={(from, to) => applyFilters({ ...filters, from, to })}
+            />
+            <CommandFilter
+              options={commandOptions}
+              selected={filters.commands}
+              onChange={(commands) => applyFilters({ ...filters, commands })}
+            />
+            {filtersActive && (
+              <>
+                <div className="filter-chips">
+                  {dateChip && (
+                    <span className="filter-chip">
+                      {dateChip}
+                      <button
+                        type="button" aria-label="Remove date filter"
+                        onClick={() => applyFilters({ ...filters, from: null, to: null })}
+                      >×</button>
+                    </span>
+                  )}
+                  {filters.commands.map(cmd => (
+                    <span key={cmd} className="filter-chip">
+                      {cmd}
+                      <button
+                        type="button" aria-label={`Remove ${cmd} filter`}
+                        onClick={() => applyFilters({ ...filters, commands: filters.commands.filter(c => c !== cmd) })}
+                      >×</button>
+                    </span>
+                  ))}
+                </div>
+                <button type="button" className="btn btn-link btn-sm" onClick={() => applyFilters(emptyFilters())}>
+                  Clear all filters
+                </button>
+                <span className="filter-count" aria-live="polite">
+                  {loading ? '' : `${total} matching run${total === 1 ? '' : 's'}`}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -253,9 +402,18 @@ export default function Runs({ openNewRun }: { openNewRun?: boolean }) {
                   </thead>
                   <tbody>
                     {error && (
-                      <tr><td colSpan={10} style={{ color: 'var(--red)', padding: 16 }}>{error}</td></tr>
+                      <tr><td colSpan={10} style={{ padding: 16 }}>
+                        <span style={{ color: 'var(--red)' }}>{error}</span>
+                        <button className="btn btn-normal btn-sm" style={{ marginLeft: 12 }} onClick={loadRuns}>Retry</button>
+                      </td></tr>
                     )}
-                    {!error && runs.length === 0 && !loading && (
+                    {!error && runs.length === 0 && !loading && filtersActive && (
+                      <tr><td colSpan={10} style={{ color: 'var(--text-2)', padding: 24, textAlign: 'center' }}>
+                        No runs match the current filters.{' '}
+                        <button className="btn btn-link btn-sm" onClick={() => applyFilters(emptyFilters())}>Clear all filters</button>
+                      </td></tr>
+                    )}
+                    {!error && runs.length === 0 && !loading && !filtersActive && (
                       <tr><td colSpan={10} style={{ color: 'var(--text-2)', padding: 24, textAlign: 'center' }}>No runs yet. Click “New run” to get started.</td></tr>
                     )}
                     {runs.map(r => {
