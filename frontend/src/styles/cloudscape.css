@@ -9,7 +9,8 @@
   --squid:#0f141a;
   --text:#0f141a;
   --text-2:#5f6b7a;
-  --text-3:#8b97a3;
+  /* Muted text still meets WCAG AA (≥4.5:1) on white surfaces. */
+  --text-3:#6d7884;
   --link:#0972d3;
   --link-hover:#033160;
   --blue:#0972d3;
@@ -38,6 +39,37 @@
   --shadow-drag:0 12px 28px -6px rgba(0,7,22,.30), 0 0 0 1px rgba(9,114,211,.5);
   --mono:"Monaco","Menlo","Consolas","Courier New",ui-monospace,monospace;
   --sans:"Open Sans","Helvetica Neue",Roboto,Arial,sans-serif;
+
+  /* Semantic aliases — resolve through the per-theme tokens above, so a
+     single definition serves light, dark, and dim. Prefer these in new CSS. */
+  --surface-canvas:var(--bg-layout);
+  --surface-raised:var(--container);
+  --surface-sunken:var(--surface-2);
+  --text-muted:var(--text-3);
+  --focus-ring:var(--blue);
+  --status-info:var(--blue);
+  --status-success:var(--green);
+  --status-warning:var(--amber);
+  --status-danger:var(--red);
+  --status-running:var(--blue);
+  --status-neutral:var(--text-3);
+  --tf-add:var(--green);
+  --tf-change:var(--amber);
+  --tf-destroy:var(--red);
+  --tf-replace:var(--purple);
+}
+
+/* ── Accessibility foundations ──────────────────────────────────────────── */
+/* One consistent, token-driven focus indicator everywhere. */
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+:focus:not(:focus-visible){outline:none}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
 }
 
 *,*::before,*::after{box-sizing:border-box}
