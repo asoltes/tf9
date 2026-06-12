@@ -14,7 +14,7 @@ test('a plan run produces a report that opens in the viewer', async ({ page }) =
 
   // ── Reports list ──
   await page.goto('/#reports');
-  await expect(page.locator('.page-title', { hasText: 'Reports' })).toBeVisible();
+  await expect(page.locator('.page-title', { hasText: 'Terraform Reports' })).toBeVisible();
   const card = page.locator('.rh-card').first();
   await expect(card).toBeVisible({ timeout: 15_000 });
   await expect(card.locator('.badge')).toContainText('plan');

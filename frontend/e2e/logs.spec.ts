@@ -3,7 +3,7 @@ import { shot } from './helpers';
 
 test('logs page lists lines, filters by level and refreshes', async ({ page }) => {
   await page.goto('/#logs');
-  await expect(page.locator('.page-title', { hasText: 'Logs' })).toBeVisible();
+  await expect(page.locator('.page-title', { hasText: 'System Logs' })).toBeVisible();
 
   // The server has logged at least its startup, so lines are present.
   await expect(page.locator('.logs-body .logs-line').first()).toBeVisible({ timeout: 15_000 });

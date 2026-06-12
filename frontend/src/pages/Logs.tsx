@@ -78,7 +78,7 @@ export default function LogsPage() {
         <div className="logs-head">
           <div>
             <div className="page-title">
-              Logs <span className="counter">({lines.length})</span>
+              System Logs <span className="counter">({lines.length})</span>
             </div>
             <div className="page-desc">
               Application logs from <code>tf9 serve</code> — also written to the log file on disk.

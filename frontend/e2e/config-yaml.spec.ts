@@ -3,7 +3,7 @@ import { shot } from './helpers';
 
 test('config editor loads the YAML and saves an edit', async ({ page }) => {
   await page.goto('/#config');
-  await expect(page.locator('.page-title', { hasText: 'Config YAML' })).toBeVisible();
+  await expect(page.locator('.page-title', { hasText: 'Configuration' })).toBeVisible();
 
   const editor = page.locator('.ed-input');
   await expect(editor).toContainText('version: 1');
