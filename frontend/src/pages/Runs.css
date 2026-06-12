@@ -576,3 +576,49 @@ html[data-variant="dim"] .runs-page{
 }
 html[data-variant="dim"] .runs-page .tgt-chip,
 html[data-variant="dim"] .runs-page .progress-bar{background:#323942}
+
+/* ── Filter toolbar (date range + command multi-select + chips) ──────────── */
+.runs-page .runs-filterbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:0 0 14px;
+}
+.cmdf{position:relative;display:inline-block}
+.cmdf-trigger{
+  display:inline-flex;align-items:center;gap:7px;height:32px;padding:4px 12px;
+  font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text-2);
+  background:var(--surface-1);border:1px solid var(--border);border-radius:var(--radius-i);
+  cursor:pointer;white-space:nowrap;
+}
+.cmdf-trigger:hover{border-color:var(--input-border);color:var(--text)}
+.cmdf-trigger.has-value{color:var(--link);border-color:var(--link)}
+.cmdf-pop{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:1200;min-width:180px;
+  background:var(--surface-1);border:1px solid var(--border);border-radius:10px;
+  box-shadow:var(--shadow-pop);padding:8px;display:flex;flex-direction:column;gap:2px;
+}
+.cmdf-opt{
+  display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;
+  font-size:13px;color:var(--text);cursor:pointer;
+}
+.cmdf-opt:hover{background:var(--surface-2)}
+.cmdf-opt input{accent-color:var(--blue);width:15px;height:15px;margin:0}
+.cmdf-sep{height:1px;background:var(--divider);margin:4px 0}
+
+.filter-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.filter-chip{
+  display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;
+  color:var(--link);background:var(--blue-bg);border:1px solid var(--blue);
+  border-radius:var(--radius-pill);padding:2px 6px 2px 11px;white-space:nowrap;
+}
+.filter-chip button{
+  border:none;background:transparent;color:inherit;font-size:15px;line-height:1;
+  cursor:pointer;padding:1px 5px;border-radius:50%;
+}
+.filter-chip button:hover{background:var(--blue);color:var(--container)}
+.filter-count{font-size:12.5px;color:var(--text-2);margin-left:auto;white-space:nowrap}
+
+@media(max-width:680px){
+  .runs-page .runs-filterbar{flex-direction:column;align-items:stretch}
+  .runs-page .runs-filterbar .drp-trigger,.runs-page .runs-filterbar .cmdf-trigger{width:100%;justify-content:flex-start}
+  .filter-count{margin-left:0}
+}

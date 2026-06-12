@@ -29,58 +29,84 @@ interface SideLink {
   id: Page['id'];
   text: string;
   href: string;
+  icon: React.ReactNode;
 }
 
-const PRIMARY_LINKS: SideLink[] = [
-  { id: 'overview', text: 'Overview', href: '#overview' },
-  { id: 'runs', text: 'Runs', href: '#runs' },
-  { id: 'workspace', text: 'Workspace', href: '#workspace' },
+const ni = (d: string) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={d} />
+  </svg>
+);
+
+// Visible labels for every destination. Route IDs and hashes are unchanged.
+const ICONS: Record<string, React.ReactNode> = {
+  overview: ni('M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-4H3zM13 7h8V3h-8z'),
+  runs: ni('M4 17l6-6-6-6M12 19h8'),
+  workspace: ni('M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'),
+  repos: ni('M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'),
+  config: ni('M16 18l6-6-6-6M8 6l-6 6 6 6'),
+  'profile-mappings': ni('M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM5 21v-2a7 7 0 0 1 14 0v2'),
+  reports: ni('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5'),
+  cost: ni('M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'),
+  logs: ni('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
+  help: ni('M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3M12 17h.01'),
+};
+
+const LABELS: Record<Page['id'], string> = {
+  overview: 'Dashboard',
+  runs: 'Run History',
+  workspace: 'Repository Workspace',
+  repos: 'Repositories',
+  config: 'Configuration',
+  'profile-mappings': 'AWS Profile Mappings',
+  reports: 'Terraform Reports',
+  report: 'Terraform Reports',
+  cost: 'Cost Analysis',
+  logs: 'System Logs',
+  help: 'Documentation',
+};
+
+const link = (id: Page['id']): SideLink => ({ id, text: LABELS[id], href: `#${id}`, icon: ICONS[id] });
+
+const NAV_GROUPS: { label: string | null; links: SideLink[] }[] = [
+  { label: 'Operations', links: [link('overview'), link('runs'), link('workspace')] },
+  { label: 'Configuration', links: [link('repos'), link('config'), link('profile-mappings')] },
+  { label: 'Insights & Support', links: [link('reports'), link('cost'), link('logs'), link('help')] },
 ];
 
-const SETTINGS_LINKS: SideLink[] = [
-  { id: 'repos', text: 'Repositories', href: '#repos' },
-  { id: 'config', text: 'Config YAML', href: '#config' },
-  { id: 'profile-mappings', text: 'CLI Directory Profiles', href: '#profile-mappings' },
-];
-
-const SECONDARY_LINKS: SideLink[] = [
-  { id: 'reports', text: 'Reports', href: '#reports' },
-  { id: 'cost', text: 'Cost', href: '#cost' },
-  { id: 'logs', text: 'Logs', href: '#logs' },
-  { id: 'help', text: 'Help', href: '#help' },
+const crumb = (id: Page['id']): { text: string; page: Page | null }[] => [
+  { text: 'tf9', page: { id: 'overview' } },
+  { text: LABELS[id], page: null },
 ];
 
 const CRUMBS: Record<Page['id'], { text: string; page: Page | null }[]> = {
-  overview: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Overview', page: null }],
-  runs: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Runs', page: null }],
+  overview: crumb('overview'),
+  runs: crumb('runs'),
+  workspace: crumb('workspace'),
   repos: [
     { text: 'tf9', page: { id: 'overview' } },
-    { text: 'Settings', page: { id: 'repos' } },
-    { text: 'Repositories', page: null },
-  ],
-  workspace: [
-    { text: 'tf9', page: { id: 'overview' } },
-    { text: 'Workspace', page: null },
+    { text: 'Configuration', page: { id: 'repos' } },
+    { text: LABELS.repos, page: null },
   ],
   config: [
     { text: 'tf9', page: { id: 'overview' } },
-    { text: 'Settings', page: { id: 'repos' } },
-    { text: 'Config YAML', page: null },
-  ],
-  reports: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Reports', page: null }],
-  report: [
-    { text: 'tf9', page: { id: 'overview' } },
-    { text: 'Reports', page: { id: 'reports' } },
-    { text: 'View', page: null },
+    { text: 'Configuration', page: { id: 'repos' } },
+    { text: LABELS.config, page: null },
   ],
   'profile-mappings': [
     { text: 'tf9', page: { id: 'overview' } },
-    { text: 'Settings', page: { id: 'repos' } },
-    { text: 'CLI Directory to Profile Mappings', page: null },
+    { text: 'Configuration', page: { id: 'repos' } },
+    { text: LABELS['profile-mappings'], page: null },
   ],
-  cost: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Cost', page: null }],
-  logs: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Logs', page: null }],
-  help: [{ text: 'tf9', page: { id: 'overview' } }, { text: 'Help', page: null }],
+  reports: crumb('reports'),
+  report: [
+    { text: 'tf9', page: { id: 'overview' } },
+    { text: LABELS.reports, page: { id: 'reports' } },
+    { text: 'View', page: null },
+  ],
+  cost: crumb('cost'),
+  logs: crumb('logs'),
+  help: crumb('help'),
 };
 
 const ICON_SUN = (
@@ -134,16 +160,21 @@ export default function Shell({ children, fullWidth = false }: ShellProps) {
     navigate(p);
   }
 
-  function renderLink(link: SideLink) {
-    const active = page.id === link.id;
+  function renderLink(l: SideLink) {
+    // The report viewer keeps Terraform Reports highlighted as its section.
+    const active = page.id === l.id || (l.id === 'reports' && page.id === 'report');
     return (
       <a
-        key={link.id}
-        href={link.href}
+        key={l.id}
+        href={l.href}
         className={active ? 'active' : undefined}
-        onClick={(e) => go(e, { id: link.id } as Page)}
+        aria-current={active ? 'page' : undefined}
+        aria-label={l.text}
+        title={navCollapsed ? l.text : undefined}
+        onClick={(e) => go(e, { id: l.id } as Page)}
       >
-        {link.text}
+        <span className="nav-ic">{l.icon}</span>
+        <span className="nav-txt">{l.text}</span>
       </a>
     );
   }
@@ -163,7 +194,7 @@ export default function Shell({ children, fullWidth = false }: ShellProps) {
           style={{ textDecoration: 'none' }}
           onClick={(e) => go(e, { id: 'workspace' })}
         >
-          Workspace
+          Repository Workspace
         </a>
         <a
           className="tn-item"
@@ -171,7 +202,7 @@ export default function Shell({ children, fullWidth = false }: ShellProps) {
           style={{ textDecoration: 'none' }}
           onClick={(e) => go(e, { id: 'runs' })}
         >
-          Runs
+          Run History
         </a>
         <a
           className="tn-item"
@@ -179,7 +210,7 @@ export default function Shell({ children, fullWidth = false }: ShellProps) {
           style={{ textDecoration: 'none' }}
           onClick={(e) => go(e, { id: 'reports' })}
         >
-          Reports
+          Terraform Reports
         </a>
         <div className="tn-spacer" />
         <div className="tn-right">
@@ -205,14 +236,15 @@ export default function Shell({ children, fullWidth = false }: ShellProps) {
       </div>
 
       <div className={`layout${navCollapsed ? ' nav-collapsed' : ''}`}>
-        <nav className="sidenav">
+        <nav className="sidenav" aria-label="Primary">
           <div className="nav-links">
-            {PRIMARY_LINKS.map(renderLink)}
-            <div className="nav-div" />
-            <div className="nav-sec">Settings</div>
-            {SETTINGS_LINKS.map(renderLink)}
-            <div className="nav-div" />
-            {SECONDARY_LINKS.map(renderLink)}
+            {NAV_GROUPS.map((group, gi) => (
+              <React.Fragment key={group.label ?? gi}>
+                {gi > 0 && <div className="nav-div" />}
+                {group.label && <div className="nav-sec">{group.label}</div>}
+                {group.links.map(renderLink)}
+              </React.Fragment>
+            ))}
           </div>
           <button
             className="nav-toggle-btn"

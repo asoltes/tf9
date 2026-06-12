@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/andres/tf9/internal/config"
 )
@@ -187,6 +189,149 @@ func TestAWSIdentityMethodNotAllowed(t *testing.T) {
 		}
 		if got.Error.Code != "method_not_allowed" {
 			t.Errorf("%s error code = %q, want method_not_allowed", method, got.Error.Code)
+		}
+	}
+}
+
+// ── GET /api/runs filtering ─────────────────────────────────────────────────
+
+// seedRunManager returns a manager holding four finished runs, oldest first:
+//   run-1 plan    2026-06-01T12:00Z
+//   run-2 apply   2026-06-02T12:00Z
+//   run-3 plan    2026-06-03T12:00Z
+//   run-4 destroy 2026-06-04T12:00Z
+func seedRunManager() *RunManager {
+	t0 := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+	mk := func(id, cmd string, day int) *Run {
+		return &Run{
+			ID:        id,
+			Status:    StatusSuccess,
+			StartedAt: t0.AddDate(0, 0, day),
+			Request:   RunRequest{Command: cmd},
+		}
+	}
+	return &RunManager{runs: []*Run{
+		mk("run-1", "plan", 0),
+		mk("run-2", "apply", 1),
+		mk("run-3", "plan", 2),
+		mk("run-4", "destroy", 3),
+	}}
+}
+
+type runsListBody struct {
+	Items []struct {
+		ID      string `json:"id"`
+		Command string `json:"command"`
+	} `json:"items"`
+	Total int `json:"total"`
+}
+
+func getRunsList(t *testing.T, mgr *RunManager, query string) (int, runsListBody) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api/runs"+query, nil)
+	res := httptest.NewRecorder()
+	listRuns(res, req, mgr)
+	var body runsListBody
+	if res.Code == http.StatusOK {
+		if err := json.Unmarshal(res.Body.Bytes(), &body); err != nil {
+			t.Fatalf("invalid JSON body: %v\n%s", err, res.Body.String())
+		}
+	}
+	return res.Code, body
+}
+
+func runIDs(body runsListBody) []string {
+	ids := make([]string, len(body.Items))
+	for i, it := range body.Items {
+		ids[i] = it.ID
+	}
+	return ids
+}
+
+func TestListRunsUnfilteredKeepsLegacyBehavior(t *testing.T) {
+	code, body := getRunsList(t, seedRunManager(), "")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	if body.Total != 4 {
+		t.Fatalf("total = %d, want 4", body.Total)
+	}
+	want := []string{"run-4", "run-3", "run-2", "run-1"} // newest-first
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsFiltersBySingleCommand(t *testing.T) {
+	code, body := getRunsList(t, seedRunManager(), "?command=plan")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	want := []string{"run-3", "run-1"}
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+	if body.Total != 2 {
+		t.Fatalf("total = %d, want 2", body.Total)
+	}
+}
+
+func TestListRunsFiltersByMultipleCommands(t *testing.T) {
+	code, body := getRunsList(t, seedRunManager(), "?command=plan&command=apply")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	want := []string{"run-3", "run-2", "run-1"}
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsFiltersByDateRangeInclusive(t *testing.T) {
+	// from equals run-2's exact start; to equals run-3's exact start —
+	// both boundaries must be inclusive.
+	code, body := getRunsList(t, seedRunManager(),
+		"?from=2026-06-02T12:00:00Z&to=2026-06-03T12:00:00Z")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	want := []string{"run-3", "run-2"}
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsCombinesDateAndCommandWithAND(t *testing.T) {
+	code, body := getRunsList(t, seedRunManager(),
+		"?from=2026-06-02T00:00:00Z&command=plan")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	want := []string{"run-3"}
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsFiltersBeforePagination(t *testing.T) {
+	code, body := getRunsList(t, seedRunManager(), "?command=plan&limit=1&page=2")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	if body.Total != 2 {
+		t.Fatalf("total = %d, want 2 (filtered count, not all runs)", body.Total)
+	}
+	want := []string{"run-1"} // page 2 of the filtered, newest-first list
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsRejectsMalformedDates(t *testing.T) {
+	for _, q := range []string{"?from=notadate", "?to=2026-06-01", "?from=2026-06-02T00:00:00Z&to=2026-06-01T00:00:00Z"} {
+		code, _ := getRunsList(t, seedRunManager(), q)
+		if code != http.StatusBadRequest {
+			t.Errorf("query %q status = %d, want 400", q, code)
 		}
 	}
 }

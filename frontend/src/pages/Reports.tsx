@@ -283,7 +283,7 @@ export default function ReportsPage() {
         <div className="rh-head">
           <div>
             <div className="page-title">
-              Reports <span className="counter">({reports.length})</span>
+              Terraform Reports <span className="counter">({reports.length})</span>
             </div>
             <div className="page-desc">
               Terraform run reports — plan, apply, and destroy output across your repositories.

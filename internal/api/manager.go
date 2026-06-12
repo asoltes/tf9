@@ -588,13 +588,30 @@ func (m *RunManager) Get(id string) (*Run, bool) {
 
 // List returns a page of runs newest-first along with the total run count.
 func (m *RunManager) List(page, limit int) ([]*Run, int) {
+	return m.ListFiltered(page, limit, nil)
+}
+
+// ListFiltered returns a page of runs newest-first that satisfy the optional
+// match predicate, along with the total matching count. Filtering happens
+// before pagination so page/total reflect the filtered set. A nil match
+// keeps every run.
+func (m *RunManager) ListFiltered(page, limit int, match func(*Run) bool) ([]*Run, int) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	total := len(m.runs)
-	ordered := make([]*Run, total)
-	for i, r := range m.runs {
-		ordered[total-1-i] = r // newest-first
+	ordered := make([]*Run, 0, len(m.runs))
+	for i := len(m.runs) - 1; i >= 0; i-- { // newest-first
+		r := m.runs[i]
+		if match != nil {
+			r.mu.RLock()
+			ok := match(r)
+			r.mu.RUnlock()
+			if !ok {
+				continue
+			}
+		}
+		ordered = append(ordered, r)
 	}
+	total := len(ordered)
 	if limit <= 0 {
 		return ordered, total
 	}

@@ -8,7 +8,7 @@ export default function ProfileMappingsPage() {
       <div className="config-page">
         <div className="page-head">
           <div>
-            <div className="page-title">CLI Directory to Profile Mappings</div>
+            <div className="page-title">AWS Profile Mappings</div>
             <div className="page-desc">
               Map directory base names to AWS profiles. Used by{' '}
               <code>tf9 plan --recursive or tf9 plan -R --skip prod-euw2</code>{' '}

@@ -48,7 +48,7 @@ function PageContent({
 }) {
   switch (page.id) {
     case 'overview': return <Overview firstRun={firstRun} />;
-    case 'runs':     return <Runs openNewRun={page.newRun} />;
+    case 'runs':     return <Runs openNewRun={page.newRun} filterQuery={page.filterQuery} />;
     case 'repos':    return <Repos />;
     case 'workspace': return (
       <Suspense fallback={<div className="workspace-loading">Loading workspace…</div>}>
@@ -73,6 +73,8 @@ function parseHash(raw: string): Page {
   if (h.startsWith('workspace/')) return { id: 'workspace', name: decodeURIComponent(h.slice(10)) };
   if (h.startsWith('repo/')) return { id: 'workspace', name: decodeURIComponent(h.slice(5)) };
   if (h === 'runs/new') return { id: 'runs', newRun: true };
+  // Run History filters live in a hash query: #runs?from=...&command=plan
+  if (h.startsWith('runs?')) return { id: 'runs', filterQuery: h.slice(h.indexOf('?')) };
   switch (h) {
     case 'runs':    return { id: 'runs' };
     case 'repos':   return { id: 'repos' };
@@ -90,6 +92,7 @@ function pageToHash(p: Page): string {
   if (p.id === 'report') return `#report/${p.name}`;
   if (p.id === 'workspace') return p.name ? `#workspace/${encodeURIComponent(p.name)}` : '#workspace';
   if (p.id === 'runs' && p.newRun) return '#runs/new';
+  if (p.id === 'runs' && p.filterQuery) return `#runs${p.filterQuery}`;
   return `#${p.id}`;
 }
 

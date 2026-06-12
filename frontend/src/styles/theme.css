@@ -10,7 +10,8 @@
 /* ── DARK: re-tokenize ──────────────────────────────────────────────────── */
 html[data-theme="dark"]{
   --bg-layout:#0d1117; --container:#161b22; --squid:#e6edf3;
-  --text:#e6edf3; --text-2:#9aa5b1; --text-3:#6e7681;
+  /* Muted text meets WCAG AA on the dark container surfaces. */
+  --text:#e6edf3; --text-2:#9aa5b1; --text-3:#848d97;
   --link:#58a6ff; --link-hover:#79c0ff; --blue:#58a6ff; --blue-bg:#132b45; --purple:#bc8cff;
   --th:#1b222c; --divider:#30363d; --border-strong:#3d444d; --input-border:#4b545e;
   --nav-bg:#010409; --nav-bg-2:#21262d;
@@ -191,7 +192,8 @@ html[data-theme="light"] .fs-modal .rct-row-open td,html[data-theme="light"] .fs
    ========================================================================= */
 html[data-variant="dim"]{
   --bg-layout:#22272e; --container:#2d333b; --squid:#cdd9e5;
-  --text:#adbac7; --text-2:#909dab; --text-3:#768390;
+  /* Muted text meets WCAG AA on the dim container surfaces. */
+  --text:#adbac7; --text-2:#909dab; --text-3:#8b98a5;
   --link:#6cb6ff; --link-hover:#96d0ff; --blue:#6cb6ff; --blue-bg:#243b53; --purple:#dcbdfb;
   --th:#2d333b; --divider:#444c56; --border-strong:#545d68; --input-border:#545d68;
   --nav-bg:#1c2128; --nav-bg-2:#2d333b;

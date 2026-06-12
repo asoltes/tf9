@@ -94,7 +94,7 @@ export default function Help() {
       <div className="help-page">
         <div className="page-head">
           <div>
-            <div className="page-title">Help</div>
+            <div className="page-title">Documentation</div>
             <div className="page-desc">
               How tf9 is configured and run. The CLI and this web UI share one <code>config.yaml</code>.
             </div>

@@ -515,7 +515,7 @@ export default function CostPage() {
       <div className="cost-page">
         <div className="cost-head">
           <div>
-            <div className="page-title">Cost</div>
+            <div className="page-title">Cost Analysis</div>
             <div className="page-desc">
               AWS infrastructure cost from Infracost — breakdown of existing infrastructure by repository and pipeline group,
               drift over time, and applied-run costs. Export shareable reports for the business.

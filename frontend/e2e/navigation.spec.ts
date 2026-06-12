@@ -4,14 +4,14 @@ import { shot } from './helpers';
 test('top nav links navigate between primary surfaces', async ({ page }) => {
   await page.goto('/#overview');
 
-  await page.locator('.tn-item', { hasText: 'Runs' }).click();
+  await page.locator('.tn-item', { hasText: 'Run History' }).click();
   await expect(page.locator('.runs-page')).toBeVisible();
 
-  await page.locator('.tn-item', { hasText: 'Reports' }).click();
+  await page.locator('.tn-item', { hasText: 'Terraform Reports' }).click();
   await expect(page.locator('.reports-page')).toBeVisible();
 
   // The bare Workspace link lands on the repository picker when no repo is open.
-  await page.locator('.tn-item', { hasText: 'Workspace' }).click();
+  await page.locator('.tn-item', { hasText: 'Repository Workspace' }).click();
   await expect(page.locator('.workspace-picker')).toBeVisible();
   await expect(page.locator('.workspace-repo-card', { hasText: 'e2e-repo' })).toBeVisible();
 });
@@ -21,7 +21,7 @@ test('side nav exposes settings links and breadcrumbs', async ({ page }) => {
 
   const sidenav = page.locator('.sidenav');
   await expect(sidenav).toBeVisible();
-  await expect(sidenav.locator('.nav-sec', { hasText: 'Settings' })).toBeVisible();
+  await expect(sidenav.locator('.nav-sec', { hasText: 'Configuration' })).toBeVisible();
 
   await sidenav.getByRole('link', { name: 'Repositories' }).click();
   await expect(page.locator('.page-title', { hasText: 'Repositories' })).toBeVisible();

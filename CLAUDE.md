@@ -232,7 +232,7 @@ exit code sets `StatusDenied` instead of `StatusFailed` when `denied` is true.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/runs` | List runs (paginated: `?page=1&limit=20`) |
+| `GET` | `/api/runs` | List runs (paginated: `?page=1&limit=20`; optional filters `from`/`to` RFC3339 inclusive + repeated `command=`, applied before pagination; malformed values → 400) |
 | `POST` | `/api/runs` | Start a new run |
 | `GET` | `/api/runs/{id}` | Get a single run |
 | `GET` | `/api/runs/{id}/stream` | SSE stream of output lines |
@@ -287,14 +287,19 @@ component imports have been removed.
 
 | Hash | Page |
 |---|---|
-| `#overview` (default) | Overview hub |
-| `#runs` | Runs list |
-| `#runs/new` | Opens New Run Modal over the runs list |
+| `#overview` (default) | Dashboard (operational overview) |
+| `#runs` | Run History (`#runs?from=…&to=…&command=…` carries filters) |
+| `#runs/new` | Opens New Run Modal over the run history |
 | `#repos` | Repositories |
-| `#config` | Config YAML editor |
-| `#reports` | Reports list |
+| `#config` | Configuration (YAML editor) |
+| `#reports` | Terraform Reports list |
 | `#report/<name>` | Report viewer |
-| `#help` | Help |
+| `#help` | Documentation |
+
+Visible navigation labels (route IDs unchanged): Dashboard, Run History,
+Repository Workspace, Repositories, Configuration, AWS Profile Mappings,
+Terraform Reports, Cost Analysis, System Logs, Documentation — grouped in the
+sidebar as Operations / Configuration / Insights & Support.
 
 ### Key files
 

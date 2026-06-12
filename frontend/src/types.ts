@@ -249,7 +249,7 @@ export interface Paginated<T> {
 
 export type Page =
   | { id: 'overview' }
-  | { id: 'runs'; newRun?: boolean }
+  | { id: 'runs'; newRun?: boolean; filterQuery?: string }
   | { id: 'repos' }
   | { id: 'workspace'; name?: string }
   | { id: 'config' }

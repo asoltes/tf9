@@ -302,7 +302,7 @@ export default function ConfigYaml() {
       <div className="config-page">
         <div className="page-head">
           <div>
-            <div className="page-title">Config YAML</div>
+            <div className="page-title">Configuration</div>
             <div className="page-desc">
               Shared CLI and web UI configuration. <code>{path}</code> — store AWS profile names, account IDs and regions here, never credentials.
             </div>

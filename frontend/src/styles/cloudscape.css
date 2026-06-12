@@ -9,7 +9,8 @@
   --squid:#0f141a;
   --text:#0f141a;
   --text-2:#5f6b7a;
-  --text-3:#8b97a3;
+  /* Muted text still meets WCAG AA (≥4.5:1) on white surfaces. */
+  --text-3:#6d7884;
   --link:#0972d3;
   --link-hover:#033160;
   --blue:#0972d3;
@@ -38,6 +39,37 @@
   --shadow-drag:0 12px 28px -6px rgba(0,7,22,.30), 0 0 0 1px rgba(9,114,211,.5);
   --mono:"Monaco","Menlo","Consolas","Courier New",ui-monospace,monospace;
   --sans:"Open Sans","Helvetica Neue",Roboto,Arial,sans-serif;
+
+  /* Semantic aliases — resolve through the per-theme tokens above, so a
+     single definition serves light, dark, and dim. Prefer these in new CSS. */
+  --surface-canvas:var(--bg-layout);
+  --surface-raised:var(--container);
+  --surface-sunken:var(--surface-2);
+  --text-muted:var(--text-3);
+  --focus-ring:var(--blue);
+  --status-info:var(--blue);
+  --status-success:var(--green);
+  --status-warning:var(--amber);
+  --status-danger:var(--red);
+  --status-running:var(--blue);
+  --status-neutral:var(--text-3);
+  --tf-add:var(--green);
+  --tf-change:var(--amber);
+  --tf-destroy:var(--red);
+  --tf-replace:var(--purple);
+}
+
+/* ── Accessibility foundations ──────────────────────────────────────────── */
+/* One consistent, token-driven focus indicator everywhere. */
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+:focus:not(:focus-visible){outline:none}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -66,16 +98,23 @@ a:hover{text-decoration:underline}
 
 /* ── Layout: side nav + content ─────────────────────────────────────────── */
 .layout{display:flex;min-height:calc(100vh - 56px)}
-.sidenav{width:220px;flex-shrink:0;background:var(--container);border-right:1px solid var(--divider);position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);overflow:hidden;display:flex;flex-direction:column;transition:width .18s ease}
-.nav-collapsed .sidenav{width:36px;border-right-color:var(--divider)}
-.sidenav .nav-links{flex:1;overflow:hidden;padding:20px 0;opacity:1;transition:opacity .12s ease}
-.nav-collapsed .sidenav .nav-links{opacity:0;pointer-events:none}
+.sidenav{width:236px;flex-shrink:0;background:var(--container);border-right:1px solid var(--divider);position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);overflow:hidden;display:flex;flex-direction:column;transition:width .18s ease}
+.nav-collapsed .sidenav{width:52px;border-right-color:var(--divider)}
+.sidenav .nav-links{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 0}
 .sidenav-title{font-weight:700;font-size:16px;color:var(--text);padding:4px 24px 14px}
-.sidenav a{display:block;color:var(--text);padding:7px 24px;font-size:14px;border-left:2px solid transparent;white-space:nowrap}
-.sidenav a:hover{background:#f4f4f4;text-decoration:none}
+.sidenav a{display:flex;align-items:center;gap:10px;color:var(--text);padding:7px 18px;font-size:14px;border-left:2px solid transparent;white-space:nowrap}
+.sidenav a .nav-ic{display:flex;flex-shrink:0}
+.sidenav a .nav-ic svg{width:16px;height:16px;color:var(--text-2)}
+.sidenav a.active .nav-ic svg{color:var(--link)}
+.sidenav a:hover{background:var(--surface-2);text-decoration:none}
 .sidenav a.active{color:var(--link);font-weight:700;border-left-color:var(--link);background:var(--blue-bg)}
-.sidenav .nav-sec{color:var(--text-2);font-weight:700;font-size:12px;letter-spacing:.3px;padding:16px 24px 6px;text-transform:none;white-space:nowrap}
+.sidenav .nav-sec{color:var(--text-2);font-weight:700;font-size:12px;letter-spacing:.3px;padding:16px 18px 6px;text-transform:none;white-space:nowrap}
 .sidenav .nav-div{height:1px;background:var(--divider);margin:12px 16px}
+/* Collapsed: an icon rail with tooltips instead of an empty strip. */
+.nav-collapsed .sidenav a .nav-txt{display:none}
+.nav-collapsed .sidenav .nav-sec{visibility:hidden;height:10px;padding:0}
+.nav-collapsed .sidenav a{padding:9px 0;justify-content:center}
+.nav-collapsed .sidenav .nav-div{margin:8px 10px}
 .nav-toggle-btn{width:100%;flex-shrink:0;border:none;border-top:1px solid var(--divider);background:var(--container);color:var(--text-3);cursor:pointer;padding:8px 0;display:flex;align-items:center;justify-content:center}
 .nav-toggle-btn:hover{background:var(--surface-2);color:var(--text)}
 .nav-toggle-btn svg{width:16px;height:16px}
