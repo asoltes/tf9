@@ -763,6 +763,54 @@ func resolveTargetDirs(req RunRequest) []string {
 	return names
 }
 
+// parseRunFilter builds the optional run-list predicate from `from`/`to`
+// (RFC3339, inclusive boundaries) and repeated `command` query parameters.
+// Returns nil when no filter parameters are present (legacy behavior) and an
+// error for malformed values, which the caller maps to a 400 response.
+func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
+	q := r.URL.Query()
+	var from, to *time.Time
+	if v := q.Get("from"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid 'from' timestamp %q: must be RFC3339", v)
+		}
+		from = &t
+	}
+	if v := q.Get("to"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid 'to' timestamp %q: must be RFC3339", v)
+		}
+		to = &t
+	}
+	if from != nil && to != nil && to.Before(*from) {
+		return nil, fmt.Errorf("'to' timestamp is before 'from'")
+	}
+	var commands map[string]bool
+	if vals := q["command"]; len(vals) > 0 {
+		commands = make(map[string]bool, len(vals))
+		for _, v := range vals {
+			commands[v] = true
+		}
+	}
+	if from == nil && to == nil && commands == nil {
+		return nil, nil
+	}
+	return func(run *Run) bool {
+		if commands != nil && !commands[run.Request.Command] {
+			return false
+		}
+		if from != nil && run.StartedAt.Before(*from) {
+			return false
+		}
+		if to != nil && run.StartedAt.After(*to) {
+			return false
+		}
+		return true
+	}, nil
+}
+
 func listRuns(w http.ResponseWriter, r *http.Request, mgr *RunManager) {
 	type runSummary struct {
 		ID             string     `json:"id"`
@@ -780,8 +828,13 @@ func listRuns(w http.ResponseWriter, r *http.Request, mgr *RunManager) {
 		Destroy        int        `json:"destroy"`
 		SavedPlanReady bool       `json:"savedPlanReady,omitempty"`
 	}
+	match, err := parseRunFilter(r)
+	if err != nil {
+		jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
+		return
+	}
 	page, limit := parsePage(r)
-	runs, total := mgr.List(page, limit)
+	runs, total := mgr.ListFiltered(page, limit, match)
 	out := make([]runSummary, len(runs))
 	for i, run := range runs {
 		run.mu.RLock()
