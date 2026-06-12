@@ -1,31 +1,34 @@
 import { expect, test } from '@playwright/test';
 import { shot } from './helpers';
 
-test('overview hub renders all cards', async ({ page }) => {
+test('dashboard renders heading, actions, and status tiles', async ({ page }) => {
   await page.goto('/#overview');
-  await expect(page.locator('.hub-hero h1')).toHaveText('tf9');
-  await expect(page.locator('.hub-card')).toHaveCount(6);
-  await shot(page, 'overview-hub');
+  await expect(page.locator('.overview-page .page-title')).toHaveText('Dashboard');
+  await expect(page.getByRole('button', { name: 'Start Terraform Run' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open Repository Workspace' })).toBeVisible();
+  // One tile per run status, with an honest scope note.
+  await expect(page.locator('.dash-tile')).toHaveCount(5);
+  await expect(page.locator('.dash-tiles-note')).toBeVisible();
+  await shot(page, 'overview-dashboard');
 });
 
-const cards: { href: string; expect: string }[] = [
-  { href: '#runs', expect: '.runs-page' },
-  { href: '#repos', expect: '.page-title:has-text("Repositories")' },
-  { href: '#config', expect: '.config-page' },
-  { href: '#reports', expect: '.reports-page' },
-  { href: '#help', expect: '.help-page' },
-];
-
-for (const c of cards) {
-  test(`hub card ${c.href} navigates`, async ({ page }) => {
-    await page.goto('/#overview');
-    await page.locator(`a.hub-card[href="${c.href}"]`).click();
-    await expect(page.locator(c.expect).first()).toBeVisible();
-  });
-}
-
-test('hub "New run" card opens the new run modal', async ({ page }) => {
+test('dashboard resources link to repositories and reports', async ({ page }) => {
   await page.goto('/#overview');
-  await page.locator('a.hub-card[href="#runs/new"]').click();
+  const resources = page.locator('section[aria-label="Resources"]');
+  await expect(resources).toBeVisible();
+  // The e2e fixture configures two repositories.
+  await resources.locator('a[href="#repos"]').click();
+  await expect(page.locator('.page-title', { hasText: 'Repositories' })).toBeVisible();
+});
+
+test('"Start Terraform Run" opens the new run modal', async ({ page }) => {
+  await page.goto('/#overview');
+  await page.getByRole('button', { name: 'Start Terraform Run' }).click();
   await expect(page.locator('.run-modal[role="dialog"]')).toBeVisible();
+});
+
+test('status tiles navigate to run history', async ({ page }) => {
+  await page.goto('/#overview');
+  await page.locator('.dash-tile.st-running').click();
+  await expect(page.locator('.runs-page')).toBeVisible();
 });

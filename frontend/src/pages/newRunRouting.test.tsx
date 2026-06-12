@@ -13,12 +13,13 @@ describe('NewRunModal renders when visible', () => {
   });
 });
 
-describe('Overview "New run" hub card', () => {
+describe('Dashboard primary actions', () => {
   const html = renderToStaticMarkup(<Overview firstRun={null as never} />);
 
-  it('links to a distinct new-run destination (not the same as plain Runs)', () => {
-    // Regression: the New run card used href="#runs" identical to the Runs
-    // card, so it navigated to the Runs page without opening the modal.
-    expect(html).toContain('href="#runs/new"');
+  it('offers Start Terraform Run and Open Repository Workspace', () => {
+    // The new-run action must lead to the distinct #runs/new destination
+    // (via navigate with newRun: true), not plain #runs.
+    expect(html).toContain('Start Terraform Run');
+    expect(html).toContain('Open Repository Workspace');
   });
 });
