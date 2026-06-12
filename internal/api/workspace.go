@@ -260,8 +260,12 @@ func bytesContainNUL(data []byte) bool {
 
 func workspaceLanguage(path string) string {
 	ext := strings.ToLower(filepath.Ext(path))
-	if lang := mime.TypeByExtension(ext); strings.HasPrefix(lang, "text/") {
-		return strings.TrimPrefix(lang, "text/")
+	name := strings.ToLower(filepath.Base(path))
+	switch name {
+	case "dockerfile", "containerfile":
+		return "dockerfile"
+	case "makefile", "gnumakefile":
+		return "shell"
 	}
 	switch ext {
 	case ".tf", ".tfvars":
@@ -272,21 +276,71 @@ func workspaceLanguage(path string) string {
 		return "json"
 	case ".go":
 		return "go"
+	case ".py", ".pyw":
+		return "python"
+	case ".rb":
+		return "ruby"
+	case ".php":
+		return "php"
+	case ".java":
+		return "java"
+	case ".c", ".h":
+		return "c"
+	case ".cc", ".cpp", ".cxx", ".hh", ".hpp", ".hxx":
+		return "cpp"
+	case ".cs":
+		return "csharp"
+	case ".rs":
+		return "rust"
+	case ".kt", ".kts":
+		return "kotlin"
+	case ".swift":
+		return "swift"
+	case ".scala":
+		return "scala"
+	case ".dart":
+		return "dart"
 	case ".ts", ".tsx":
 		return "typescript"
 	case ".js", ".jsx":
 		return "javascript"
+	case ".vue", ".svelte":
+		return "html"
 	case ".md":
 		return "markdown"
 	case ".sh", ".zsh", ".bash":
 		return "shell"
+	case ".ps1", ".psm1":
+		return "powershell"
 	case ".css":
 		return "css"
-	case ".html":
+	case ".scss":
+		return "scss"
+	case ".less":
+		return "less"
+	case ".html", ".htm":
 		return "html"
-	default:
-		return "plaintext"
+	case ".xml", ".svg":
+		return "xml"
+	case ".sql":
+		return "sql"
+	case ".graphql", ".gql":
+		return "graphql"
+	case ".lua":
+		return "lua"
+	case ".pl", ".pm":
+		return "perl"
+	case ".r":
+		return "r"
+	case ".toml", ".ini", ".cfg", ".conf":
+		return "ini"
+	case ".properties":
+		return "ini"
 	}
+	if lang := mime.TypeByExtension(ext); strings.HasPrefix(lang, "text/") {
+		return strings.TrimPrefix(lang, "text/")
+	}
+	return "plaintext"
 }
 
 func workspaceSaveFile(w http.ResponseWriter, r *http.Request, name string) {

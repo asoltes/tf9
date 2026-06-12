@@ -10,6 +10,7 @@ import {
   buildLockIds,
   type RawTarget,
 } from '../lib/runPreview';
+import { commandStyleClass } from '../lib/commandStyle';
 import './NewRunModal.css';
 
 // ── Inline icons (stroke=currentColor), ported verbatim from run.js `I` map ──
@@ -633,7 +634,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                 {COMMON.map(c => (
                   <button
                     key={c.id}
-                    className={`cmd-chip ${c.icon}${cmd === c.id ? ' on' : ''}`}
+                    className={`cmd-chip ${c.icon} command-style ${commandStyleClass(c.id)}${cmd === c.id ? ' on' : ''}`}
                     onClick={() => onSetCmd(c.id)}
                   >
                     <span className="ic">{I[c.icon]}</span>
@@ -642,7 +643,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                 ))}
                 <div className="cmd-more">
                   <select
-                    className="sel"
+                    className={`sel command-select command-style${isMore ? ` selected ${commandStyleClass(cmd)}` : ''}`}
                     value={isMore ? cmd : ''}
                     onChange={e => { if (e.target.value) onSetCmd(e.target.value); }}
                   >

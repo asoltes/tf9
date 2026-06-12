@@ -85,6 +85,7 @@ writeFileSync(join(serviceRepo, 'service.tf'), [
 run('git', ['init', '--initial-branch=main'], repo);
 run('git', ['add', '.'], repo);
 run('git', ['commit', '-m', 'Initial fixture'], repo);
+run('git', ['branch', 'rebase-target'], repo);
 run('git', ['init', '--initial-branch=main'], serviceRepo);
 run('git', ['add', '.'], serviceRepo);
 run('git', ['commit', '-m', 'Initial service fixture'], serviceRepo);

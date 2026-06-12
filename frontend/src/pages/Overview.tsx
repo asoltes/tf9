@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Shell from '../Shell';
 import { useNav } from '../nav';
 import { api, awsApi, reportsApi } from '../api';
 import { relativeTime } from '../lib/relativeTime';
+import { commandStyleClass } from '../lib/commandStyle';
 import type { Identity, Paginated, Repo, Report, Run, RunStatus } from '../types';
 import './Overview.css';
 
@@ -35,16 +36,23 @@ function useFetch<T>(fetcher: () => Promise<T>): Fetched<T> & { retry: () => voi
   return { ...state, retry: load };
 }
 
-function cmdBadgeClass(cmd: string): string {
-  return cmd === 'destroy' ? 'red' : cmd === 'apply' ? 'orange' : cmd === 'plan' ? 'green' : 'blue';
-}
-
 function duration(start: string, end?: string): string {
   if (!end) return '—';
   const ms = new Date(end).getTime() - new Date(start).getTime();
   if (ms < 0 || isNaN(ms)) return '—';
   if (ms < 60000) return `${Math.round(ms / 1000)}s`;
   return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+}
+
+function exactDateTime(iso: string): { date: string; time: string; full: string } {
+  if (!iso) return { date: '—', time: '', full: '' };
+  const value = new Date(iso);
+  if (isNaN(value.getTime())) return { date: '—', time: '', full: '' };
+  return {
+    date: value.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+    time: value.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    full: value.toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'long' }),
+  };
 }
 
 const STATUS_TILES: { status: RunStatus; label: string }[] = [
@@ -77,12 +85,21 @@ export default function Overview(_props: OverviewProps) {
 
   const runsQ = useFetch(() => api.get<Paginated<Run>>(`/api/runs?page=1&limit=${RUN_WINDOW}`));
   const reposQ = useFetch(() => api.get<Paginated<Repo>>('/api/repos'));
-  const reportsQ = useFetch(() => reportsApi.list(1, 5));
+  // Pull the full set so the Recent reports card can show every report; the
+  // server orders them by filename (command, then time), so we re-sort by run
+  // time below to get a true latest-first list.
+  const reportsQ = useFetch(() => reportsApi.list(1, 500));
   const identityQ = useFetch<Identity>(() => awsApi.identity());
 
   const runs = runsQ.data?.items ?? [];
   const repos = reposQ.data?.items ?? [];
-  const reports = reportsQ.data?.items ?? [];
+  // Newest first by run time; reports without a parseable time (e.g. live runs)
+  // are treated as most recent so they surface at the top.
+  const reports = useMemo(() => {
+    const items = reportsQ.data?.items ?? [];
+    const ts = (r: Report) => { const t = new Date(r.runAt).getTime(); return isNaN(t) ? Infinity : t; };
+    return items.slice().sort((a, b) => ts(b) - ts(a));
+  }, [reportsQ.data]);
 
   const counts = STATUS_TILES.map(t => ({
     ...t,
@@ -133,6 +150,22 @@ export default function Overview(_props: OverviewProps) {
   }
 
   const recent = runs.slice(0, RECENT_RUNS_SHOWN);
+  const analysis = useMemo(() => {
+    const promotion = runs.filter(run => !run.request?.parallel).length;
+    const parallel = runs.length - promotion;
+    const completed = runs.filter(run => run.finishedAt);
+    const success = runs.filter(run => run.status === 'success').length;
+    const totalDuration = completed.reduce((sum, run) => (
+      sum + Math.max(0, new Date(run.finishedAt!).getTime() - new Date(run.startedAt).getTime())
+    ), 0);
+    return {
+      promotion,
+      parallel,
+      successRate: completed.length ? Math.round((success / completed.length) * 100) : 0,
+      averageDuration: completed.length ? Math.round(totalDuration / completed.length / 1000) : 0,
+      resourceChanges: runs.reduce((sum, run) => sum + (run.add ?? 0) + (run.change ?? 0) + (run.destroy ?? 0), 0),
+    };
+  }, [runs]);
 
   return (
     <Shell>
@@ -164,8 +197,8 @@ export default function Overview(_props: OverviewProps) {
                 <a
                   key={t.status}
                   className={`dash-tile st-${t.status}`}
-                  href="#runs"
-                  onClick={e => { e.preventDefault(); navigate({ id: 'runs' }); }}
+                  href={`#runs?status=${t.status}`}
+                  onClick={e => { e.preventDefault(); navigate({ id: 'runs', filterQuery: `?status=${t.status}` }); }}
                   aria-label={`${t.label}: ${runsQ.loading ? 'loading' : t.count} of the last ${runs.length} runs`}
                 >
                   <span className="dash-tile-n">{runsQ.loading ? '…' : t.count}</span>
@@ -211,24 +244,47 @@ export default function Overview(_props: OverviewProps) {
             {!runsQ.loading && !runsQ.error && recent.length > 0 && (
               <table className="tbl dash-tbl">
                 <thead>
-                  <tr><th>Command</th><th>Repository</th><th>Status</th><th>Started</th><th>Duration</th></tr>
+                  <tr><th>Command</th><th>Repository</th><th>Status</th><th>Date and time</th><th>Duration</th></tr>
                 </thead>
                 <tbody>
-                  {recent.map(r => (
+                  {recent.map(r => {
+                    const started = exactDateTime(r.startedAt);
+                    return (
                     <tr key={r.id} className="selectable" onClick={() => navigate({ id: 'runs' })}>
-                      <td><span className={`badge ${cmdBadgeClass(r.command || r.request?.command || '')}`}>{r.command || r.request?.command || '—'}</span></td>
+                      <td><span className={`badge command-style ${commandStyleClass(r.command || r.request?.command || '')}`}>{r.command || r.request?.command || '—'}</span></td>
                       <td><span className="mono dash-repo" title={r.repo || ''}>{r.repo || '—'}</span></td>
                       <td><span className={`dash-status ${r.status}`}>{r.status}</span></td>
-                      <td>{r.startedAt ? relativeTime(r.startedAt) : '—'}</td>
+                      <td title={started.full}><span className="dash-run-date">{started.date}<small>{started.time}</small></span></td>
                       <td>{r.status === 'running' ? 'in progress' : duration(r.startedAt, r.finishedAt)}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}
           </section>
 
           <div className="dash-side">
+            <section className="container dash-card" aria-label="Execution mode analysis">
+              <div className="c-head noborder"><div className="c-title">Execution modes</div></div>
+              <div className="c-body tight dash-mode-body">
+                <div className="dash-mode-chart" aria-label={`${analysis.promotion} promotion runs and ${analysis.parallel} parallel runs`}>
+                  <div className="dash-mode-bar promotion" style={{ flexGrow: analysis.promotion || 0 }} />
+                  <div className="dash-mode-bar parallel" style={{ flexGrow: analysis.parallel || 0 }} />
+                  {runs.length === 0 && <div className="dash-mode-bar empty" />}
+                </div>
+                <div className="dash-mode-legend">
+                  <span><i className="promotion" />Promotion <strong>{analysis.promotion}</strong></span>
+                  <span><i className="parallel" />Parallel <strong>{analysis.parallel}</strong></span>
+                </div>
+                <div className="dash-analysis-grid">
+                  <div><strong>{analysis.successRate}%</strong><span>Success rate</span></div>
+                  <div><strong>{analysis.averageDuration}s</strong><span>Avg. duration</span></div>
+                  <div><strong>{analysis.resourceChanges}</strong><span>Resource changes</span></div>
+                </div>
+              </div>
+            </section>
+
             <section className="container dash-card" aria-label="Resources">
               <div className="c-head noborder"><div className="c-title">Resources</div></div>
               <div className="c-body tight">
@@ -260,7 +316,10 @@ export default function Overview(_props: OverviewProps) {
             </section>
 
             <section className="container dash-card" aria-label="Recent reports">
-              <div className="c-head noborder"><div className="c-title">Recent reports</div></div>
+              <div className="c-head">
+                <div className="c-title">Recent reports</div>
+                <a href="#reports" onClick={e => { e.preventDefault(); navigate({ id: 'reports' }); }}>View all</a>
+              </div>
               <div className="c-body tight">
                 {reportsQ.loading && <div style={{ padding: '4px 20px 14px' }}><Skeleton lines={2} /></div>}
                 {!reportsQ.loading && reportsQ.error && (
@@ -270,14 +329,14 @@ export default function Overview(_props: OverviewProps) {
                   <div className="dash-empty" style={{ padding: '4px 20px 16px' }}>No reports yet — they are written after each run.</div>
                 )}
                 {!reportsQ.loading && !reportsQ.error && reports.length > 0 && (
-                  <ul className="dash-reports">
-                    {reports.slice(0, 4).map((rep: Report) => (
+                  <ul className="dash-reports scroll">
+                    {reports.map((rep: Report) => (
                       <li key={rep.name}>
                         <a
                           href={`#report/${rep.name}`}
                           onClick={e => { e.preventDefault(); navigate({ id: 'report', name: rep.name }); }}
                         >
-                          <span className={`badge ${cmdBadgeClass(rep.command)}`}>{rep.command}</span>
+                          <span className={`badge command-style ${commandStyleClass(rep.command)}`}>{rep.command}</span>
                           <span className="dash-report-name" title={rep.name}>{rep.name}</span>
                           <span className="dash-muted">{rep.runAt ? relativeTime(rep.runAt) : ''}</span>
                         </a>

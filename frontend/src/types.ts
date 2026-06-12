@@ -102,6 +102,7 @@ export interface Report {
   runAt: string;
   sizeKb: number;
   isLive: boolean;
+  applied: boolean;
   add: number;
   change: number;
   destroy: number;
@@ -116,6 +117,7 @@ export interface Report {
 export interface ReportEnvResult {
   env: string;
   profile: string;
+  applied: boolean;
   failed: boolean;
   noChanges: boolean;
   add: number;
@@ -129,6 +131,7 @@ export interface ReportData {
   command: string;
   runAt?: string;
   repoLabel?: string;
+  applied: boolean;
   add: number;
   change: number;
   destroy: number;

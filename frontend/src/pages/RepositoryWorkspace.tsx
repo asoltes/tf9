@@ -40,7 +40,7 @@ type WorkbenchIconName =
   | 'files' | 'source' | 'search' | 'settings' | 'folder' | 'folderOpen'
   | 'file' | 'terraform' | 'json' | 'yaml' | 'markdown' | 'code'
   | 'newFile' | 'newFolder' | 'refresh' | 'collapse' | 'terminal'
-  | 'split' | 'trash' | 'maximize' | 'restore' | 'close' | 'branch'
+  | 'split' | 'trash' | 'stop' | 'rename' | 'maximize' | 'restore' | 'close' | 'branch'
   | 'back' | 'save' | 'repo' | 'ai';
 
 const ICON_PATHS: Record<WorkbenchIconName, React.ReactNode> = {
@@ -63,6 +63,8 @@ const ICON_PATHS: Record<WorkbenchIconName, React.ReactNode> = {
   terminal: <><path d="m5 7 4 4-4 4M11 17h7" /><rect x="2" y="3" width="20" height="18" rx="2" /></>,
   split: <><rect x="3" y="4" width="18" height="16" rx="1" /><path d="M12 4v16" /></>,
   trash: <><path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7M10 11v6m4-6v6" /></>,
+  stop: <rect x="5" y="5" width="14" height="14" rx="1" />,
+  rename: <><path d="m4 16-.5 4.5L8 20 19 9l-4-4L4 16Z" /><path d="m13 7 4 4" /></>,
   maximize: <path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5" />,
   restore: <><rect x="5" y="5" width="14" height="14" /><path d="M8 5V2h14v14h-3" /></>,
   close: <path d="m6 6 12 12M18 6 6 18" />,
@@ -342,7 +344,7 @@ function TerminalInstance({
 
 function LiveTerminal({
   repo, sessions, activeSessionId, mode, active, maximized, onSelectSession, onNewSession,
-  onToggleMaximize, onCollapse,
+  onTerminateSession, onToggleMaximize, onCollapse,
 }: {
   repo: string;
   sessions: TerminalSession[];
@@ -352,6 +354,7 @@ function LiveTerminal({
   maximized: boolean;
   onSelectSession: (id: number) => void;
   onNewSession: () => void;
+  onTerminateSession: (id: number) => void;
   onToggleMaximize: () => void;
   onCollapse: () => void;
 }) {
@@ -391,6 +394,15 @@ function LiveTerminal({
         <span className="rw-spacer" />
         <button className="rw-icon-button" aria-label="New terminal" title="New terminal" onClick={onNewSession}>
           <WorkbenchIcon name="terminal" />＋
+        </button>
+        <button
+          className="rw-icon-button rw-terminal-terminate"
+          aria-label="Terminate terminal"
+          title="Terminate terminal"
+          disabled={!activeSession}
+          onClick={() => activeSession && onTerminateSession(activeSession.id)}
+        >
+          <WorkbenchIcon name="stop" />
         </button>
         <button className="rw-icon-button" title={maximized ? 'Restore panel' : 'Maximize panel'} onClick={onToggleMaximize}>
           <WorkbenchIcon name={maximized ? 'restore' : 'maximize'} />
@@ -641,6 +653,9 @@ function GitOperationsModal({
   const [selectedBranch, setSelectedBranch] = useState(candidates[0] ?? '');
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [selectedCommits, setSelectedCommits] = useState<string[]>([]);
+  const [previewCommit, setPreviewCommit] = useState('');
+  const [commitPatch, setCommitPatch] = useState('');
+  const [loadingPatch, setLoadingPatch] = useState(false);
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
@@ -663,6 +678,8 @@ function GitOperationsModal({
     if (operation !== 'cherry-pick' || !selectedBranch || !currentBranch) {
       setCommits([]);
       setSelectedCommits([]);
+      setPreviewCommit('');
+      setCommitPatch('');
       return;
     }
     let cancelled = false;
@@ -673,6 +690,8 @@ function GitOperationsModal({
         if (cancelled) return;
         setCommits(result);
         setSelectedCommits([]);
+        setPreviewCommit('');
+        setCommitPatch('');
       })
       .catch(err => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load commits.');
@@ -683,8 +702,28 @@ function GitOperationsModal({
     return () => { cancelled = true; };
   }, [currentBranch, operation, repo, selectedBranch]);
 
+  useEffect(() => {
+    if (!previewCommit) {
+      setCommitPatch('');
+      return;
+    }
+    let cancelled = false;
+    setLoadingPatch(true);
+    repoGit.commit(repo, previewCommit)
+      .then(result => {
+        if (!cancelled) setCommitPatch(result.patch);
+      })
+      .catch(err => {
+        if (!cancelled) setCommitPatch(err instanceof Error ? err.message : 'Could not load commit changes.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPatch(false);
+      });
+    return () => { cancelled = true; };
+  }, [previewCommit, repo]);
+
   async function execute() {
-    if (blocked || !selectedBranch || running) return;
+    if (!selectedBranch || running) return;
     if (operation === 'cherry-pick' && selectedCommits.length === 0) return;
     const action = operation === 'rebase'
       ? `Rebase ${currentBranch} onto ${selectedBranch}?`
@@ -771,9 +810,15 @@ function GitOperationsModal({
             <div className="rw-commit-picker">
               <div className="rw-commit-picker-head">
                 <span>Commits not in {currentBranch}</span>
-                {commits.length > 0 && <button onClick={() => setSelectedCommits(
-                  selectedCommits.length === commits.length ? [] : commits.map(commit => commit.sha),
-                )}>{selectedCommits.length === commits.length ? 'Clear' : 'Select all'}</button>}
+                {commits.length > 0 && <button onClick={() => {
+                  if (selectedCommits.length === commits.length) {
+                    setSelectedCommits([]);
+                    setPreviewCommit('');
+                  } else {
+                    setSelectedCommits(commits.map(commit => commit.sha));
+                    setPreviewCommit(commits[0].sha);
+                  }
+                }}>{selectedCommits.length === commits.length ? 'Clear' : 'Select all'}</button>}
               </div>
               {loadingCommits ? (
                 <div className="rw-git-ops-empty">Loading commits…</div>
@@ -785,14 +830,30 @@ function GitOperationsModal({
                     type="checkbox"
                     checked={selectedCommits.includes(commit.sha)}
                     disabled={running}
-                    onChange={event => setSelectedCommits(current => event.target.checked
-                      ? [...current, commit.sha]
-                      : current.filter(sha => sha !== commit.sha))}
+                    onChange={event => {
+                      const checked = event.target.checked;
+                      setSelectedCommits(current => {
+                        const next = checked
+                          ? [...current, commit.sha]
+                          : current.filter(sha => sha !== commit.sha);
+                        if (checked) setPreviewCommit(commit.sha);
+                        else if (previewCommit === commit.sha) setPreviewCommit(next[0] ?? '');
+                        return next;
+                      });
+                    }}
                   />
                   <code>{commit.shortSha}</code>
                   <span><strong>{commit.message}</strong><small>{commit.author} · {commit.date}</small></span>
                 </label>
               ))}
+              {previewCommit && (
+                <section className="rw-commit-preview" aria-label="Selected commit changes">
+                  <header>Selected commit changes</header>
+                  {loadingPatch
+                    ? <div className="rw-git-ops-empty">Loading changes…</div>
+                    : <pre>{commitPatch}</pre>}
+                </section>
+              )}
             </div>
           )}
           {output && <pre className="rw-git-ops-output">{output}</pre>}
@@ -801,13 +862,180 @@ function GitOperationsModal({
           <button className="btn btn-normal" disabled={running} onClick={onClose}>Cancel</button>
           <button
             className="btn btn-primary"
-            disabled={Boolean(blocked) || !selectedBranch || running ||
+            disabled={!selectedBranch || running ||
               (operation === 'cherry-pick' && selectedCommits.length === 0)}
             onClick={() => void execute()}
           >
             {running ? 'Running…' : operation === 'rebase' ? 'Rebase branch' : 'Cherry-pick selected'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkspaceEntryModal({
+  entry, onClose, onTerminal, onRename, onDelete,
+}: {
+  entry: WorkspaceEntry;
+  onClose: () => void;
+  onTerminal: () => void;
+  onRename: (destination: string) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const [view, setView] = useState<'actions' | 'rename' | 'delete'>('actions');
+  const [destination, setDestination] = useState(entry.path);
+  const [working, setWorking] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const canRename = destination.trim() !== '' && destination.trim() !== entry.path;
+  const title = view === 'rename'
+    ? `Rename ${entry.isDir ? 'folder' : 'file'}`
+    : view === 'delete'
+      ? `Delete ${entry.isDir ? 'folder' : 'file'}`
+      : `Manage ${entry.isDir ? 'folder' : 'file'}`;
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !working) onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose, working]);
+
+  async function submitRename() {
+    if (!canRename || working) return;
+    setWorking(true);
+    setModalError('');
+    try {
+      await onRename(destination.trim());
+      onClose();
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : 'Could not rename entry.');
+      setWorking(false);
+    }
+  }
+
+  async function submitDelete() {
+    if (working) return;
+    setWorking(true);
+    setModalError('');
+    try {
+      await onDelete();
+      onClose();
+    } catch (err) {
+      setModalError(err instanceof Error ? err.message : 'Could not delete entry.');
+      setWorking(false);
+    }
+  }
+
+  return (
+    <div
+      className="overlay show rw-entry-modal-overlay"
+      onMouseDown={event => {
+        if (event.target === event.currentTarget && !working) onClose();
+      }}
+    >
+      <div
+        className="modal rw-entry-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={view === 'actions' ? 'Workspace item actions' : title}
+      >
+        <header className="rw-entry-modal-head">
+          <span className={`rw-entry-modal-icon ${view === 'delete' ? 'danger' : ''}`}>
+            <WorkbenchIcon name={view === 'delete' ? 'trash' : entry.isDir ? 'folder' : 'file'} />
+          </span>
+          <div>
+            <h2>{title}</h2>
+            <code title={entry.path}>{entry.path}</code>
+          </div>
+          <button
+            className="rw-entry-modal-close"
+            aria-label="Close"
+            disabled={working}
+            onClick={onClose}
+          >
+            <WorkbenchIcon name="close" />
+          </button>
+        </header>
+
+        {view === 'actions' && (
+          <div className="rw-entry-action-list">
+            {entry.isDir && (
+              <button onClick={onTerminal}>
+                <span><WorkbenchIcon name="terminal" /></span>
+                <span><strong>Open terminal</strong><small>Start a shell in this folder</small></span>
+                <b>›</b>
+              </button>
+            )}
+            <button onClick={() => setView('rename')}>
+              <span><WorkbenchIcon name="rename" /></span>
+              <span><strong>Rename</strong><small>Move this item to a new path</small></span>
+              <b>›</b>
+            </button>
+            <button className="danger" onClick={() => setView('delete')}>
+              <span><WorkbenchIcon name="trash" /></span>
+              <span><strong>Delete</strong><small>{entry.isDir ? 'Remove this folder and its contents' : 'Permanently remove this file'}</small></span>
+              <b>›</b>
+            </button>
+          </div>
+        )}
+
+        {view === 'rename' && (
+          <form className="rw-entry-modal-form" onSubmit={event => {
+            event.preventDefault();
+            void submitRename();
+          }}>
+            <label>
+              New path
+              <input
+                autoFocus
+                value={destination}
+                disabled={working}
+                spellCheck={false}
+                onFocus={event => event.currentTarget.select()}
+                onChange={event => setDestination(event.target.value)}
+              />
+            </label>
+            <p>Enter a path relative to the repository root.</p>
+            {modalError && <div className="rw-entry-modal-error">{modalError}</div>}
+            <footer>
+              <button type="button" className="btn btn-normal" disabled={working} onClick={() => {
+                setModalError('');
+                setView('actions');
+              }}>Back</button>
+              <button type="submit" className="btn btn-primary" disabled={!canRename || working}>
+                {working ? 'Renaming…' : 'Rename'}
+              </button>
+            </footer>
+          </form>
+        )}
+
+        {view === 'delete' && (
+          <div className="rw-entry-delete">
+            <div className="rw-entry-delete-warning">
+              <WorkbenchIcon name="trash" />
+              <div>
+                <strong>This action cannot be undone.</strong>
+                <p>
+                  {entry.isDir
+                    ? 'The folder and all files and folders inside it will be permanently deleted.'
+                    : 'This file will be permanently deleted from the repository workspace.'}
+                </p>
+              </div>
+            </div>
+            {modalError && <div className="rw-entry-modal-error">{modalError}</div>}
+            <footer>
+              <button type="button" className="btn btn-normal" disabled={working} onClick={() => {
+                setModalError('');
+                setView('actions');
+              }}>Back</button>
+              <button type="button" className="btn btn-danger" disabled={working} onClick={() => void submitDelete()}>
+                {working ? 'Deleting…' : 'Delete permanently'}
+              </button>
+            </footer>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -845,6 +1073,7 @@ function Workbench({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [gitOperationsOpen, setGitOperationsOpen] = useState(false);
+  const [entryModal, setEntryModal] = useState<WorkspaceEntry | null>(null);
   const [explorerWidth, setExplorerWidth] = useState(250);
   const [diffWidth, setDiffWidth] = useState(initialDiffWidth);
   const [terminalHeight, setTerminalHeight] = useState(250);
@@ -873,6 +1102,21 @@ function Workbench({
     setActiveTerminalId(session.id);
     setTerminalOpen(true);
     setTerminalMaximized(false);
+  }
+
+  function terminateTerminal(id: number) {
+    const index = terminalSessions.findIndex(session => session.id === id);
+    const remaining = terminalSessions.filter(session => session.id !== id);
+    setTerminalSessions(remaining);
+    if (remaining.length === 0) {
+      setActiveTerminalId(-1);
+      setTerminalOpen(false);
+      setTerminalMaximized(false);
+      return;
+    }
+    if (activeTerminalId === id) {
+      setActiveTerminalId(remaining[Math.min(Math.max(index, 0), remaining.length - 1)].id);
+    }
   }
 
   useEffect(() => {
@@ -1112,34 +1356,34 @@ function Workbench({
     }
   }
 
-  async function editEntry(entry: WorkspaceEntry) {
-    const actions = entry.isDir ? '"terminal", "rename", or "delete"' : '"rename" or "delete"';
-    const action = window.prompt(`Enter ${actions}`, entry.isDir ? 'terminal' : 'rename');
-    if (action === 'terminal' && entry.isDir) {
-      openTerminal(entry.path);
-      return;
-    }
-    if (action === 'rename') {
-      const destination = window.prompt('New path', entry.path);
-      if (!destination || destination === entry.path) return;
-      try {
-        await workspaceApi.move(name, entry.path, destination);
-        setTabs(current => current.map(tab => tab.path === entry.path ? { ...tab, path: destination } : tab));
-        if (activePath === entry.path) setActivePath(destination);
-        await refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not rename entry.');
+  function editEntry(entry: WorkspaceEntry) {
+    setEntryModal(entry);
+  }
+
+  async function renameEntry(entry: WorkspaceEntry, destination: string) {
+    await workspaceApi.move(name, entry.path, destination);
+    const childPrefix = `${entry.path}/`;
+    setTabs(current => current.map(tab => {
+      if (tab.path === entry.path) return { ...tab, path: destination };
+      if (tab.path.startsWith(childPrefix)) {
+        return { ...tab, path: `${destination}/${tab.path.slice(childPrefix.length)}` };
       }
-    } else if (action === 'delete' && window.confirm(`Delete ${entry.path}${entry.isDir ? ' recursively' : ''}?`)) {
-      try {
-        await workspaceApi.remove(name, entry.path);
-        setTabs(current => current.filter(tab => tab.path !== entry.path && !tab.path.startsWith(`${entry.path}/`)));
-        if (activePath === entry.path || activePath.startsWith(`${entry.path}/`)) setActivePath('');
-        await refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not delete entry.');
-      }
-    }
+      return tab;
+    }));
+    setActivePath(current => {
+      if (current === entry.path) return destination;
+      if (current.startsWith(childPrefix)) return `${destination}/${current.slice(childPrefix.length)}`;
+      return current;
+    });
+    await refresh();
+  }
+
+  async function deleteEntry(entry: WorkspaceEntry) {
+    await workspaceApi.remove(name, entry.path);
+    const childPrefix = `${entry.path}/`;
+    setTabs(current => current.filter(tab => tab.path !== entry.path && !tab.path.startsWith(childPrefix)));
+    setActivePath(current => current === entry.path || current.startsWith(childPrefix) ? '' : current);
+    await refresh();
   }
 
   async function checkout(nextBranch: string) {
@@ -1483,6 +1727,7 @@ function Workbench({
                 maximized={terminalMaximized}
                 onSelectSession={setActiveTerminalId}
                 onNewSession={() => openTerminal()}
+                onTerminateSession={terminateTerminal}
                 onToggleMaximize={() => setTerminalMaximized(value => !value)}
                 onCollapse={() => {
                   setTerminalOpen(false);
@@ -1491,7 +1736,10 @@ function Workbench({
               />
             </div>
           ) : (
-            <button className="rw-open-terminal" onClick={() => setTerminalOpen(true)}><WorkbenchIcon name="terminal" /> Terminal</button>
+            <button className="rw-open-terminal" onClick={() => {
+              if (terminalSessions.length === 0) openTerminal();
+              else setTerminalOpen(true);
+            }}><WorkbenchIcon name="terminal" /> Terminal</button>
           )}
         </section>
       </div>
@@ -1523,6 +1771,19 @@ function Workbench({
           blocked={gitOperationBlocked}
           onClose={() => setGitOperationsOpen(false)}
           onComplete={refreshAfterGitOperation}
+        />
+      )}
+      {entryModal && (
+        <WorkspaceEntryModal
+          key={`${entryModal.path}:${entryModal.isDir}`}
+          entry={entryModal}
+          onClose={() => setEntryModal(null)}
+          onTerminal={() => {
+            openTerminal(entryModal.path);
+            setEntryModal(null);
+          }}
+          onRename={destination => renameEntry(entryModal, destination)}
+          onDelete={() => deleteEntry(entryModal)}
         />
       )}
     </div>

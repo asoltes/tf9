@@ -8,6 +8,7 @@ const makeReport = (command: string, name = 'r'): Report => ({
   runAt: '2026-06-08T10:00:00Z',
   sizeKb: 10,
   isLive: false,
+  applied: command === 'apply',
   add: 1,
   change: 0,
   destroy: 0,

@@ -70,6 +70,21 @@ export function updateApprovalGate(
   return { pending: reset ? false : prev.pending, seenCount: newShow, clearCount: newClear, runId };
 }
 
+/**
+ * Whether the approval gate should be visible, given the reducer state and how
+ * many prompts the user has already answered (`answeredSeen`). The gate shows
+ * only for an *unanswered* prompt — once the user clicks Approve/Deny the
+ * component bumps answeredSeen to seenCount, so streaming output or a lagging
+ * run.awaitingInput can never re-open it. This is the fix for the bug where the
+ * fullscreen approval bar required a second click to dismiss.
+ */
+export function approvalGateVisible(
+  gate: { pending: boolean; seenCount: number },
+  answeredSeen: number,
+): boolean {
+  return gate.pending && gate.seenCount > answeredSeen;
+}
+
 export interface EnvSection {
   name: string;
   profile: string;

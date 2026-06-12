@@ -8,6 +8,7 @@ import {
   emptyFilters, isEmptyFilters, parseHashQuery, toHashQuery, toQuery,
   type RunFilters,
 } from '../lib/runFilters';
+import { commandStyleClass } from '../lib/commandStyle';
 import type { Run, RunStatus, Paginated } from '../types';
 import './Runs.css';
 
@@ -52,10 +53,6 @@ function statusIcon(s: RunStatus): React.ReactNode {
   return ICON_STOP;
 }
 
-function cmdBadgeClass(cmd: string): string {
-  return cmd === 'destroy' ? 'red' : cmd === 'apply' ? 'orange' : cmd === 'plan' ? 'green' : 'blue';
-}
-
 function fmtTimestamp(iso: string): { label: string; title: string } {
   if (!iso) return { label: '—', title: '' };
   const d = new Date(iso);
@@ -95,6 +92,7 @@ function runTargets(r: Run): string[] {
 }
 
 const BASE_COMMANDS = ['plan', 'apply', 'destroy'];
+const RUN_STATUSES: RunStatus[] = ['running', 'success', 'failed', 'denied', 'cancelled'];
 
 /** Multi-select command filter: checkbox dropdown with an "all" state. */
 function CommandFilter({
@@ -159,7 +157,80 @@ function CommandFilter({
           {options.map(cmd => (
             <label key={cmd} className="cmdf-opt">
               <input type="checkbox" checked={selected.includes(cmd)} onChange={() => toggle(cmd)} />
-              <span className={`badge ${cmdBadgeClass(cmd)}`}>{cmd}</span>
+              <span className={`badge command-style ${commandStyleClass(cmd)}`}>{cmd}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Multi-select status filter matching the command filter interaction. */
+function StatusFilter({
+  selected, onChange,
+}: {
+  selected: string[];
+  onChange: (statuses: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  function toggle(status: string) {
+    onChange(selected.includes(status)
+      ? selected.filter(item => item !== status)
+      : [...selected, status]);
+  }
+
+  const label = selected.length === 0
+    ? 'All statuses'
+    : selected.length === 1 ? `Status: ${selected[0]}` : `Statuses: ${selected.length}`;
+
+  return (
+    <div className="cmdf statusf" ref={rootRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`cmdf-trigger${selected.length > 0 ? ' has-value' : ''}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen(value => !value)}
+      >
+        {label}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+      </button>
+      {open && (
+        <div
+          className="cmdf-pop"
+          role="group"
+          aria-label="Filter by status"
+          onKeyDown={event => {
+            if (event.key === 'Escape') {
+              event.stopPropagation();
+              setOpen(false);
+              triggerRef.current?.focus();
+            }
+          }}
+        >
+          <label className="cmdf-opt">
+            <input type="checkbox" checked={selected.length === 0} onChange={() => onChange([])} />
+            All statuses
+          </label>
+          <div className="cmdf-sep" />
+          {RUN_STATUSES.map(status => (
+            <label key={status} className="cmdf-opt status-option">
+              <input type="checkbox" checked={selected.includes(status)} onChange={() => toggle(status)} />
+              <span className={`dash-status ${status}`}>{status}</span>
             </label>
           ))}
         </div>
@@ -355,6 +426,10 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
               selected={filters.commands}
               onChange={(commands) => applyFilters({ ...filters, commands })}
             />
+            <StatusFilter
+              selected={filters.statuses}
+              onChange={statuses => applyFilters({ ...filters, statuses })}
+            />
             {filtersActive && (
               <>
                 <div className="filter-chips">
@@ -373,6 +448,15 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                       <button
                         type="button" aria-label={`Remove ${cmd} filter`}
                         onClick={() => applyFilters({ ...filters, commands: filters.commands.filter(c => c !== cmd) })}
+                      >×</button>
+                    </span>
+                  ))}
+                  {filters.statuses.map(status => (
+                    <span key={status} className="filter-chip status">
+                      Status: {status}
+                      <button
+                        type="button" aria-label={`Remove ${status} status filter`}
+                        onClick={() => applyFilters({ ...filters, statuses: filters.statuses.filter(item => item !== status) })}
                       >×</button>
                     </span>
                   ))}
@@ -430,7 +514,7 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                           <td style={{ width: 118 }}>
                             <span className="run-id">{r.status === 'running' && <span className="live" />}{r.id}</span>
                           </td>
-                          <td style={{ width: 96 }}><span className={`badge ${cmdBadgeClass(command)}`}>{command}</span></td>
+                          <td style={{ width: 96 }}><span className={`run-command command-style ${commandStyleClass(command)}`}>{command}</span></td>
                           <td style={{ width: 160 }}><span className="mono-cell repo" title={r.repo || r.request?.repo || ''}>{r.repo || r.request?.repo || '—'}</span></td>
                           <td style={{ width: 118 }}><span className="branch-cell">{ICON_GIT}{r.gitBranch || '—'}</span></td>
                           <td style={{ width: 170 }}>

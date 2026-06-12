@@ -252,6 +252,7 @@ type Summary struct {
 	Command   string      `json:"command"`
 	RunAt     time.Time   `json:"runAt,omitempty"`
 	RepoLabel string      `json:"repoLabel,omitempty"`
+	Applied   bool        `json:"applied"`
 	Add       int         `json:"add"`
 	Change    int         `json:"change"`
 	Destroy   int         `json:"destroy"`
@@ -287,6 +288,7 @@ type CostResource struct {
 type EnvResult struct {
 	Env       string        `json:"env"`
 	Profile   string        `json:"profile"`
+	Applied   bool          `json:"applied"`
 	Failed    bool          `json:"failed"`
 	NoChanges bool          `json:"noChanges"`
 	Add       int           `json:"add"`
@@ -351,8 +353,6 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 	}
 
 	funcs := template.FuncMap{
-		"statusClass":  statusClass,
-		"statusBadge":  statusBadge,
 		"renderOutput": renderOutput,
 		"changesTable": changesTable,
 		"fmtTime":      func(t time.Time) string { return t.UTC().Format("2006-01-02 15:04:05 UTC") },
@@ -405,6 +405,7 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 			Command:   opts.Command,
 			RunAt:     opts.RunAt,
 			RepoLabel: opts.RepoLabel,
+			Applied:   opts.Command == "apply" && len(results) > 0,
 			Envs:      len(results),
 			Results:   results,
 		}
@@ -414,6 +415,9 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 			sum.Destroy += r.Destroy
 			if r.Failed {
 				sum.Failed++
+			}
+			if !r.Applied {
+				sum.Applied = false
 			}
 			if r.Cost != nil {
 				sum.HasCost = true
@@ -434,31 +438,6 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 	}
 
 	return path, nil
-}
-func statusClass(r EnvResult) string {
-	if r.Failed {
-		return "sf"
-	}
-	if r.NoChanges || (r.Add == 0 && r.Change == 0 && r.Destroy == 0) {
-		return "sn"
-	}
-	if r.Destroy > 0 {
-		return "sd"
-	}
-	return "sc"
-}
-
-func statusBadge(r EnvResult) string {
-	if r.Failed {
-		return "Failed"
-	}
-	if r.NoChanges || (r.Add == 0 && r.Change == 0 && r.Destroy == 0) {
-		return "No changes"
-	}
-	if r.Destroy > 0 {
-		return "has destroys"
-	}
-	return "Changes"
 }
 
 // ParseReportName parses a report filename into command, run time, and live flag.
@@ -786,7 +765,7 @@ tr:hover td{background:var(--hover)}
             <th>Profile</th>
             <th>Add</th><th>Change</th><th>Destroy</th>
             {{if .HasCost}}<th>Monthly Cost</th>{{end}}
-            <th>Status</th>
+            <th>Applied</th>
           </tr>
         </thead>
         <tbody>
@@ -798,7 +777,7 @@ tr:hover td{background:var(--hover)}
             <td class="mono">{{if .Failed}}<span class="mz">—</span>{{else if gt .Change 0}}<span class="mc">~{{.Change}}</span>{{else}}<span class="mz">~0</span>{{end}}</td>
             <td class="mono">{{if .Failed}}<span class="mz">—</span>{{else if gt .Destroy 0}}<span class="md">-{{.Destroy}}</span>{{else}}<span class="mz">-0</span>{{end}}</td>
             {{if $.HasCost}}<td class="mono">{{if .Cost}}{{.Cost.Currency}} {{money .Cost.TotalMonthly}}{{if .Cost.HasDiff}} ({{signedMoney .Cost.DiffMonthly}}){{end}}{{else}}<span class="mz">—</span>{{end}}</td>{{end}}
-            <td><span class="sb {{statusClass .}}">{{statusBadge .}}</span></td>
+            <td><span class="sb {{if .Applied}}sc{{else}}sn{{end}}">{{if .Applied}}True{{else}}False{{end}}</span></td>
           </tr>
           {{end}}
         </tbody>

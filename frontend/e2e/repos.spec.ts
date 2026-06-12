@@ -44,3 +44,26 @@ test('add, rename and remove a repository', async ({ page }) => {
   // The original fixture repo is untouched.
   await expect(page.locator('table.tbl tbody tr', { hasText: 'e2e-repo' })).toBeVisible();
 });
+
+test('deletes a stage from the pipeline after confirmation', async ({ page }) => {
+  const configResponse = await page.request.get('/api/repos/e2e-repo/config');
+  const originalConfig = await configResponse.json();
+
+  try {
+    await page.goto('/#repos');
+    const row = page.locator('table.tbl tbody tr', { hasText: 'e2e-repo' });
+    await row.getByRole('button', { name: 'Configure' }).click();
+
+    const deleteButton = page.getByRole('button', { name: 'Delete dev stage' });
+    await expect(deleteButton).toBeVisible();
+    await deleteButton.click();
+
+    const confirm = page.locator('.modal', { hasText: 'Delete stage' });
+    await expect(confirm).toContainText('dev');
+    await confirm.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(page.locator('.toast.show')).toContainText('Removed dev');
+    await expect(page.getByRole('button', { name: 'Delete dev stage' })).toHaveCount(0);
+  } finally {
+    await page.request.put('/api/repos/e2e-repo/config', { data: originalConfig });
+  }
+});

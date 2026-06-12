@@ -252,13 +252,14 @@ function RepoTable({
 // ── Stage card (pipeline view) ─────────────────────────────────────────────
 
 function StageCard({
-  target, idx, gpos, onToggle, onEdit, onGripDown,
+  target, idx, gpos, onToggle, onEdit, onDelete, onGripDown,
 }: {
   target: TargetWithGate;
   idx: number;
   gpos: number;
   onToggle: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   onGripDown: (e: React.PointerEvent) => void;
 }) {
   const col = stageColor(target);
@@ -283,9 +284,11 @@ function StageCard({
           <span className={'switch' + (target.disabled ? '' : ' on')} onClick={e => { e.stopPropagation(); onToggle(); }} />
           {target.disabled ? 'Disabled' : 'Enabled'}
         </span>
-        {target.gated
-          ? <span className="gate" title="Manual approval before this stage"><IconLock />Approval</span>
-          : <button className="btn btn-icon" title="Edit stage" style={{ width: 28, height: 28 }} onClick={onEdit}><IconEdit /></button>}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {target.gated && <span className="gate" title="Manual approval before this stage"><IconLock />Approval</span>}
+          <button className="btn btn-icon" title="Edit stage" aria-label={`Edit ${target.name} stage`} style={{ width: 28, height: 28 }} onClick={onEdit}><IconEdit /></button>
+          <button className="btn btn-icon" title="Delete stage" aria-label={`Delete ${target.name} stage`} style={{ width: 28, height: 28, color: 'var(--red)' }} onClick={onDelete}><IconTrash /></button>
+        </span>
       </div>
     </div>
   );
@@ -533,6 +536,7 @@ function ConfigureSection({
                                 gpos={pos}
                                 onToggle={() => toggle(gi)}
                                 onEdit={() => onEdit(gi)}
+                                onDelete={() => onDeleteTarget(gi)}
                                 onGripDown={e => startDrag(e, g.key, pos)}
                               />
                             </span>
@@ -600,8 +604,8 @@ function ConfigureSection({
                               <td>{t.region || '—'}</td>
                               <td><span className={'switch' + (t.disabled ? '' : ' on')} onClick={() => toggle(gi)} /></td>
                               <td style={{ textAlign: 'right' }}>
-                                <button className="btn btn-icon" onClick={() => onEdit(gi)}><IconEdit /></button>
-                                <button className="btn btn-icon" onClick={() => onDeleteTarget(gi)}><IconTrash /></button>
+                                <button className="btn btn-icon" aria-label={`Edit ${t.name} stage`} onClick={() => onEdit(gi)}><IconEdit /></button>
+                                <button className="btn btn-icon" aria-label={`Delete ${t.name} stage`} onClick={() => onDeleteTarget(gi)}><IconTrash /></button>
                               </td>
                             </tr>
                           );
@@ -770,6 +774,28 @@ function ConfirmDeleteGroup({ groupKey, count, onConfirm, onCancel }: { groupKey
   );
 }
 
+function ConfirmDeleteStage({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+  return (
+    <div className="overlay show" onClick={e => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="modal">
+        <div className="modal-head">Delete stage</div>
+        <div className="modal-body">
+          Remove stage <strong>{name}</strong> from config.yaml?
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-normal" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-primary" onClick={onConfirm}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function Repos() {
@@ -793,6 +819,7 @@ export default function Repos() {
   const [addError, setAddError] = useState('');
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [confirmDeleteGroup, setConfirmDeleteGroup] = useState<string | null>(null);
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<number | null>(null);
   const [editIdx, setEditIdx] = useState<number>(-1);
 
   const cfgSectionRef = useRef<HTMLDivElement>(null);
@@ -1045,7 +1072,7 @@ export default function Repos() {
             onSave={saveTargets}
             onEdit={setEditIdx}
             onAddStageGroup={onAddStageGroup}
-            onDeleteTarget={deleteTarget}
+            onDeleteTarget={setConfirmDeleteTarget}
             onDeleteGroup={key => setConfirmDeleteGroup(key)}
             toast={toast}
           />
@@ -1076,6 +1103,16 @@ export default function Repos() {
           count={deriveGroups(cfgTargets).find(g => g.key === confirmDeleteGroup)?.idxs.length ?? 0}
           onConfirm={() => { deleteGroup(confirmDeleteGroup); setConfirmDeleteGroup(null); }}
           onCancel={() => setConfirmDeleteGroup(null)}
+        />
+      )}
+      {confirmDeleteTarget !== null && cfgTargets[confirmDeleteTarget] && (
+        <ConfirmDeleteStage
+          name={cfgTargets[confirmDeleteTarget].name}
+          onConfirm={() => {
+            deleteTarget(confirmDeleteTarget);
+            setConfirmDeleteTarget(null);
+          }}
+          onCancel={() => setConfirmDeleteTarget(null)}
         />
       )}
 

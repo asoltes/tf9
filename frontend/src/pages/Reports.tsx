@@ -174,7 +174,7 @@ export default function ReportsPage() {
     return (
       <div className="rh-cards">
         {list.map(r => {
-          const status = r.failed > 0 ? 'failed' : 'success';
+          const status = r.applied ? 'success' : 'not-applied';
           const envLabel = `${r.envs} env${r.envs === 1 ? '' : 's'}`;
           return (
             <div
@@ -191,7 +191,7 @@ export default function ReportsPage() {
                   <span className="rh-card-id">{runId(r.name)}</span>
                 </div>
                 <span className={`rh-card-status ${status}`}>
-                  {status === 'success' ? ICON_CHECKC : ICON_X}{status}
+                  {r.applied ? ICON_CHECKC : ICON_X}Applied: {r.applied ? 'True' : 'False'}
                 </span>
               </div>
               <ChangeBar add={r.add} change={r.change} destroy={r.destroy} />
@@ -232,12 +232,12 @@ export default function ReportsPage() {
               <th className="num">Envs</th>
               <th className="num">Monthly Cost</th>
               <th>Date</th>
-              <th>Status</th>
+              <th>Applied</th>
             </tr>
           </thead>
           <tbody>
             {list.map(r => {
-              const status = r.failed > 0 ? 'failed' : 'success';
+              const status = r.applied ? 'success' : 'not-applied';
               const total = r.add + r.change + r.destroy || 1;
               return (
                 <tr
@@ -265,7 +265,7 @@ export default function ReportsPage() {
                   <td><span className="date">{relTime(r.runAt)}</span></td>
                   <td>
                     <span className={`st ${status}`}>
-                      {status === 'success' ? ICON_CHECKC : ICON_X}{status}
+                      {r.applied ? ICON_CHECKC : ICON_X}{r.applied ? 'True' : 'False'}
                     </span>
                   </td>
                 </tr>

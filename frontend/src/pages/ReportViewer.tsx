@@ -201,7 +201,12 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
   const toast = useToast();
   const s = statusOf(result);
   const [filter, setFilter] = useState<RvFilter>('all');
-  const lines = useMemo(() => (result.output || '').split('\n'), [result.output]);
+  const lines = useMemo(() => (result.output || '').split('\n').filter(line => {
+    const text = stripAnsi(line).trim();
+    return text !== '__TF9_APPROVAL__' &&
+      text !== '__TF9_APPROVAL_CLEAR__' &&
+      text !== '[APPROVED] Approval accepted.';
+  }), [result.output]);
 
   const resourceChanges = useMemo(
     () => filter === 'changes' ? parseResourceChanges(lines) : null,
@@ -518,7 +523,7 @@ export default function ReportViewer({ name }: { name: string; mode?: 'light' | 
                     <tr>
                       <th>Environment</th><th>Profile</th>
                       <th className="num">Add</th><th className="num">Change</th><th className="num">Destroy</th>
-                      <th>Distribution</th><th>Status</th>
+                      <th>Distribution</th><th>Applied</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -548,7 +553,11 @@ export default function ReportViewer({ name }: { name: string; mode?: 'light' | 
                               </span>
                             )}
                           </td>
-                          <td><span className={`sb ${s.cls}`}><span className="d" />{s.label}</span></td>
+                          <td>
+                            <span className={`sb ${r.applied ? 'sb-changes' : 'sb-none'}`}>
+                              <span className="d" />{r.applied ? 'True' : 'False'}
+                            </span>
+                          </td>
                         </tr>
                       );
                     })}

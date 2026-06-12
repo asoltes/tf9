@@ -131,6 +131,12 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 				return
 			}
 			listRepoCommits(w, r, name)
+		case "commit":
+			if r.Method != http.MethodGet {
+				methodNotAllowed(w)
+				return
+			}
+			getRepoCommit(w, r, name)
 		case "rebase":
 			if r.Method != http.MethodPost {
 				methodNotAllowed(w)
@@ -764,7 +770,7 @@ func resolveTargetDirs(req RunRequest) []string {
 }
 
 // parseRunFilter builds the optional run-list predicate from `from`/`to`
-// (RFC3339, inclusive boundaries) and repeated `command` query parameters.
+// (RFC3339, inclusive boundaries) and repeated `command`/`status` parameters.
 // Returns nil when no filter parameters are present (legacy behavior) and an
 // error for malformed values, which the caller maps to a 400 response.
 func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
@@ -794,11 +800,29 @@ func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
 			commands[v] = true
 		}
 	}
-	if from == nil && to == nil && commands == nil {
+	validStatuses := map[RunStatus]bool{
+		StatusRunning: true, StatusSuccess: true, StatusFailed: true,
+		StatusDenied: true, StatusCancelled: true,
+	}
+	var statuses map[RunStatus]bool
+	if vals := q["status"]; len(vals) > 0 {
+		statuses = make(map[RunStatus]bool, len(vals))
+		for _, v := range vals {
+			status := RunStatus(v)
+			if !validStatuses[status] {
+				return nil, fmt.Errorf("invalid run status %q", v)
+			}
+			statuses[status] = true
+		}
+	}
+	if from == nil && to == nil && commands == nil && statuses == nil {
 		return nil, nil
 	}
 	return func(run *Run) bool {
 		if commands != nil && !commands[run.Request.Command] {
+			return false
+		}
+		if statuses != nil && !statuses[run.Status] {
 			return false
 		}
 		if from != nil && run.StartedAt.Before(*from) {
@@ -1171,6 +1195,7 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 		RunAt        time.Time `json:"runAt"`
 		SizeKB       int64     `json:"sizeKb"`
 		IsLive       bool      `json:"isLive"`
+		Applied      bool      `json:"applied"`
 		Add          int       `json:"add"`
 		Change       int       `json:"change"`
 		Destroy      int       `json:"destroy"`
@@ -1201,6 +1226,7 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 			var sum report.Summary
 			if json.Unmarshal(b, &sum) == nil {
 				en.Add = sum.Add
+				en.Applied = sum.Applied
 				en.Change = sum.Change
 				en.Destroy = sum.Destroy
 				en.Envs = sum.Envs
@@ -1620,7 +1646,7 @@ func parseReportHTML(path, cmd string, runAt time.Time) (report.Summary, error) 
 	names := reEnvName.FindAllStringSubmatch(content, -1)
 	profiles := reEnvProfile.FindAllStringSubmatch(content, -1)
 
-	sum := report.Summary{Command: cmd, RunAt: runAt}
+	sum := report.Summary{Command: cmd, RunAt: runAt, Applied: cmd == "apply" && len(hdrs) > 0}
 	for i, hdr := range hdrs {
 		add, _ := strconv.Atoi(content[hdr[2]:hdr[3]])
 		change, _ := strconv.Atoi(content[hdr[4]:hdr[5]])
@@ -1639,6 +1665,7 @@ func parseReportHTML(path, cmd string, runAt time.Time) (report.Summary, error) 
 		r := report.EnvResult{
 			Env:     env,
 			Profile: profile,
+			Applied: cmd == "apply" && !failed,
 			Failed:  failed,
 			Add:     add,
 			Change:  change,
@@ -1650,6 +1677,7 @@ func parseReportHTML(path, cmd string, runAt time.Time) (report.Summary, error) 
 		sum.Destroy += destroy
 		if failed {
 			sum.Failed++
+			sum.Applied = false
 		}
 	}
 	sum.Envs = len(sum.Results)
@@ -1735,6 +1763,25 @@ func listRepoCommits(w http.ResponseWriter, r *http.Request, name string) {
 		}
 	}
 	jsonOK(w, out)
+}
+
+func getRepoCommit(w http.ResponseWriter, r *http.Request, name string) {
+	sha := r.URL.Query().Get("sha")
+	if sha == "" {
+		jsonErr(w, "bad_request", "sha query parameter is required", http.StatusBadRequest)
+		return
+	}
+	dir, err := repoPath(name)
+	if err != nil {
+		jsonErr(w, "not_found", err.Error(), http.StatusNotFound)
+		return
+	}
+	patch, err := git.CommitPatch(r.Context(), dir, sha)
+	if err != nil {
+		jsonErr(w, "commit_failed", err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	jsonOK(w, map[string]string{"patch": patch})
 }
 
 func listRepoBranches(w http.ResponseWriter, _ *http.Request, name string) {

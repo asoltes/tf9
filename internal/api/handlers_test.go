@@ -196,25 +196,26 @@ func TestAWSIdentityMethodNotAllowed(t *testing.T) {
 // ── GET /api/runs filtering ─────────────────────────────────────────────────
 
 // seedRunManager returns a manager holding four finished runs, oldest first:
-//   run-1 plan    2026-06-01T12:00Z
-//   run-2 apply   2026-06-02T12:00Z
-//   run-3 plan    2026-06-03T12:00Z
-//   run-4 destroy 2026-06-04T12:00Z
+//
+//	run-1 plan    2026-06-01T12:00Z
+//	run-2 apply   2026-06-02T12:00Z
+//	run-3 plan    2026-06-03T12:00Z
+//	run-4 destroy 2026-06-04T12:00Z
 func seedRunManager() *RunManager {
 	t0 := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-	mk := func(id, cmd string, day int) *Run {
+	mk := func(id, cmd string, status RunStatus, day int) *Run {
 		return &Run{
 			ID:        id,
-			Status:    StatusSuccess,
+			Status:    status,
 			StartedAt: t0.AddDate(0, 0, day),
 			Request:   RunRequest{Command: cmd},
 		}
 	}
 	return &RunManager{runs: []*Run{
-		mk("run-1", "plan", 0),
-		mk("run-2", "apply", 1),
-		mk("run-3", "plan", 2),
-		mk("run-4", "destroy", 3),
+		mk("run-1", "plan", StatusSuccess, 0),
+		mk("run-2", "apply", StatusFailed, 1),
+		mk("run-3", "plan", StatusSuccess, 2),
+		mk("run-4", "destroy", StatusCancelled, 3),
 	}}
 }
 
@@ -284,6 +285,24 @@ func TestListRunsFiltersByMultipleCommands(t *testing.T) {
 	want := []string{"run-3", "run-2", "run-1"}
 	if got := runIDs(body); !reflect.DeepEqual(got, want) {
 		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsFiltersByStatus(t *testing.T) {
+	code, body := getRunsList(t, seedRunManager(), "?status=success")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	want := []string{"run-3", "run-1"}
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsRejectsInvalidStatus(t *testing.T) {
+	code, _ := getRunsList(t, seedRunManager(), "?status=unknown")
+	if code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", code)
 	}
 }
 

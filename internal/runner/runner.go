@@ -207,6 +207,7 @@ func terminalFile(r io.Reader) (*os.File, bool) {
 type envResult struct {
 	env     string
 	profile string
+	applied bool
 	failed  bool
 	summary *planSummary
 	output  string
@@ -572,6 +573,7 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 
 		res := envResult{env: env, profile: profile, output: tw.capture.String()}
 		res.summary = summary
+		res.applied = exitCode == 0 && opts.TfCommand == "apply"
 		if exitCode == 0 && opts.Stdin != nil && approvalPromptShown(res.output) {
 			fmt.Fprintln(out, approvalAcceptedLine)
 		}
@@ -704,8 +706,9 @@ func toReportResults(results []envResult) []report.EnvResult {
 		rr[i] = report.EnvResult{
 			Env:     r.env,
 			Profile: r.profile,
+			Applied: r.applied,
 			Failed:  r.failed,
-			Output:  r.output,
+			Output:  reportOutput(r.output),
 			Cost:    r.cost,
 		}
 		if r.summary != nil {
@@ -716,6 +719,20 @@ func toReportResults(results []envResult) []report.EnvResult {
 		}
 	}
 	return rr
+}
+
+func reportOutput(output string) string {
+	lines := strings.Split(output, "\n")
+	filtered := lines[:0]
+	for _, line := range lines {
+		switch strings.TrimSpace(reANSI.ReplaceAllString(line, "")) {
+		case ApprovalSentinel, ApprovalClearSentinel, strings.TrimSpace(approvalAcceptedLine):
+			continue
+		default:
+			filtered = append(filtered, line)
+		}
+	}
+	return strings.Join(filtered, "\n")
 }
 
 func printPlanSummary(out io.Writer, results []envResult) {
@@ -744,7 +761,7 @@ func printPlanSummary(out io.Writer, results []envResult) {
 		addW, "ADD",
 		changeW, "CHANGE",
 		destroyW, "DESTROY",
-		"STATUS",
+		"APPLIED",
 	)
 	fmt.Fprintf(out, "  %s\n", rule)
 
@@ -752,21 +769,15 @@ func printPlanSummary(out io.Writer, results []envResult) {
 		addTxt := clr(color, ansiDim, "-")
 		changeTxt := clr(color, ansiDim, "-")
 		destroyTxt := clr(color, ansiDim, "-")
-		statusTxt, statusCode := "✓ ok", ansiGreen
+		appliedTxt, appliedCode := "False", ansiDim
 
-		if r.failed {
-			statusTxt, statusCode = "✗ FAILED", ansiRed
-		} else if r.summary != nil {
-			if r.summary.noChanges {
-				statusTxt, statusCode = "● no changes", ansiDim
-			} else {
-				addTxt = clr(color, ansiGreen, fmt.Sprintf("+%d", r.summary.add))
-				changeTxt = clr(color, ansiYellow, fmt.Sprintf("~%d", r.summary.change))
-				destroyTxt = clr(color, ansiRed, fmt.Sprintf("-%d", r.summary.destroy))
-				if r.summary.destroy > 0 {
-					statusTxt, statusCode = "⚠ has destroys", ansiRed
-				}
-			}
+		if r.applied {
+			appliedTxt, appliedCode = "True", ansiGreen
+		}
+		if r.summary != nil && !r.summary.noChanges {
+			addTxt = clr(color, ansiGreen, fmt.Sprintf("+%d", r.summary.add))
+			changeTxt = clr(color, ansiYellow, fmt.Sprintf("~%d", r.summary.change))
+			destroyTxt = clr(color, ansiRed, fmt.Sprintf("-%d", r.summary.destroy))
 		}
 
 		fmt.Fprintf(out, "  %-*s   %s   %s   %s   %s\n",
@@ -774,7 +785,7 @@ func printPlanSummary(out io.Writer, results []envResult) {
 			padRight(addTxt, addW),
 			padRight(changeTxt, changeW),
 			padRight(destroyTxt, destroyW),
-			clr(color, statusCode, statusTxt),
+			clr(color, appliedCode, appliedTxt),
 		)
 	}
 	fmt.Fprintf(out, "  %s\n", rule)

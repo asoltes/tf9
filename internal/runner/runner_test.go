@@ -419,6 +419,38 @@ func TestApprovalMonitorDoesNotApproveDenial(t *testing.T) {
 	}
 }
 
+func TestReportOutputRemovesApprovalControlLines(t *testing.T) {
+	input := strings.Join([]string{
+		"Terraform will perform the following actions:",
+		ApprovalSentinel,
+		approvalAcceptedLine,
+		ApprovalClearSentinel,
+		"Apply complete! Resources: 1 added, 0 changed, 0 destroyed.",
+	}, "\n")
+	got := reportOutput(input)
+	if strings.Contains(got, "__TF9_APPROVAL") || strings.Contains(got, "[APPROVED]") {
+		t.Fatalf("report output contains approval control lines: %q", got)
+	}
+	if !strings.Contains(got, "Terraform will perform") || !strings.Contains(got, "Apply complete!") {
+		t.Fatalf("report output removed regular Terraform output: %q", got)
+	}
+}
+
+func TestPlanSummaryUsesAppliedBoolean(t *testing.T) {
+	var out strings.Builder
+	printPlanSummary(&out, []envResult{
+		{env: "dev", applied: true, summary: &planSummary{add: 1}},
+		{env: "prod", applied: false, failed: true},
+	})
+	got := out.String()
+	if !strings.Contains(got, "APPLIED") || !strings.Contains(got, "True") || !strings.Contains(got, "False") {
+		t.Fatalf("summary does not show applied booleans: %q", got)
+	}
+	if strings.Contains(got, "STATUS") {
+		t.Fatalf("summary still contains status heading: %q", got)
+	}
+}
+
 func TestReorderDirsUsesTargetNames(t *testing.T) {
 	dirs := []string{"/repo/a/dev", "/repo/b/dev"}
 	labels := map[string]string{dirs[0]: "dev-a", dirs[1]: "dev-b"}

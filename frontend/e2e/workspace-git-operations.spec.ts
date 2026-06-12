@@ -13,6 +13,8 @@ test('cherry-picks selected commits and rebases the current branch', async ({ pa
   const featureCommit = modal.locator('.rw-commit-row', { hasText: 'Add feature module' });
   await expect(featureCommit).toBeVisible();
   await featureCommit.getByRole('checkbox').check();
+  await expect(modal.getByRole('region', { name: 'Selected commit changes' })).toContainText('feature.tf');
+  await expect(modal.getByRole('button', { name: 'Cherry-pick selected' })).toBeEnabled();
 
   page.once('dialog', dialog => dialog.accept());
   await modal.getByRole('button', { name: 'Cherry-pick selected' }).click();
@@ -27,12 +29,12 @@ test('cherry-picks selected commits and rebases the current branch', async ({ pa
   await expect(page.locator('.rw-tree-row', { hasText: 'base.tf' })).toBeVisible();
 });
 
-test('blocks Git operations when the working tree has changes', async ({ page }) => {
+test('warns but allows Git operations when the working tree has changes', async ({ page }) => {
   await page.goto('/#workspace/e2e-repo');
   await expect(page.locator('.rw-workbench')).toBeVisible();
 
   await page.getByRole('button', { name: 'Git ops' }).click();
   const modal = page.getByRole('dialog', { name: 'Git operations' });
   await expect(modal).toContainText('Commit, stash, or discard working-tree changes');
-  await expect(modal.getByRole('button', { name: 'Rebase branch' })).toBeDisabled();
+  await expect(modal.getByRole('button', { name: 'Rebase branch' })).toBeEnabled();
 });

@@ -115,7 +115,8 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 	if !strings.Contains(logText, "cwd="+root) ||
 		!strings.Contains(logText, "--permission-mode acceptEdits") ||
 		!strings.Contains(logText, "--resume 11111111-1111-1111-1111-111111111111") ||
-		!strings.Contains(logText, "Bash(git push *)") {
+		!strings.Contains(logText, "Bash(git *)") ||
+		strings.Contains(logText, "Bash(git push *)") {
 		t.Fatalf("claude invocation was not scoped as expected:\n%s", logText)
 	}
 

@@ -1,6 +1,6 @@
 /* Dashboard — operational overview. Token-driven; works in all three themes. */
 
-.overview-page{max-width:1180px}
+.overview-page{width:100%;max-width:none}
 .overview-page .dash-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 /* ── Status tiles ───────────────────────────────────────────────────────── */
@@ -28,8 +28,8 @@
 .dash-attn-list .dot{margin-top:5px}
 
 /* ── Main grid ──────────────────────────────────────────────────────────── */
-.dash-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
-.dash-side{display:flex;flex-direction:column;gap:0}
+.dash-grid{display:grid;grid-template-columns:minmax(560px,1.5fr) minmax(440px,1fr);gap:22px;align-items:start}
+.dash-side{display:flex;flex-direction:column;gap:18px}
 .dash-recent .c-head a{font-size:13px}
 .dash-tbl tbody td{padding:10px 20px;font-size:13.5px}
 .dash-tbl thead th{padding:10px 20px}
@@ -40,8 +40,34 @@
 .dash-status.denied{color:var(--amber)}
 .dash-status.running{color:var(--blue)}
 .dash-status.cancelled{color:var(--text-2)}
+.dash-run-date{display:flex;flex-direction:column;gap:2px;white-space:nowrap}
+.dash-run-date small{color:var(--text-3);font-size:11px}
 .dash-empty{color:var(--text-2);font-size:13.5px}
 .dash-muted{color:var(--text-3);font-size:12.5px}
+
+/* Execution mode distribution + analysis */
+.dash-mode-body{padding:4px 20px 18px}
+.dash-mode-chart{height:16px;display:flex;overflow:hidden;border-radius:999px;background:var(--surface-3)}
+.dash-mode-bar{min-width:0}
+.dash-mode-bar.promotion{background:var(--blue)}
+.dash-mode-bar.parallel{background:var(--purple)}
+.dash-mode-bar.empty{flex:1;background:var(--surface-3)}
+.dash-mode-legend{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:10px;color:var(--text-2);font-size:12px}
+.dash-mode-legend span{display:flex;align-items:center;gap:6px}
+.dash-mode-legend i{width:8px;height:8px;border-radius:50%}
+.dash-mode-legend i.promotion{background:var(--blue)}
+.dash-mode-legend i.parallel{background:var(--purple)}
+.dash-mode-legend strong{color:var(--text)}
+.dash-analysis-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));
+  gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--divider);
+}
+.dash-analysis-grid div{
+  min-width:0;display:flex;flex-direction:column;gap:4px;
+  padding:12px 14px;border:1px solid var(--divider);border-radius:10px;background:var(--surface-2);
+}
+.dash-analysis-grid strong{color:var(--text);font-size:21px;line-height:1.1}
+.dash-analysis-grid span{color:var(--text-2);font-size:12px;line-height:1.3}
 
 /* Resources key/value list */
 .dash-kv{list-style:none;margin:0;padding:0 20px 14px}
@@ -54,6 +80,9 @@
 
 /* Recent reports */
 .dash-reports{list-style:none;margin:0;padding:0 12px 12px}
+.dash-reports.scroll{max-height:340px;overflow-y:auto;scrollbar-width:thin}
+.dash-reports.scroll::-webkit-scrollbar{width:8px}
+.dash-reports.scroll::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
 .dash-reports a{
   display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;
   color:var(--text);text-decoration:none;min-width:0;

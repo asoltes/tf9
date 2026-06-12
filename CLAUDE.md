@@ -232,7 +232,7 @@ exit code sets `StatusDenied` instead of `StatusFailed` when `denied` is true.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/runs` | List runs (paginated: `?page=1&limit=20`; optional filters `from`/`to` RFC3339 inclusive + repeated `command=`, applied before pagination; malformed values → 400) |
+| `GET` | `/api/runs` | List runs (paginated: `?page=1&limit=20`; optional filters `from`/`to` RFC3339 inclusive + repeated `command=`/`status=`, applied before pagination; malformed values → 400) |
 | `POST` | `/api/runs` | Start a new run |
 | `GET` | `/api/runs/{id}` | Get a single run |
 | `GET` | `/api/runs/{id}/stream` | SSE stream of output lines |

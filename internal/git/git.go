@@ -134,6 +134,20 @@ func CherryPick(ctx context.Context, repoDir string, commits []string) (string, 
 	return output, nil
 }
 
+// CommitPatch returns the metadata, file summary, and patch for a commit.
+func CommitPatch(ctx context.Context, repoDir, commit string) (string, error) {
+	if !validSHA.MatchString(commit) {
+		return "", fmt.Errorf("invalid commit hash %q: must be 7-40 hex characters", commit)
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", repoDir, "show",
+		"--no-ext-diff", "--no-color", "--format=fuller", "--stat", "--patch", commit)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("git show: %w", err)
+	}
+	return string(out), nil
+}
+
 // Fetch runs `git fetch origin` in repoDir.
 func Fetch(ctx context.Context, repoDir string) error {
 	cmd := exec.CommandContext(ctx, "git", "-C", repoDir, "fetch", "origin")
@@ -226,7 +240,7 @@ func DiffSummary(ctx context.Context, repoDir, base, head string) ([]FileDiff, e
 
 // WorkingDirFile describes a single entry from `git status --porcelain=v1`.
 type WorkingDirFile struct {
-	XY   string `json:"xy"`   // two-char porcelain code, e.g. "M ", " M", "??"
+	XY   string `json:"xy"` // two-char porcelain code, e.g. "M ", " M", "??"
 	Path string `json:"path"`
 }
 

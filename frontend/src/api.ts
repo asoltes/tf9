@@ -108,6 +108,8 @@ export const repoGit = {
     api.get<string[]>(`/api/repos/${encodeURIComponent(name)}/branches`),
   commits:    (name: string, base: string, head: string) =>
     api.get<GitCommit[]>(`/api/repos/${encodeURIComponent(name)}/commits?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`),
+  commit:     (name: string, sha: string)                =>
+    api.get<{ patch: string }>(`/api/repos/${encodeURIComponent(name)}/commit?sha=${encodeURIComponent(sha)}`),
   rebase:     (name: string, baseBranch: string)      =>
     api.post<{ output?: string; error?: string }>(`/api/repos/${encodeURIComponent(name)}/rebase`, { baseBranch }),
   cherryPick: (name: string, commits: string[])       =>

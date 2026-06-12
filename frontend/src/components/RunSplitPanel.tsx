@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useNav } from '../nav';
 import { useToast } from './ToastProvider';
 import { envColor } from '../lib/colors';
+import { commandStyleClass } from '../lib/commandStyle';
 import {
   parseEnvSections,
   parseCounts,
@@ -10,9 +11,12 @@ import {
   sectionTerminalStatus,
   isParallelStream,
   stripAnsi,
+  updateApprovalGate,
+  approvalGateVisible,
   APPROVAL_SENTINEL,
   APPROVAL_CLEAR_SENTINEL,
   type EnvSection,
+  type PlanCounts,
   type TargetState,
   type TargetStatus,
 } from '../lib/runStatus';
@@ -170,10 +174,6 @@ function relTime(iso: string): string {
   return Math.floor(s / 86400) + 'd ago';
 }
 
-function cmdBadgeClass(cmd: string): string {
-  return cmd === 'destroy' ? 'red' : cmd === 'apply' ? 'orange' : cmd === 'plan' ? 'green' : 'blue';
-}
-
 // Proportional colour bar showing add/change/destroy distribution.
 function DistBar({ counts }: { counts: ReturnType<typeof parseCounts> }) {
   const total = counts.add + counts.change + counts.destroy;
@@ -204,7 +204,7 @@ function StatsChips({ counts, runStatus }: { counts: ReturnType<typeof parseCoun
   return null;
 }
 
-interface FullscreenState { env: string; profile: string; sectionName: string | null; }
+interface FullscreenState { env: string; profile: string; sectionName: string | null; follow?: boolean; }
 
 interface Props {
   run: Run | null;
@@ -238,12 +238,21 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const [confirmKill, setConfirmKill] = useState(false);
   const [retryOpen, setRetryOpen] = useState(false);
   const [approvalPending, setApprovalPending] = useState(false);
-  const [approvalInput, setApprovalInput] = useState('yes');
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
   const fsBodyRef = useRef<HTMLDivElement>(null);
+  // Edge-triggered approval gate state (single source of truth in runStatus.ts).
+  // Held in a ref so re-renders driven by streaming output don't re-open a gate
+  // the user already answered.
+  const gateRef = useRef<{ pending: boolean; seenCount: number; clearCount: number; runId: string | undefined }>(
+    { pending: false, seenCount: 0, clearCount: 0, runId: undefined },
+  );
+  // How many approval prompts the user has already answered. The gate shows only
+  // when a NEW prompt arrives beyond this — so once you click Approve/Deny it can
+  // never re-appear for the same prompt, no matter what streams in afterward.
+  const answeredSeenRef = useRef(0);
 
   // ── Resize handle (axis depends on dock) ─────────────────────────────────
   useEffect(() => {
@@ -382,6 +391,35 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   // Use stage-aware statuses for auto runs everywhere (progress bar, dots, retry).
   const effectiveTargetStatuses = isAutoRun ? autoTargetStatuses : targetStatuses;
 
+  // The section terraform is actively working (running / blocked on approval).
+  // For auto runs this lives in the latest stage group; otherwise it's the live
+  // matching section. Used so fullscreen can follow the run across stages.
+  const sectionKey = (s: EnvSection) => (s.stage ? `${s.stage}:${s.name}` : s.name);
+  const activeSection: EnvSection | undefined = (() => {
+    const running = effectiveTargetStatuses.find(t => t.status === 'running');
+    if (!running) return undefined;
+    const pool = isAutoRun && stageGroups.length > 0
+      ? stageGroups[stageGroups.length - 1].sections
+      : envSections;
+    return pool.find(s => s.name === running.name);
+  })();
+  const activeSectionKey = activeSection ? sectionKey(activeSection) : null;
+
+  // While following the live run in fullscreen, advance to whichever section is
+  // now active. This fixes the case where approving a stage left the fullscreen
+  // terminal stuck on the finished stage instead of showing the next one.
+  useEffect(() => {
+    if (!fullscreen || !fullscreen.follow || !activeSection || !activeSectionKey) return;
+    if (fullscreen.sectionName === null) return; // raw/combined view — leave as is
+    if (fullscreen.sectionName === activeSectionKey) return;
+    setFullscreen({
+      env: activeSection.name,
+      profile: activeSection.profile,
+      sectionName: activeSectionKey,
+      follow: true,
+    });
+  }, [activeSectionKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Default the active tab once sections exist.
   useEffect(() => {
     setActiveTab(prev => (prev || envSections[0]?.name) ?? '');
@@ -461,6 +499,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     setConfirmKill(false);
     try {
       await api.forceKill(run.id);
+      gateRef.current = { ...gateRef.current, pending: false };
       setApprovalPending(false);
       toast('Run force-killed', 'success');
     } catch (e) {
@@ -470,78 +509,138 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   }
 
   // ── Terraform interactive approval detection ─────────────────────────────
-  // The runner emits APPROVAL_SENTINEL when terraform blocks on the prompt and
-  // APPROVAL_CLEAR_SENTINEL when it stops waiting. The bar is open only while
-  // more show-sentinels than clear-sentinels have streamed — so it appears
-  // exactly when terraform is blocked and clears reliably. run.awaitingInput is
-  // the backend's authoritative fallback (covers reload / late join).
+  // The runner emits APPROVAL_SENTINEL when terraform blocks on the prompt. Each
+  // sentinel is one prompt; `seenCount` counts them. The gate is open only while
+  // an *unanswered* prompt exists (seenCount > answeredSeen). Because answering
+  // bumps answeredSeen to the current seenCount, no amount of streaming output
+  // (or a stale run.awaitingInput from a lagging poll) can re-open it — which is
+  // what previously made the fullscreen bar require a second click to dismiss.
   useEffect(() => {
-    const show = lines.filter(l => l === APPROVAL_SENTINEL).length;
-    const clear = lines.filter(l => l === APPROVAL_CLEAR_SENTINEL).length;
-    const pending = (show > clear) || !!run?.awaitingInput;
-    setApprovalPending(pending);
-    if (pending) setApprovalInput('yes');
-  }, [lines, run?.awaitingInput, run?.id]);
+    const prev = gateRef.current;
+    const next = updateApprovalGate(prev, lines, run?.id);
+    if (next.runId !== prev.runId) answeredSeenRef.current = 0; // new run → forget answers
+    gateRef.current = next;
+    setApprovalPending(approvalGateVisible(next, answeredSeenRef.current));
+  }, [lines, run?.id]);
 
   // Force-clear the gate when a run finishes (no more input possible).
   useEffect(() => {
-    if (!run || run.status !== 'running') setApprovalPending(false);
+    if (!run || run.status !== 'running') {
+      gateRef.current = { ...gateRef.current, pending: false };
+      setApprovalPending(false);
+    }
   }, [run?.status]);
 
   async function sendApproval(value: string) {
     if (!run || approvalSubmitting) return;
+    // Optimistically latch this prompt as answered and hide the gate *now*, so a
+    // single click dismisses it immediately instead of waiting on the round-trip.
+    answeredSeenRef.current = gateRef.current.seenCount;
+    gateRef.current = { ...gateRef.current, pending: false };
+    setApprovalPending(false);
     setApprovalSubmitting(true);
     try {
       await api.sendRunInput(run.id, value);
-      setApprovalPending(false);
     } catch (e) {
-      // 409 = run is no longer waiting (it moved on, finished, or was killed).
-      // Surface it and resync run state so a stale bar clears instead of hanging.
-      toast(e instanceof Error ? e.message : 'Approval failed', 'error');
-      setApprovalPending(false);
+      // 409 = run is no longer waiting (it moved on, finished, or was killed):
+      // the gate is correctly closed, just resync. Any other error means the
+      // input may not have landed — surface it and re-open so the user can retry.
+      const msg = e instanceof Error ? e.message : 'Approval failed';
+      toast(msg, 'error');
+      if (!/409|no longer waiting|not waiting/i.test(msg)) {
+        answeredSeenRef.current = Math.max(0, gateRef.current.seenCount - 1);
+        gateRef.current = { ...gateRef.current, pending: true };
+        setApprovalPending(true);
+      }
       onStatusChange?.();
     } finally {
       setApprovalSubmitting(false);
     }
   }
 
-  // Inline terraform approval bar — rendered in the split panel body AND inside
+  // Identify the target currently blocked on approval so the gate can name the
+  // exact stage / environment / AWS profile being decided and the plan's blast
+  // radius. The blocked target is the one still 'running'; in fullscreen we
+  // prefer the section the user has open.
+  function approvalContext(variant: 'sp' | 'fs'): {
+    stage?: string; env: string; profile: string;
+    counts?: PlanCounts; destructive: boolean;
+  } {
+    const running = effectiveTargetStatuses.find(t => t.status === 'running');
+    const runningSection = running ? envSections.find(s => s.name === running.name) : undefined;
+    let section = runningSection;
+    let stage = runningSection?.stage;
+    let env = runningSection?.name || run?.envFilter || '';
+    let profile = runningSection?.profile || run?.request?.profile || '';
+    if (variant === 'fs' && fullscreen) {
+      const sec = envSections.find(s => {
+        const key = s.stage ? `${s.stage}:${s.name}` : s.name;
+        return key === fullscreen.sectionName || s.name === fullscreen.env;
+      });
+      section = sec ?? runningSection;
+      stage = sec?.stage ?? runningSection?.stage;
+      env = fullscreen.env || sec?.name || env;
+      profile = fullscreen.profile || sec?.profile || profile;
+    }
+    const counts = section ? parseCounts(section.lines) : undefined;
+    return { stage, env, profile, counts, destructive: command === 'destroy' };
+  }
+
+  // Inline terraform approval panel — rendered in the split panel body AND inside
   // the fullscreen terminal so the user can approve without leaving fullscreen.
   function approvalBar(variant: 'sp' | 'fs') {
     if (!approvalPending || run?.status !== 'running') return null;
+    const ctx = approvalContext(variant);
+    const c = ctx.counts;
+    const hasCounts = !!c && !c.noChanges && (c.add + c.change + c.destroy > 0);
+    const verb = ctx.destructive ? 'destroy' : 'apply';
     return (
-      <div className={`sp-approval-bar${variant === 'fs' ? ' fs-approval-bar' : ''}`} role="alert" aria-live="assertive">
-        <div className="sp-approval-msg">
+      <div
+        className={`sp-approval-bar${variant === 'fs' ? ' fs-approval-bar' : ''}${ctx.destructive ? ' destructive' : ''}`}
+        role="alertdialog"
+        aria-label="Terraform approval required"
+        aria-live="assertive"
+      >
+        <div className="sp-approval-main">
           <span className="sp-approval-icon">{I.warn}</span>
-          <span>Terraform is waiting for your approval — only <strong>yes</strong> will be accepted to apply.</span>
+          <div className="sp-approval-text">
+            <div className="sp-approval-title">
+              Approval required
+              <span className={`sp-approval-cmd${ctx.destructive ? ' bad' : ''}`}>{verb}</span>
+            </div>
+            <div className="sp-approval-sub">
+              Review the plan below, then choose whether to {verb} these changes{ctx.env ? <> to <strong>{ctx.env}</strong></> : null}.
+            </div>
+            {(ctx.stage || ctx.env || ctx.profile || hasCounts) && (
+              <div className="sp-approval-ctx">
+                {ctx.stage && <span className="sp-approval-chip">Stage <strong>{ctx.stage}</strong></span>}
+                {ctx.env && <span className="sp-approval-chip">Target <strong>{ctx.env}</strong></span>}
+                {ctx.profile && <span className="sp-approval-chip">AWS profile <strong>{ctx.profile}</strong></span>}
+                {hasCounts && (
+                  <span className="sp-approval-chip plan">
+                    <b className="g">+{c!.add}</b>
+                    <b className="y">~{c!.change}</b>
+                    <b className="r">-{c!.destroy}</b>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="sp-approval-actions">
-          <input
-            className="sp-approval-input"
-            type="text"
-            value={approvalInput}
-            onChange={e => setApprovalInput(e.target.value)}
-            onKeyDown={e => {
-              e.stopPropagation();
-              if (e.key === 'Enter' && approvalInput.trim() === 'yes') sendApproval(approvalInput.trim());
-            }}
-            spellCheck={false}
-            autoComplete="off"
-            autoFocus
-          />
           <button
-            className="btn btn-primary btn-sm"
-            disabled={approvalInput.trim() !== 'yes' || approvalSubmitting}
-            onClick={() => sendApproval(approvalInput.trim())}
-          >
-            {approvalSubmitting ? 'Approving…' : 'Approve'}
-          </button>
-          <button
-            className="btn btn-danger btn-sm"
+            className="btn btn-normal btn-sm"
             disabled={approvalSubmitting}
             onClick={() => sendApproval('no')}
           >
             Deny
+          </button>
+          <button
+            className={`btn btn-sm ${ctx.destructive ? 'btn-danger' : 'btn-primary'}`}
+            disabled={approvalSubmitting}
+            onClick={() => sendApproval('yes')}
+          >
+            {approvalSubmitting ? 'Submitting…' : ctx.destructive ? 'Approve destroy' : 'Approve apply'}
           </button>
         </div>
       </div>
@@ -566,7 +665,11 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   }
 
   function openFullscreen(env: string, profile: string, sectionName: string | null) {
-    setFullscreen({ env, profile, sectionName });
+    // Follow the live run only when opening on the section that is currently
+    // active — so approving a stage advances the view to the next one. Opening a
+    // finished section (to review it) stays put.
+    const follow = run?.status === 'running' && sectionName !== null && sectionName === activeSectionKey;
+    setFullscreen({ env, profile, sectionName, follow });
   }
 
   // ── Empty state rendered inline below (same root element as non-empty) ──
@@ -979,7 +1082,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
 
               <div className="sp-body">
                 <div className="meta-strip">
-                  <MetaItem k="Command"><span className={`badge ${cmdBadgeClass(command)}`}>{command}</span></MetaItem>
+                  <MetaItem k="Command"><span className={`badge command-style ${commandStyleClass(command)}`}>{command}</span></MetaItem>
                   <MetaItem k="Mode">
                     <span className={`mode-cell ${mode === 'parallel' ? 'par' : ''}`} style={{ fontWeight: 600 }}>
                       {mode === 'parallel' ? I.par : I.seq}{mode === 'parallel' ? 'Parallel' : 'Promotion'}
@@ -1063,6 +1166,11 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
               <div className="fs-header-left">
                 <div className="fs-dots"><span /><span /><span /></div>
                 <span className="fs-title">{fullscreen.env}{fullscreen.profile ? `  ·  ${fullscreen.profile}` : ''}</span>
+                {fullscreen.follow && run?.status === 'running' && (
+                  <span className="fs-follow" title="Following the active stage — advances automatically as the run progresses">
+                    <i /> Following live
+                  </span>
+                )}
               </div>
               <div className="fs-header-right">
                 <span className="fs-stats">{fsStats}</span>

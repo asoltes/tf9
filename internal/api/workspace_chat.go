@@ -286,14 +286,13 @@ func appendHistory(messages []workspaceChatMessage, message workspaceChatMessage
 
 var workspaceChatAllowedTools = []string{
 	"Read", "Glob", "Grep",
-	"Bash(git status *)", "Bash(git diff *)", "Bash(git log *)", "Bash(git show *)",
+	"Bash(git *)",
 	"Bash(go test *)", "Bash(go vet *)", "Bash(go build *)",
 	"Bash(npm test *)", "Bash(npm run test *)", "Bash(npm run build *)", "Bash(npx tsc *)",
 	"Bash(terraform fmt -check *)", "Bash(terraform validate *)",
 }
 
 var workspaceChatDeniedTools = []string{
-	"Bash(git push *)", "Bash(git reset *)", "Bash(git clean *)", "Bash(git checkout -- *)",
 	"Bash(rm *)", "Bash(sudo *)", "Bash(curl *)", "Bash(wget *)", "Bash(ssh *)", "Bash(scp *)",
 }
 

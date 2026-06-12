@@ -18,11 +18,13 @@ test('a plan run produces a report that opens in the viewer', async ({ page }) =
   const card = page.locator('.rh-card').first();
   await expect(card).toBeVisible({ timeout: 15_000 });
   await expect(card.locator('.badge')).toContainText('plan');
+  await expect(card).toContainText('Applied: False');
   await shot(page, 'reports-cards');
 
   // ── List view toggle ──
   await page.locator('.rh-view-toggle button', { hasText: 'List' }).click();
   await expect(page.locator('table.rh-tbl')).toBeVisible();
+  await expect(page.locator('table.rh-tbl thead')).toContainText('Applied');
 
   // ── Filters ──
   await page.locator('.rh-filter', { hasText: 'Plan' }).click();
@@ -32,6 +34,7 @@ test('a plan run produces a report that opens in the viewer', async ({ page }) =
   await page.locator('.rh-view-toggle button', { hasText: 'Cards' }).click();
   await page.locator('.rh-card').first().click();
   await expect(page.locator('.report-viewer')).toBeVisible();
+  await expect(page.locator('.report-viewer table thead')).toContainText('Applied');
   await expect(page.getByRole('button', { name: /Back to Reports/ })).toBeVisible();
   await shot(page, 'report-viewer');
 });

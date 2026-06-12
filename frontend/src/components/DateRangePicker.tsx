@@ -106,7 +106,7 @@ export default function DateRangePicker({ from, to, onChange }: DateRangePickerP
   function commitInputs() {
     const f = fromDraft.trim() || null;
     const t = toDraft.trim() || null;
-    const err = validateRange({ from: f, to: t, commands: [] });
+    const err = validateRange({ from: f, to: t, commands: [], statuses: [] });
     if (err) { setInputError(err); return; }
     setInputError(null);
     applyDays(f, t);

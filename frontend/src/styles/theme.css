@@ -16,6 +16,10 @@ html[data-theme="dark"]{
   --th:#1b222c; --divider:#30363d; --border-strong:#3d444d; --input-border:#4b545e;
   --nav-bg:#010409; --nav-bg-2:#21262d;
   --green:#3fb950; --green-bg:#102619; --amber:#d29922; --amber-bg:#27220f; --red:#f85149; --red-bg:#2b1618;
+  --command-init:#58a6ff; --command-plan:#3fb950; --command-apply:#ffa657; --command-destroy:#ff7b72;
+  --command-auto:#bc8cff; --command-validate:#39c5cf; --command-refresh:#9aa5b1; --command-state:#e3b341;
+  --command-output:#d2a8ff; --command-import:#79c0ff; --command-taint:#f0883e; --command-untaint:#a5d6ff;
+  --command-force-unlock:#ffa198;
   --grey-badge:#30363d;
   --surface-1:#161b22; --surface-2:#1b222c; --surface-3:#21262d;
   --border:#3d444d; --text-1:#e6edf3;
@@ -39,6 +43,8 @@ html[data-theme="dark"] .badge.amber{background:#27220f;color:#e3b341}
 html[data-theme="dark"] .badge.orange{background:#3a230f;color:#ffa657}
 html[data-theme="dark"] .badge.red{background:#2b1618;color:#ffa198}
 html[data-theme="dark"] .badge{background:#30363d;color:var(--text)}
+html[data-theme="dark"] .badge.command-style,
+html[data-variant="dim"] .badge.command-style{background:color-mix(in srgb,var(--command-color) 18%,var(--container));color:var(--command-color)}
 html[data-theme="dark"] .seq-summary .s-node{background:#0d1117}
 html[data-theme="dark"] .view-toggle button{background:#161b22;color:var(--text-2)}
 html[data-theme="dark"] .view-toggle button.on{background:var(--blue);color:#04101f}
@@ -198,6 +204,10 @@ html[data-variant="dim"]{
   --th:#2d333b; --divider:#444c56; --border-strong:#545d68; --input-border:#545d68;
   --nav-bg:#1c2128; --nav-bg-2:#2d333b;
   --green:#57ab5a; --green-bg:#1b3326; --amber:#c69026; --amber-bg:#302a18; --red:#e5534b; --red-bg:#3a2024;
+  --command-init:#6cb6ff; --command-plan:#57ab5a; --command-apply:#f69d50; --command-destroy:#f47067;
+  --command-auto:#dcbdfb; --command-validate:#45c2c9; --command-refresh:#909dab; --command-state:#daaa3f;
+  --command-output:#b083f0; --command-import:#96d0ff; --command-taint:#e0823d; --command-untaint:#c8e1ff;
+  --command-force-unlock:#e8958f;
   --grey-badge:#373e47;
   --surface-1:#2d333b; --surface-2:#323942; --surface-3:#373e47;
   --border:#545d68; --text-1:#adbac7;

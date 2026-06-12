@@ -110,6 +110,30 @@ func TestWorkspaceCRUDAndRevisionConflict(t *testing.T) {
 	}
 }
 
+func TestWorkspaceLanguageCommonFiles(t *testing.T) {
+	tests := map[string]string{
+		"app.py":         "python",
+		"server.rb":      "ruby",
+		"main.rs":        "rust",
+		"Program.cs":     "csharp",
+		"service.java":   "java",
+		"worker.cpp":     "cpp",
+		"query.sql":      "sql",
+		"schema.graphql": "graphql",
+		"styles.scss":    "scss",
+		"config.toml":    "ini",
+		"Dockerfile":     "dockerfile",
+		"Makefile":       "shell",
+	}
+	for path, want := range tests {
+		t.Run(path, func(t *testing.T) {
+			if got := workspaceLanguage(path); got != want {
+				t.Fatalf("workspaceLanguage(%q) = %q, want %q", path, got, want)
+			}
+		})
+	}
+}
+
 func TestWorkspaceRejectsTraversalGitAndSymlinkEscape(t *testing.T) {
 	handler, root := workspaceTestHandler(t)
 	outside := t.TempDir()

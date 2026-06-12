@@ -34,8 +34,8 @@ test('apply approval gate — Approve completes the apply', async ({ page }) => 
   const bar = panel.locator('.sp-approval-bar');
   await expect(bar).toBeVisible({ timeout: 45_000 });
 
-  // The input defaults to "yes"; Approve is enabled only for "yes".
-  await expect(bar.locator('.sp-approval-input')).toHaveValue('yes');
+  await expect(bar.locator('.sp-approval-input')).toHaveCount(0);
+  await expect(bar.getByRole('button', { name: 'Approve' })).toBeEnabled();
   await bar.getByRole('button', { name: 'Approve' }).click();
 
   await expect(panel.locator('.rstatus.success')).toBeVisible({ timeout: 45_000 });

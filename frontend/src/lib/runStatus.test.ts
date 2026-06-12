@@ -6,8 +6,9 @@ import {
   sectionTerminalStatus,
   isParallelStream,
   stripAnsi,
-  updateApprovalGate,   // NEW — does not exist yet; import fails before fix
-  APPROVAL_SENTINEL,    // NEW — does not exist yet; import fails before fix
+  updateApprovalGate,
+  approvalGateVisible,
+  APPROVAL_SENTINEL,
 } from './runStatus';
 
 function banner(env: string, profile = 'p'): string[] {
@@ -284,5 +285,34 @@ describe('updateApprovalGate', () => {
     const s2 = updateApprovalGate(s1, [], 'run-2');        // switch run → reset
     const s3 = updateApprovalGate(s2, [APPROVAL_SENTINEL], 'run-2'); // new sentinel in run-2
     expect(s3.pending).toBe(true);
+  });
+});
+
+// ── Approval gate visibility latch — single-click dismissal regression ───────
+// Reproduces the fullscreen "had to click twice" bug: once the user answers a
+// prompt, the gate must stay hidden even as more output streams and the reducer
+// state still reports pending=true for that same prompt.
+describe('approvalGateVisible', () => {
+  it('shows for an unanswered prompt', () => {
+    expect(approvalGateVisible({ pending: true, seenCount: 1 }, 0)).toBe(true);
+  });
+
+  it('stays hidden after the prompt is answered, even while pending lingers', () => {
+    // User clicked → answeredSeen bumped to the current seenCount (1).
+    const answered = 1;
+    // Streaming output keeps the reducer pending for the same prompt…
+    expect(approvalGateVisible({ pending: true, seenCount: 1 }, answered)).toBe(false);
+    // …and a stale poll that re-runs the reducer can't resurrect it.
+    expect(approvalGateVisible({ pending: true, seenCount: 1 }, answered)).toBe(false);
+  });
+
+  it('re-opens only when a genuinely new prompt arrives', () => {
+    const answered = 1; // already answered prompt #1
+    // A second terraform approval (auto-run next stage) bumps seenCount to 2.
+    expect(approvalGateVisible({ pending: true, seenCount: 2 }, answered)).toBe(true);
+  });
+
+  it('never shows when the reducer is not pending', () => {
+    expect(approvalGateVisible({ pending: false, seenCount: 5 }, 0)).toBe(false);
   });
 });

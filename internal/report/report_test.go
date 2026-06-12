@@ -30,6 +30,31 @@ func TestGenerateUsesTF9FilenameAndBranding(t *testing.T) {
 	}
 }
 
+func TestGenerateShowsAppliedBoolean(t *testing.T) {
+	path, err := Generate([]EnvResult{
+		{Env: "dev", Profile: "test", Applied: true},
+		{Env: "prod", Profile: "test", Applied: false, Failed: true},
+	}, Options{
+		Command:   "apply",
+		RunAt:     time.Date(2026, time.June, 12, 3, 4, 5, 0, time.UTC),
+		OutputDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(data)
+	if !containsAll(html, "<th>Applied</th>", ">True</span>", ">False</span>") {
+		t.Fatalf("generated report does not contain applied booleans")
+	}
+	if strings.Contains(html, "<th>Status</th>") {
+		t.Fatalf("generated report still contains status column")
+	}
+}
+
 func TestParseReportNameUsesTF9Prefix(t *testing.T) {
 	cmd, runAt, live := ParseReportName("tf9-apply-20260612-030405.html")
 	if cmd != "apply" || live || runAt.UTC().Format("20060102-150405") != "20260612-030405" {

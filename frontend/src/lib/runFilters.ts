@@ -12,6 +12,8 @@ export interface RunFilters {
   to: string | null;
   /** Selected terraform commands; empty = all commands. */
   commands: string[];
+  /** Selected run statuses; empty = all statuses. */
+  statuses: string[];
 }
 
 export type DatePreset = 'today' | 'yesterday' | 'last7' | 'last30';
@@ -19,11 +21,11 @@ export type DatePreset = 'today' | 'yesterday' | 'last7' | 'last30';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function emptyFilters(): RunFilters {
-  return { from: null, to: null, commands: [] };
+  return { from: null, to: null, commands: [], statuses: [] };
 }
 
 export function isEmptyFilters(f: RunFilters): boolean {
-  return !f.from && !f.to && f.commands.length === 0;
+  return !f.from && !f.to && f.commands.length === 0 && f.statuses.length === 0;
 }
 
 /** Returns a user-facing error for an invalid range, or null when valid. */
@@ -79,6 +81,7 @@ export function toQuery(f: RunFilters): string {
     params.set('to', end.toISOString());
   }
   for (const c of f.commands) params.append('command', c);
+  for (const status of f.statuses) params.append('status', status);
   return params.toString();
 }
 
@@ -88,6 +91,7 @@ export function toHashQuery(f: RunFilters): string {
   if (f.from) params.set('from', f.from);
   if (f.to) params.set('to', f.to);
   for (const c of f.commands) params.append('command', c);
+  for (const status of f.statuses) params.append('status', status);
   const qs = params.toString();
   return qs ? `?${qs}` : '';
 }
@@ -101,5 +105,6 @@ export function parseHashQuery(qs: string): RunFilters {
     from: from && DATE_RE.test(from) ? from : null,
     to: to && DATE_RE.test(to) ? to : null,
     commands: params.getAll('command').filter(Boolean),
+    statuses: params.getAll('status').filter(Boolean),
   };
 }

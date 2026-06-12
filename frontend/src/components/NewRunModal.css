@@ -52,14 +52,12 @@
 .run-overlay .cmd-chip .ic svg{width:18px;height:18px}
 .run-overlay .cmd-chip .cc-t{font-size:14px;font-weight:700;color:var(--text);font-family:var(--mono);display:block}
 .run-overlay .cmd-chip .cc-d{font-size:11.5px;color:var(--text-2);margin-top:1px;display:block}
-.run-overlay .cmd-chip.on{border-color:var(--blue);background:var(--blue-bg)}
-.run-overlay .cmd-chip.on .ic{background:#d8ebfc;color:var(--blue)}
-.run-overlay .cmd-chip.apply.on{border-color:var(--green);background:#f0fbf2}
-.run-overlay .cmd-chip.apply.on .ic{background:#d4f7d9;color:var(--green)}
-.run-overlay .cmd-chip.destroy.on{border-color:var(--red);background:#fff5f5}
-.run-overlay .cmd-chip.destroy.on .ic{background:#ffd9d9;color:var(--red)}
+.run-overlay .cmd-chip.on{border-color:var(--command-color);background:color-mix(in srgb,var(--command-color) 8%,var(--container))}
+.run-overlay .cmd-chip.on .ic{background:color-mix(in srgb,var(--command-color) 16%,var(--container));color:var(--command-color)}
+.run-overlay .cmd-chip.on .cc-t{color:var(--command-color)}
 .run-overlay .cmd-more{display:flex;align-items:center;gap:8px;min-width:170px;flex:1}
 .run-overlay .cmd-more .sel{flex:1}
+.run-overlay .command-select.selected{border-color:var(--command-color);color:var(--command-color);font-weight:700}
 
 /* two-column field row */
 .run-overlay .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -281,19 +279,6 @@ html[data-theme="dark"] .run-overlay .destroy-warn{background:#2b1618;border-col
 html[data-theme="dark"] .run-overlay .dw-text{color:#e8a0a0}
 
 /* selected command chips — dark-mode safe backgrounds */
-html[data-theme="dark"] .run-overlay .cmd-chip.on{background:#0f2138}
-html[data-theme="dark"] .run-overlay .cmd-chip.on .ic{background:rgba(56,139,253,.18);color:var(--blue)}
-html[data-theme="dark"] .run-overlay .cmd-chip.apply.on{background:#16271b;border-color:var(--green)}
-html[data-theme="dark"] .run-overlay .cmd-chip.apply.on .ic{background:rgba(63,185,80,.18);color:var(--green)}
-html[data-theme="dark"] .run-overlay .cmd-chip.destroy.on{background:#2b1618;border-color:var(--red)}
-html[data-theme="dark"] .run-overlay .cmd-chip.destroy.on .ic{background:rgba(248,81,73,.18);color:var(--red)}
-
-/* auto command chip */
-.run-overlay .cmd-chip.auto.on{border-color:#7c3aed;background:#f5f3ff}
-.run-overlay .cmd-chip.auto.on .ic{background:#ede9fe;color:#7c3aed}
-html[data-theme="dark"] .run-overlay .cmd-chip.auto.on{background:#1a1230;border-color:#7c3aed}
-html[data-theme="dark"] .run-overlay .cmd-chip.auto.on .ic{background:rgba(124,58,237,.18);color:#a78bfa}
-
 /* auto pipeline steps in summary rail */
 .run-overlay .auto-steps{margin:14px 0;padding:12px;background:#fff;border:1px solid var(--divider);border-radius:10px}
 .run-overlay .auto-steps .as-hdr{font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;display:flex;align-items:center;gap:6px}

@@ -9,6 +9,7 @@ test('dashboard renders heading, actions, and status tiles', async ({ page }) =>
   // One tile per run status, with an honest scope note.
   await expect(page.locator('.dash-tile')).toHaveCount(5);
   await expect(page.locator('.dash-tiles-note')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Execution mode analysis' })).toBeVisible();
   await shot(page, 'overview-dashboard');
 });
 
@@ -31,4 +32,32 @@ test('status tiles navigate to run history', async ({ page }) => {
   await page.goto('/#overview');
   await page.locator('.dash-tile.st-running').click();
   await expect(page.locator('.runs-page')).toBeVisible();
+  await expect(page).toHaveURL(/#runs\?status=running$/);
+  const statusFilter = page.getByRole('button', { name: 'Status: running' });
+  await expect(statusFilter).toBeVisible();
+  await statusFilter.click();
+  const statusOptions = page.getByRole('group', { name: 'Filter by status' });
+  await expect(statusOptions.getByText('All statuses')).toBeVisible();
+  await statusOptions.getByText('failed', { exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Statuses: 2' })).toBeVisible();
+  await expect(page).toHaveURL(/status=running.*status=failed/);
+});
+
+test('dashboard shows real mode analysis and timestamps', async ({ page }) => {
+  const response = await page.request.post('/api/runs', {
+    data: { command: 'init', repo: 'e2e-repo', envFilter: 'staging' },
+  });
+  expect(response.ok()).toBeTruthy();
+  const { id } = await response.json();
+  await expect.poll(async () => {
+    const runResponse = await page.request.get(`/api/runs/${id}`);
+    return (await runResponse.json()).status;
+  }, { timeout: 45_000 }).toBe('success');
+
+  await page.goto('/#overview');
+  const recent = page.getByRole('region', { name: 'Recent runs' });
+  await expect(recent.locator('.dash-run-date small').first()).not.toHaveText('');
+
+  const analysis = page.getByRole('region', { name: 'Execution mode analysis' });
+  await expect(analysis).toContainText('Promotion 1');
 });

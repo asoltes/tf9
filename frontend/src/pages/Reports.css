@@ -164,6 +164,7 @@
 }
 .rh-card-status.success { background: var(--green-bg); color: var(--green); }
 .rh-card-status.failed  { background: var(--red-bg);   color: var(--red);   }
+.rh-card-status.not-applied { background: var(--surface-3); color: var(--text-2); }
 .rh-card-status svg { width: 12px; height: 12px; }
 
 /* repo + branch */
@@ -271,6 +272,7 @@
 .rh-tbl .st { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
 .rh-tbl .st.success { background: var(--green-bg); color: var(--green); }
 .rh-tbl .st.failed  { background: var(--red-bg);   color: var(--red);   }
+.rh-tbl .st.not-applied { background: var(--surface-3); color: var(--text-2); }
 .rh-tbl .st svg { width: 12px; height: 12px; }
 
 /* ── Empty / loading / error state ───────────────────────────────────────── */
