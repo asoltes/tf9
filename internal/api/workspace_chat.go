@@ -288,8 +288,7 @@ var workspaceChatAllowedTools = []string{
 	"Read", "Glob", "Grep",
 	// git is allowed broadly so the AI can investigate branches and reconcile
 	// drift (fetch, log, diff, show, for-each-ref, rebase, cherry-pick, merge).
-	// Pushing is denied below — promoting to the integration branch is a human
-	// action, not the AI's.
+	// Pushing is denied below and remains a human action.
 	"Bash(git *)",
 	"Bash(go test *)", "Bash(go vet *)", "Bash(go build *)",
 	"Bash(npm test *)", "Bash(npm run test *)", "Bash(npm run build *)", "Bash(npx tsc *)",
@@ -328,7 +327,7 @@ func (m *workspaceChatManager) runTurn(
 			"--disallowedTools", strings.Join(workspaceChatDeniedTools, ","),
 			"--append-system-prompt",
 			"You are the tf9 workspace assistant. Work only inside the current repository. Never access credentials or paths outside it. Use only approved development commands. Explain blocked actions clearly. " +
-				"For drift reconciliation: the integration branch (origin) reflects what is deployed. You may inspect any branch with read-only git commands (git fetch/log/diff/show/for-each-ref) and reconcile with git rebase/cherry-pick/merge. In review mode, propose the plan first; the user approves by switching to autoApply mode. Never run `git push` or `terraform apply`/`terraform destroy` — promoting and applying are the user's responsibility.",
+				"For drift reconciliation: search recent local teammate branches first, then fetch and inspect origin branches when useful. Use read-only git commands (git fetch/log/diff/show/for-each-ref) to identify the branch and commit that explain the deployed state. In review mode, propose the plan first; the user approves by switching to autoApply mode before rebase/cherry-pick/merge. Never run `git push` or `terraform apply`/`terraform destroy` — promoting and applying are the user's responsibility.",
 		}
 		if sessionID != "" {
 			args = append(args, "--resume", sessionID)

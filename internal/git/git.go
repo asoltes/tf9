@@ -425,13 +425,14 @@ type BranchInfo struct {
 	Author  string `json:"author"`  // last committer name
 	Date    string `json:"date"`    // last commit date (ISO-8601)
 	Subject string `json:"subject"` // last commit subject
+	Local   bool   `json:"local"`   // refs/heads/<name> exists
+	Remote  bool   `json:"remote"`  // refs/remotes/origin/<name> exists
 }
 
 // ActiveBranches returns local and origin branches whose latest commit is newer
-// than windowDays, most-recent first, deduped (first occurrence per clean name
-// wins), capped at limit. windowDays<=0 disables the time filter; limit<=0
-// disables the cap. This is the "active/open branches" feed for AI auto-mode
-// drift reconciliation.
+// than windowDays, most-recent first, merged by clean branch name, and capped at
+// limit. The newest local/origin ref supplies the displayed commit metadata;
+// Local and Remote record where the branch can be inspected.
 func ActiveBranches(ctx context.Context, repoDir string, windowDays, limit int) ([]BranchInfo, error) {
 	cmd := exec.CommandContext(ctx, "git", "-C", repoDir, "for-each-ref",
 		"--sort=-committerdate",
@@ -445,7 +446,7 @@ func ActiveBranches(ctx context.Context, repoDir string, windowDays, limit int) 
 	if windowDays > 0 {
 		cutoff = time.Now().AddDate(0, 0, -windowDays).Unix()
 	}
-	seen := map[string]bool{}
+	byName := map[string]int{}
 	var branches []BranchInfo
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		if line == "" {
@@ -456,28 +457,39 @@ func ActiveBranches(ctx context.Context, repoDir string, windowDays, limit int) 
 			continue
 		}
 		name := strings.TrimSpace(parts[0])
+		remote := strings.HasPrefix(name, "origin/")
 		// refs/remotes/origin/foo → "origin/foo"; strip to clean "foo".
-		if strings.HasPrefix(name, "origin/") {
+		if remote {
 			name = strings.TrimPrefix(name, "origin/")
 		}
-		if name == "" || name == "HEAD" || seen[name] {
+		if name == "" || name == "HEAD" {
 			continue
 		}
 		unix, _ := strconv.ParseInt(strings.TrimSpace(parts[4]), 10, 64)
 		if cutoff > 0 && unix < cutoff {
 			continue // older than the active window
 		}
-		seen[name] = true
+		if index, ok := byName[name]; ok {
+			if remote {
+				branches[index].Remote = true
+			} else {
+				branches[index].Local = true
+			}
+			continue
+		}
+		byName[name] = len(branches)
 		branches = append(branches, BranchInfo{
 			Name:    name,
 			Hash:    parts[1],
 			Author:  parts[2],
 			Date:    parts[3],
 			Subject: parts[5],
+			Local:   !remote,
+			Remote:  remote,
 		})
-		if limit > 0 && len(branches) >= limit {
-			break
-		}
+	}
+	if limit > 0 && len(branches) > limit {
+		branches = branches[:limit]
 	}
 	return branches, nil
 }

@@ -6,6 +6,25 @@ export interface ResourceChange {
   blockLines: string[];
 }
 
+export type ResourceChangeSort = 'plan' | 'action' | 'resource';
+
+const ACTION_ORDER: Record<ResourceChange['action'], number> = {
+  add: 0,
+  change: 1,
+  replace: 2,
+  destroy: 3,
+};
+
+export function sortResourceChanges(changes: ResourceChange[], sort: ResourceChangeSort): ResourceChange[] {
+  if (sort === 'plan') return changes;
+  return changes.map((change, index) => ({ change, index })).sort((a, b) => {
+    const primary = sort === 'action'
+      ? ACTION_ORDER[a.change.action] - ACTION_ORDER[b.change.action]
+      : a.change.resource.localeCompare(b.change.resource);
+    return primary || a.index - b.index;
+  }).map(item => item.change);
+}
+
 export function parseResourceChanges(lines: string[]): ResourceChange[] {
   const segments: { hdr: string; lines: string[] }[] = [];
   let cur: string[] | null = null;

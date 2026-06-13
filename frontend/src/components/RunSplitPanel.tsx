@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { api, graphApi } from '../api';
+import { api, graphApi, repoGit } from '../api';
+import { buildReconcilePrompt } from '../lib/reconcilePrompt';
+import { setPendingChatSeed } from '../lib/pendingChat';
 import { useNav } from '../nav';
 import { useToast } from './ToastProvider';
 import { envColor } from '../lib/colors';
@@ -20,7 +22,13 @@ import {
   type TargetState,
   type TargetStatus,
 } from '../lib/runStatus';
-import { parseResourceChanges, rctBadgeLabel, type ResourceChange } from '../lib/planChanges';
+import {
+  parseResourceChanges,
+  rctBadgeLabel,
+  sortResourceChanges,
+  type ResourceChange,
+  type ResourceChangeSort,
+} from '../lib/planChanges';
 import TerminalBody, { renderLine, lineClass } from './Terminal';
 import ConfirmModal from './ConfirmModal';
 import RetryBranchModal from './RetryBranchModal';
@@ -69,10 +77,22 @@ function applyFilter(lines: string[], filter: FsFilter, search: string): string[
 }
 
 
-function ResourceChangeTable({ lines, search, expanded, onToggle }: { lines: string[]; search: string; expanded: string | null; onToggle: (key: string) => void }) {
+export function ResourceChangeTable({
+  lines, search, expanded, onToggle, sort, onSortChange,
+}: {
+  lines: string[];
+  search: string;
+  expanded: Set<string>;
+  onToggle: (key: string) => void;
+  sort: ResourceChangeSort;
+  onSortChange: (sort: ResourceChangeSort) => void;
+}) {
   const changes = useMemo(() => parseResourceChanges(lines), [lines]);
   const term = search.trim().toLowerCase();
-  const filtered = term ? changes.filter(c => c.resource.toLowerCase().includes(term)) : changes;
+  const filtered = sortResourceChanges(
+    term ? changes.filter(c => c.resource.toLowerCase().includes(term)) : changes,
+    sort,
+  );
   if (filtered.length === 0) {
     return (
       <div className="tc-body">
@@ -84,15 +104,25 @@ function ResourceChangeTable({ lines, search, expanded, onToggle }: { lines: str
   }
   return (
     <div className="tc-body rct-wrap">
+      <div className="rct-toolbar">
+        <label>
+          Sort
+          <select value={sort} onChange={event => onSortChange(event.target.value as ResourceChangeSort)}>
+            <option value="plan">Plan order</option>
+            <option value="action">Action</option>
+            <option value="resource">Resource A-Z</option>
+          </select>
+        </label>
+      </div>
       <table className="rct">
         <thead><tr><th>Action</th><th>Resource</th><th /></tr></thead>
         <tbody>
-          {filtered.flatMap((c, i) => {
+          {filtered.flatMap(c => {
             const key = `${c.action}:${c.resource}`;
-            const isOpen = expanded === key;
+            const isOpen = expanded.has(key);
             const rows: React.ReactNode[] = [
               <tr
-                key={`r${i}`}
+                key={`r:${key}`}
                 className={`rct-row${isOpen ? ' rct-row-open' : ''}`}
                 onClick={() => onToggle(key)}
               >
@@ -103,7 +133,7 @@ function ResourceChangeTable({ lines, search, expanded, onToggle }: { lines: str
             ];
             if (isOpen) {
               rows.push(
-                <tr key={`e${i}`} className="rct-expanded">
+                <tr key={`e:${key}`} className="rct-expanded">
                   <td colSpan={3} className="rct-block-cell">
                     <TerminalBody lines={c.blockLines} autoScroll={false} className="rct-block-body" />
                   </td>
@@ -146,6 +176,7 @@ const I = {
   close: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>,
   search: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.35-4.35" /></svg>,
   ban: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><line x1="6.3" y1="6.3" x2="17.7" y2="17.7" /></svg>,
+  ai: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z" /><path d="M18.5 15.5 19 17l1.5.5L19 18l-.5 1.5L18 18l-1.5-.5L18 17z" /></svg>,
 };
 
 type Dock = 'bottom' | 'side';
@@ -243,7 +274,8 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const [graphError, setGraphError] = useState('');
   // Changes-filter resource expansion, keyed per table id so it survives the
   // single→promotion/parallel branch switch that remounts ResourceChangeTable.
-  const [rctExpanded, setRctExpanded] = useState<Record<string, string | null>>({});
+  const [rctExpanded, setRctExpanded] = useState<Record<string, Set<string>>>({});
+  const [rctSort, setRctSort] = useState<Record<string, ResourceChangeSort>>({});
   const spSearchInputRef = useRef<HTMLInputElement>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmApplyPlan, setConfirmApplyPlan] = useState(false);
@@ -251,9 +283,11 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const [retryOpen, setRetryOpen] = useState(false);
   const [approvalPending, setApprovalPending] = useState(false);
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+  const [destroyApprovalConfirm, setDestroyApprovalConfirm] = useState(false);
   const [approvalDeadline, setApprovalDeadline] = useState<number | null>(null);
   const [approvalTimeoutSeconds, setApprovalTimeoutSeconds] = useState(300);
   const [clock, setClock] = useState(() => Date.now());
+  const [reconcileLoading, setReconcileLoading] = useState(false);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
@@ -389,10 +423,15 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
 
   // Props that make ResourceChangeTable a controlled component for a given table.
   const rctProps = useCallback((tableId: string) => ({
-    expanded: rctExpanded[tableId] ?? null,
-    onToggle: (key: string) =>
-      setRctExpanded(p => ({ ...p, [tableId]: p[tableId] === key ? null : key })),
-  }), [rctExpanded]);
+    expanded: rctExpanded[tableId] ?? new Set<string>(),
+    onToggle: (key: string) => setRctExpanded(previous => {
+      const next = new Set(previous[tableId] ?? []);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return { ...previous, [tableId]: next };
+    }),
+    sort: rctSort[tableId] ?? 'plan',
+    onSortChange: (sort: ResourceChangeSort) => setRctSort(previous => ({ ...previous, [tableId]: sort })),
+  }), [rctExpanded, rctSort]);
 
   // Derived data ------------------------------------------------------------
   const displayLines = lines.filter(l => l !== APPROVAL_SENTINEL && l !== APPROVAL_CLEAR_SENTINEL);
@@ -598,11 +637,15 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   useEffect(() => {
     const prev = gateRef.current;
     const next = updateApprovalGate(prev, lines, run?.id);
-    if (next.runId !== prev.runId) answeredSeenRef.current = 0; // new run → forget answers
+    if (next.runId !== prev.runId) {
+      answeredSeenRef.current = 0; // new run → forget answers
+      setDestroyApprovalConfirm(false);
+    }
     gateRef.current = next;
     const visible = approvalGateVisible(next, answeredSeenRef.current);
     setApprovalPending(visible);
     if (visible && (next.seenCount > prev.seenCount || next.runId !== prev.runId)) {
+      setDestroyApprovalConfirm(false);
       const serverDeadline = run?.approvalExpiresAt ? new Date(run.approvalExpiresAt).getTime() : NaN;
       setApprovalDeadline(Number.isFinite(serverDeadline)
         ? serverDeadline
@@ -626,6 +669,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     if (!approvalPending || approvalDeadline === null || clock < approvalDeadline) return;
     gateRef.current = { ...gateRef.current, pending: false };
     setApprovalPending(false);
+    setDestroyApprovalConfirm(false);
   }, [approvalPending, approvalDeadline, clock]);
 
   // Force-clear the gate when a run finishes (no more input possible).
@@ -633,6 +677,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     if (!run || run.status !== 'running') {
       gateRef.current = { ...gateRef.current, pending: false };
       setApprovalPending(false);
+      setDestroyApprovalConfirm(false);
       setApprovalDeadline(null);
     }
   }, [run?.status]);
@@ -644,6 +689,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     answeredSeenRef.current = gateRef.current.seenCount;
     gateRef.current = { ...gateRef.current, pending: false };
     setApprovalPending(false);
+    setDestroyApprovalConfirm(false);
     setApprovalDeadline(null);
     setApprovalSubmitting(true);
     try {
@@ -703,23 +749,25 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     const verb = ctx.destructive ? 'destroy' : 'apply';
     return (
       <div
-        className={`sp-approval-bar${variant === 'fs' ? ' fs-approval-bar' : ''}${ctx.destructive ? ' destructive' : ''}`}
+        className={`sp-approval-bar${variant === 'fs' ? ' fs-approval-bar' : ''}${ctx.destructive ? ' destructive' : ''}${ctx.destructive && destroyApprovalConfirm ? ' final-confirm' : ''}`}
         role="alertdialog"
-        aria-label="Terraform approval required"
+        aria-label={ctx.destructive && destroyApprovalConfirm ? 'Final Terraform destroy confirmation' : 'Terraform approval required'}
         aria-live="assertive"
       >
         <div className="sp-approval-main">
           <span className="sp-approval-icon">{I.warn}</span>
           <div className="sp-approval-text">
             <div className="sp-approval-title">
-              Approval required
+              {ctx.destructive && destroyApprovalConfirm ? 'Are you sure?' : 'Approval required'}
               <span className={`sp-approval-cmd${ctx.destructive ? ' bad' : ''}`}>{verb}</span>
               {approvalDeadline !== null && (
                 <span className="sp-approval-countdown">Expires in {countdownLabel(approvalDeadline, clock)}</span>
               )}
             </div>
             <div className="sp-approval-sub">
-              Review the plan below, then choose whether to {verb} these changes{ctx.env ? <> to <strong>{ctx.env}</strong></> : null}.
+              {ctx.destructive && destroyApprovalConfirm
+                ? <>This permanently destroys the selected infrastructure{ctx.env ? <> in <strong>{ctx.env}</strong></> : null}. Terraform is still waiting for your final confirmation.</>
+                : <>Review the plan below, then choose whether to {verb} these changes{ctx.env ? <> to <strong>{ctx.env}</strong></> : null}.</>}
             </div>
             {(ctx.stage || ctx.env || ctx.profile || hasCounts) && (
               <div className="sp-approval-ctx">
@@ -743,14 +791,24 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             disabled={approvalSubmitting}
             onClick={() => sendApproval('no')}
           >
-            Deny
+            {ctx.destructive && destroyApprovalConfirm ? 'Cancel destroy' : 'Deny'}
           </button>
           <button
             className={`btn btn-sm ${ctx.destructive ? 'btn-danger' : 'btn-primary'}`}
             disabled={approvalSubmitting}
-            onClick={() => sendApproval('yes')}
+            onClick={() => {
+              if (ctx.destructive && !destroyApprovalConfirm) {
+                setDestroyApprovalConfirm(true);
+                return;
+              }
+              sendApproval('yes');
+            }}
           >
-            {approvalSubmitting ? 'Submitting…' : ctx.destructive ? 'Approve destroy' : 'Approve apply'}
+            {approvalSubmitting
+              ? 'Submitting…'
+              : ctx.destructive
+                ? destroyApprovalConfirm ? 'Destroy permanently' : 'Approve destroy'
+                : 'Approve apply'}
           </button>
         </div>
       </div>
@@ -795,6 +853,29 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
         importAddrs: undefined,
       },
     });
+  }
+
+  // Build a drift-reconcile prompt from this run's repo state plus the terraform
+  // output already on screen, stash it, and hand off to the Repository Workspace
+  // where the AI chat picks it up. The terminal output gives Claude the exact
+  // drifted resource addresses the workspace-only flow lacks.
+  async function reconcileWithAI() {
+    const repoName = run?.request?.repo || run?.repo;
+    if (!repoName || reconcileLoading) return;
+    setReconcileLoading(true);
+    try {
+      const [status, branches] = await Promise.all([
+        repoGit.reconcile(repoName),
+        repoGit.activeBranches(repoName).catch(() => null),
+      ]);
+      const planOutput = displayLines.join('\n');
+      setPendingChatSeed(repoName, buildReconcilePrompt(repoName, status, branches, planOutput));
+      navigate({ id: 'workspace', name: repoName });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Could not load reconcile status', 'error');
+    } finally {
+      setReconcileLoading(false);
+    }
   }
 
   function openFullscreen(env: string, profile: string, sectionName: string | null) {
@@ -1325,6 +1406,17 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             </>
           )}
         </div>
+        {run && run.status !== 'running' && (run.request?.repo || run.repo) && ['plan', 'apply', 'auto'].includes(command) && (
+          <button
+            className={`sp-reconcile-ai${reconcileLoading ? ' loading' : ''}`}
+            onClick={reconcileWithAI}
+            disabled={reconcileLoading}
+            aria-label={reconcileLoading ? 'Loading Reconcile with AI' : 'Reconcile with AI'}
+            title="Reconcile with AI"
+          >
+            {I.ai}
+          </button>
+        )}
       </div>
 
       {fullscreen && (

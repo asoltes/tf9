@@ -368,6 +368,10 @@ html[data-theme="dark"] .report-viewer {
 }
 /* ── Resource change table in report context ────────────────────────────── */
 .report-viewer .rv-rct{overflow:auto;background:var(--rv-term-bg)}
+.report-viewer .rv-rct-toolbar{position:sticky;top:0;z-index:2;display:flex;justify-content:flex-end;padding:8px 12px;border-bottom:1px solid var(--rv-border-2);background:var(--rv-term-bg)}
+.report-viewer .rv-rct-toolbar label{display:flex;align-items:center;gap:7px;color:var(--rv-muted);font:700 10px var(--rv-sans);text-transform:uppercase;letter-spacing:.04em}
+.report-viewer .rv-rct-toolbar select{height:27px;padding:2px 26px 2px 8px;border:1px solid var(--rv-border-2);border-radius:6px;outline:none;background:var(--rv-surface);color:var(--rv-text);font:11px var(--rv-sans)}
+.report-viewer .rv-rct-toolbar select:focus{border-color:var(--rv-blue)}
 .report-viewer .rv-rct table{width:100%;border-collapse:collapse;font-size:12.5px}
 .report-viewer .rv-rct th{
   text-align:left;font-family:var(--rv-sans);font-size:11px;font-weight:700;

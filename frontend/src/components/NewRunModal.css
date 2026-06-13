@@ -58,6 +58,17 @@
 .run-overlay .cmd-more{display:flex;align-items:center;gap:8px;min-width:170px;flex:1}
 .run-overlay .cmd-more .sel{flex:1}
 .run-overlay .command-select.selected{border-color:var(--command-color);color:var(--command-color);font-weight:700}
+.run-overlay .command-description{
+  display:flex;align-items:flex-start;gap:10px;margin-top:10px;padding:10px 12px;
+  border:1px solid color-mix(in srgb,var(--command-color) 24%,var(--divider));
+  border-radius:9px;background:color-mix(in srgb,var(--command-color) 5%,var(--container));
+}
+.run-overlay .command-description-icon{display:grid;place-items:center;color:var(--command-color);flex-shrink:0;margin-top:1px}
+.run-overlay .command-description-icon svg{width:16px;height:16px}
+.run-overlay .command-description div{display:flex;align-items:baseline;gap:9px;min-width:0}
+.run-overlay .command-description strong{font:700 12px var(--mono);color:var(--command-color);white-space:nowrap}
+.run-overlay .command-description span:last-child{font-size:12px;line-height:1.45;color:var(--text-2)}
+.run-overlay .command-description.danger{border-color:color-mix(in srgb,var(--red) 60%,var(--divider));background:color-mix(in srgb,var(--red) 8%,var(--container))}
 
 /* two-column field row */
 .run-overlay .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -230,6 +241,7 @@
 
 .run-overlay .btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
 .run-overlay .btn-danger:hover{background:#a40e0e;border-color:#a40e0e}
+.run-overlay .run-modal.is-destroy .cmd-chip.destroy.on{box-shadow:0 0 0 1px color-mix(in srgb,var(--red) 16%,transparent)}
 
 .run-overlay .field-label{font-weight:700;font-size:13px;color:var(--text);margin-bottom:5px;display:block}
 .run-overlay .field-hint{font-size:12px;color:var(--text-2);margin-top:4px}
@@ -263,30 +275,43 @@ html[data-theme="dark"] .run-overlay .tgroup.grp-disabled .tgroup-head{backgroun
 html[data-theme="dark"] .run-overlay .tgt.dragging{background:#1c2330}
 /* destroy warning block */
 .run-overlay .destroy-warn{
-  border:1.5px solid var(--red);border-left:5px solid var(--red);
-  border-radius:10px;background:#fff5f5;padding:14px 16px;
+  position:relative;border:1px solid color-mix(in srgb,var(--red) 42%,var(--divider));
+  border-radius:10px;background:color-mix(in srgb,var(--red) 6%,var(--container));padding:13px 15px;
+  isolation:isolate;overflow:hidden;
 }
-.run-overlay .dw-top{margin-bottom:10px}
-.run-overlay .dw-badge{
-  display:inline-block;font-size:10px;font-weight:800;letter-spacing:.8px;
-  color:#fff;background:var(--red);border-radius:4px;padding:2px 7px;
-  text-transform:uppercase;
+.run-overlay .destroy-warn::after{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;padding:2px;pointer-events:none;
+  background:conic-gradient(from var(--destroy-glow-angle),transparent 0 72%,color-mix(in srgb,var(--command-destroy) 40%,transparent) 78%,var(--command-destroy) 86%,#fff 89%,var(--command-destroy) 92%,transparent 98%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  filter:drop-shadow(0 0 4px color-mix(in srgb,var(--command-destroy) 70%,transparent));
+  animation:destroyBorderGlow 2.4s linear infinite;
 }
 .run-overlay .dw-row{display:flex;gap:12px;align-items:flex-start}
 .run-overlay .dw-icon{color:var(--red);flex-shrink:0;margin-top:1px}
 .run-overlay .dw-icon svg{width:22px;height:22px}
-.run-overlay .dw-title{font-size:14px;font-weight:800;color:var(--red);letter-spacing:-.1px;margin-bottom:4px}
-.run-overlay .dw-text{font-size:12.5px;color:#5c1212;line-height:1.55}
-html[data-theme="dark"] .run-overlay .destroy-warn{background:#2b1618;border-color:var(--red)}
-html[data-theme="dark"] .run-overlay .dw-text{color:#e8a0a0}
+.run-overlay .dw-title{font-size:14px;font-weight:600;color:var(--command-destroy);margin-bottom:4px}
+.run-overlay .dw-text{font-size:12.5px;color:var(--text-2);line-height:1.55}
+html[data-theme="dark"] .run-overlay .destroy-warn{background:color-mix(in srgb,var(--red) 8%,var(--container));border-color:color-mix(in srgb,var(--red) 48%,var(--divider))}
+@property --destroy-glow-angle{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes destroyBorderGlow{to{--destroy-glow-angle:360deg}}
+@media(prefers-reduced-motion:reduce){.run-overlay .destroy-warn::after{animation:none;background:transparent}}
+html[data-theme="dark"] .run-overlay .sum-warn.red,
+html[data-variant="dim"] .run-overlay .sum-warn.red{
+  background:color-mix(in srgb,var(--red) 12%,var(--container));
+  color:var(--command-destroy);
+  border:1px solid color-mix(in srgb,var(--red) 35%,var(--divider));
+}
 
 /* selected command chips — dark-mode safe backgrounds */
 /* auto pipeline steps in summary rail */
 .run-overlay .auto-steps{margin:14px 0;padding:12px;background:#fff;border:1px solid var(--divider);border-radius:10px}
 .run-overlay .auto-steps .as-hdr{font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;display:flex;align-items:center;gap:6px}
 .run-overlay .auto-steps .as-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);padding:2px 0}
-.run-overlay .auto-steps .as-num{width:18px;height:18px;border-radius:50%;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;flex-shrink:0}
-.run-overlay .auto-steps .as-apply{background:#037f0c}
+.run-overlay .auto-steps .as-num{width:18px;height:18px;border-radius:50%;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;flex-shrink:0}
+.run-overlay .auto-steps .as-init{background:var(--command-init)}
+.run-overlay .auto-steps .as-plan{background:var(--command-plan)}
+.run-overlay .auto-steps .as-apply{background:var(--command-apply)}
 .run-overlay .auto-steps .as-name{font-family:var(--mono);font-weight:600}
 .run-overlay .auto-steps .as-conn{width:18px;display:flex;justify-content:center;color:var(--text-3);height:8px}
 .run-overlay .auto-steps .as-conn svg{width:11px;height:11px;transform:rotate(90deg)}
