@@ -134,9 +134,14 @@ export default function Help() {
                 <span className="ck-key">version</span>: 1{'\n'}
                 <span className="ck-key">web</span>:{'\n'}
                 {'  '}<span className="ck-key">saved_plan_apply</span>: true{'\n'}
+                {'  '}<span className="ck-key">approval_timeout_seconds</span>: 300{'\n'}
+                {'  '}<span className="ck-key">reviewed_plan_timeout_seconds</span>: 3600{'\n'}
                 <span className="ck-key">repositories</span>:{'\n'}
                 {'  - '}<span className="ck-key">name</span>: infrastructure{'\n'}
                 {'    '}<span className="ck-key">path</span>: /absolute/path/to/infrastructure{'\n'}
+                {'    '}<span className="ck-key">default_aws_profile</span>: company-dev{'\n'}
+                {'    '}<span className="ck-key">default_account_id</span>: "123456789012"{'\n'}
+                {'    '}<span className="ck-key">default_region</span>: eu-west-2{'\n'}
                 {'    '}<span className="ck-key">targets</span>:{'\n'}
                 {'      - '}<span className="ck-key">name</span>: dev{'\n'}
                 {'        '}<span className="ck-key">directory</span>: environments/dev{'\n'}
@@ -144,9 +149,12 @@ export default function Help() {
                 {'        '}<span className="ck-key">account_id</span>: "123456789012"{'\n'}
                 {'        '}<span className="ck-key">region</span>: eu-west-2
               </CodeBlock>
+              <div className="kv"><code>default_*</code><span>· optional — copied into targets added from the repository browser.</span></div>
               <div className="kv"><code>account_id</code><span>· optional — verified against STS before runs.</span></div>
               <div className="kv"><code>disabled</code><span>· optional — skips the target in promotion and parallel runs.</span></div>
               <div className="kv"><code>web.saved_plan_apply</code><span>· optional — saves successful web plans and requires applies to use the reviewed plan file.</span></div>
+              <div className="kv"><code>web.approval_timeout_seconds</code><span>· optional — automatically denies unattended approval prompts; defaults to 300 seconds.</span></div>
+              <div className="kv"><code>web.reviewed_plan_timeout_seconds</code><span>· optional — expires saved reviewed plans and their apply action; defaults to 3600 seconds.</span></div>
             </section>
 
             <section className="help-sec" id="runs" style={{ marginBottom: 34 }}>

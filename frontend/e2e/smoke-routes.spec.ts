@@ -11,6 +11,7 @@ const routes: { hash: string; selector: string; name: string }[] = [
   { hash: 'config', selector: '.config-page', name: 'config' },
   { hash: 'profile-mappings', selector: '.page-title', name: 'profile-mappings' },
   { hash: 'reports', selector: '.reports-page', name: 'reports' },
+  { hash: 'graph', selector: '.graph-page', name: 'graph' },
   { hash: 'logs', selector: '.logs-page', name: 'logs' },
   { hash: 'help', selector: '.help-page', name: 'help' },
 ];
@@ -26,5 +27,5 @@ for (const r of routes) {
 test('unknown hash falls back to a rendered page', async ({ page }) => {
   await page.goto('/#definitely-not-a-route');
   // The SPA never shows a blank screen — the topnav brand is always present.
-  await expect(page.locator('.topnav .brand')).toContainText('tf9');
+  await expect(page.locator('.topnav .brand[aria-label="tf9"]')).toBeVisible();
 });

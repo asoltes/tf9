@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func useTestConfig(t *testing.T) string {
@@ -55,10 +56,17 @@ func TestSaveAndLoad(t *testing.T) {
 	path := useTestConfig(t)
 	want := Config{
 		Version: 1,
-		Web:     WebConfig{SavedPlanApply: true},
+		Web: WebConfig{
+			SavedPlanApply:             true,
+			ApprovalTimeoutSeconds:     45,
+			ReviewedPlanTimeoutSeconds: 900,
+		},
 		Repositories: []Repository{{
-			Name: "infra",
-			Path: "/work/infra",
+			Name:              "infra",
+			Path:              "/work/infra",
+			DefaultAWSProfile: "company-dev",
+			DefaultAccountID:  "123456789012",
+			DefaultRegion:     "eu-west-2",
 			Targets: []RepoTarget{{
 				Name: "dev", Directory: "environments/dev", AWSProfile: "company-dev",
 				AccountID: "123456789012", Region: "eu-west-2",
@@ -75,8 +83,15 @@ func TestSaveAndLoad(t *testing.T) {
 	if len(got.Repositories) != 1 || got.Repositories[0].Targets[0].AWSProfile != "company-dev" {
 		t.Fatalf("unexpected config: %#v", got)
 	}
+	repo := got.Repositories[0]
+	if repo.DefaultAWSProfile != "company-dev" || repo.DefaultAccountID != "123456789012" || repo.DefaultRegion != "eu-west-2" {
+		t.Fatalf("repository defaults did not round-trip: %#v", repo)
+	}
 	if !got.Web.SavedPlanApply {
 		t.Fatal("web.saved_plan_apply did not round-trip")
+	}
+	if got.Web.ApprovalTimeoutSeconds != 45 || got.Web.ReviewedPlanTimeoutSeconds != 900 {
+		t.Fatalf("web timeouts did not round-trip: %#v", got.Web)
 	}
 	info, err := os.Stat(path)
 	if err != nil {
@@ -84,6 +99,35 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 	if info.Mode().Perm() != 0o600 {
 		t.Fatalf("config mode = %o, want 600", info.Mode().Perm())
+	}
+}
+
+func TestWebTimeoutDefaultsAndValidation(t *testing.T) {
+	if got := (WebConfig{}).ApprovalTimeout(); got != 300*time.Second {
+		t.Fatalf("default approval timeout = %s", got)
+	}
+	if got := (WebConfig{}).ReviewedPlanTimeout(); got != time.Hour {
+		t.Fatalf("default reviewed plan timeout = %s", got)
+	}
+	useTestConfig(t)
+	err := Save(Config{Version: 1, Web: WebConfig{ApprovalTimeoutSeconds: -1}})
+	if err == nil || !strings.Contains(err.Error(), "approval_timeout_seconds") {
+		t.Fatalf("expected approval timeout validation error, got %v", err)
+	}
+}
+
+func TestRejectsInvalidDefaultAccountID(t *testing.T) {
+	useTestConfig(t)
+	err := Save(Config{
+		Version: 1,
+		Repositories: []Repository{{
+			Name:             "infra",
+			Path:             "/work/infra",
+			DefaultAccountID: "1234",
+		}},
+	})
+	if err == nil {
+		t.Fatal("expected invalid default account ID validation error")
 	}
 }
 
@@ -170,6 +214,23 @@ func TestRawConfigPreservesSourceAndRejectsStaleRevision(t *testing.T) {
 	}
 	if _, err := WriteRaw(updated, revision); !errors.Is(err, ErrRevisionConflict) {
 		t.Fatalf("stale save error = %v, want revision conflict", err)
+	}
+}
+
+func TestFormatRawPreservesCommentsAndUsesTwoSpaceIndent(t *testing.T) {
+	formatted, err := FormatRaw("# repository config\nversion: 1\nrepositories:\n    - name: infra\n      path: /work/infra\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "# repository config\nversion: 1\nrepositories:\n  - name: infra\n    path: /work/infra\n"
+	if formatted != want {
+		t.Fatalf("FormatRaw() = %q, want %q", formatted, want)
+	}
+}
+
+func TestFormatRawRejectsInvalidYAML(t *testing.T) {
+	if _, err := FormatRaw("version: ["); err == nil {
+		t.Fatal("expected invalid YAML error")
 	}
 }
 

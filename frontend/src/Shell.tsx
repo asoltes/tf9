@@ -47,6 +47,7 @@ const ICONS: Record<string, React.ReactNode> = {
   config: ni('M16 18l6-6-6-6M8 6l-6 6 6 6'),
   'profile-mappings': ni('M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM5 21v-2a7 7 0 0 1 14 0v2'),
   reports: ni('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5'),
+  graph: ni('M6 5h4v4H6zM14 3h4v4h-4zM14 15h4v4h-4zM4 16h4v4H4zM10 7l4-2M8 9l7 6M8 18l6-1'),
   cost: ni('M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'),
   logs: ni('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
   help: ni('M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3M12 17h.01'),
@@ -61,6 +62,7 @@ const LABELS: Record<Page['id'], string> = {
   'profile-mappings': 'AWS Profile Mappings',
   reports: 'Terraform Reports',
   report: 'Terraform Reports',
+  graph: 'Graph View',
   cost: 'Cost Analysis',
   logs: 'System Logs',
   help: 'Documentation',
@@ -71,7 +73,7 @@ const link = (id: Page['id']): SideLink => ({ id, text: LABELS[id], href: `#${id
 const NAV_GROUPS: { label: string | null; links: SideLink[] }[] = [
   { label: 'Operations', links: [link('overview'), link('runs'), link('workspace')] },
   { label: 'Configuration', links: [link('repos'), link('config'), link('profile-mappings')] },
-  { label: 'Insights & Support', links: [link('reports'), link('cost'), link('logs'), link('help')] },
+  { label: 'Insights & Support', links: [link('reports'), link('graph'), link('cost'), link('logs'), link('help')] },
 ];
 
 const crumb = (id: Page['id']): { text: string; page: Page | null }[] => [
@@ -104,6 +106,7 @@ const CRUMBS: Record<Page['id'], { text: string; page: Page | null }[]> = {
     { text: LABELS.reports, page: { id: 'reports' } },
     { text: 'View', page: null },
   ],
+  graph: crumb('graph'),
   cost: crumb('cost'),
   logs: crumb('logs'),
   help: crumb('help'),

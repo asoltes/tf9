@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { api } from '../api';
+import { api, graphApi } from '../api';
 import { useNav } from '../nav';
 import { useToast } from './ToastProvider';
 import { envColor } from '../lib/colors';
@@ -24,7 +24,9 @@ import { parseResourceChanges, rctBadgeLabel, type ResourceChange } from '../lib
 import TerminalBody, { renderLine, lineClass } from './Terminal';
 import ConfirmModal from './ConfirmModal';
 import RetryBranchModal from './RetryBranchModal';
-import type { Run, RunStatus } from '../types';
+import type { Run, RunStatus, WebSettings } from '../types';
+import type { GraphDocument } from '../types';
+import GraphView from './GraphView';
 
 type FsFilter = 'all' | 'changes' | 'errors' | 'plan';
 
@@ -148,6 +150,7 @@ const I = {
 
 type Dock = 'bottom' | 'side';
 type ParallelView = 'grid' | 'tabs' | 'merged';
+const RERUN_COMMANDS = ['init', 'plan', 'apply', 'destroy', 'auto'] as const;
 
 function statusClass(s: RunStatus): string { return s; }
 function statusIcon(s: RunStatus): React.ReactNode {
@@ -172,6 +175,12 @@ function relTime(iso: string): string {
   if (s < 3600) return Math.floor(s / 60) + 'm ago';
   if (s < 86400) return Math.floor(s / 3600) + 'h ago';
   return Math.floor(s / 86400) + 'd ago';
+}
+
+function countdownLabel(deadline: number, now: number): string {
+  const seconds = Math.max(0, Math.ceil((deadline - now) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
 // Proportional colour bar showing add/change/destroy distribution.
@@ -229,6 +238,9 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const fsSearchInputRef = useRef<HTMLInputElement>(null);
   const [spSearch, setSpSearch] = useState('');
   const [spFilter, setSpFilter] = useState<FsFilter>('all');
+  const [panelView, setPanelView] = useState<'terminal' | 'graph'>('terminal');
+  const [graphDoc, setGraphDoc] = useState<GraphDocument | null>(null);
+  const [graphError, setGraphError] = useState('');
   // Changes-filter resource expansion, keyed per table id so it survives the
   // single→promotion/parallel branch switch that remounts ResourceChangeTable.
   const [rctExpanded, setRctExpanded] = useState<Record<string, string | null>>({});
@@ -239,10 +251,14 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const [retryOpen, setRetryOpen] = useState(false);
   const [approvalPending, setApprovalPending] = useState(false);
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+  const [approvalDeadline, setApprovalDeadline] = useState<number | null>(null);
+  const [approvalTimeoutSeconds, setApprovalTimeoutSeconds] = useState(300);
+  const [clock, setClock] = useState(() => Date.now());
 
   const panelRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
   const fsBodyRef = useRef<HTMLDivElement>(null);
+  const rerunMenuRef = useRef<HTMLDetailsElement>(null);
   // Edge-triggered approval gate state (single source of truth in runStatus.ts).
   // Held in a ref so re-renders driven by streaming output don't re-open a gate
   // the user already answered.
@@ -295,6 +311,49 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     if (panelRef.current) { panelRef.current.style.width = ''; panelRef.current.style.height = ''; }
   }, [dock]);
 
+  useEffect(() => {
+    api.get<WebSettings>('/api/web/settings')
+      .then(settings => setApprovalTimeoutSeconds(settings.approvalTimeoutSeconds))
+      .catch(() => {});
+  }, []);
+
+  const savedPlanDeadline = run?.savedPlanExpiresAt ? new Date(run.savedPlanExpiresAt).getTime() : null;
+  const reviewedPlanAvailable = !!run
+    && run.request?.command === 'plan'
+    && run.status === 'success'
+    && run.savedPlanReady
+    && (savedPlanDeadline === null || savedPlanDeadline > clock);
+  const timerActive = approvalPending || (savedPlanDeadline !== null && savedPlanDeadline > clock);
+  useEffect(() => {
+    if (!timerActive) return;
+    const timer = window.setInterval(() => setClock(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [timerActive]);
+
+  useEffect(() => {
+    if (!reviewedPlanAvailable) setConfirmApplyPlan(false);
+  }, [reviewedPlanAvailable]);
+
+  useEffect(() => {
+    function closeRerunMenu(event: MouseEvent | KeyboardEvent) {
+      const menu = rerunMenuRef.current;
+      if (!menu?.open) return;
+      if (event instanceof KeyboardEvent && event.key === 'Escape') {
+        menu.removeAttribute('open');
+        return;
+      }
+      if (event instanceof MouseEvent && !menu.contains(event.target as Node)) {
+        menu.removeAttribute('open');
+      }
+    }
+    document.addEventListener('mousedown', closeRerunMenu);
+    document.addEventListener('keydown', closeRerunMenu);
+    return () => {
+      document.removeEventListener('mousedown', closeRerunMenu);
+      document.removeEventListener('keydown', closeRerunMenu);
+    };
+  }, []);
+
   // Reset view-related state when the selected run changes.
   const runId = run?.id ?? null;
   useEffect(() => {
@@ -304,8 +363,29 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     setFullscreen(null);
     setSpSearch('');
     setSpFilter('all');
+    setPanelView('terminal');
+    setGraphDoc(null);
+    setGraphError('');
     setRctExpanded({});
+    setApprovalDeadline(null);
   }, [runId]);
+
+  useEffect(() => {
+    if (!run?.hasGraph && panelView === 'graph') {
+      setPanelView('terminal');
+    }
+  }, [run?.hasGraph, panelView]);
+
+  useEffect(() => {
+    if (!runId || panelView !== 'graph') return;
+    let active = true;
+    const load = () => graphApi.get(runId)
+      .then(doc => { if (active) { setGraphDoc(doc); setGraphError(''); } })
+      .catch(e => { if (active) { setGraphDoc(null); setGraphError(e instanceof Error ? e.message : 'Graph unavailable.'); } });
+    load();
+    const timer = run?.status === 'running' ? window.setInterval(load, 1200) : undefined;
+    return () => { active = false; if (timer) window.clearInterval(timer); };
+  }, [runId, panelView, run?.status]);
 
   // Props that make ResourceChangeTable a controlled component for a given table.
   const rctProps = useCallback((tableId: string) => ({
@@ -520,14 +600,40 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     const next = updateApprovalGate(prev, lines, run?.id);
     if (next.runId !== prev.runId) answeredSeenRef.current = 0; // new run → forget answers
     gateRef.current = next;
-    setApprovalPending(approvalGateVisible(next, answeredSeenRef.current));
-  }, [lines, run?.id]);
+    const visible = approvalGateVisible(next, answeredSeenRef.current);
+    setApprovalPending(visible);
+    if (visible && (next.seenCount > prev.seenCount || next.runId !== prev.runId)) {
+      const serverDeadline = run?.approvalExpiresAt ? new Date(run.approvalExpiresAt).getTime() : NaN;
+      setApprovalDeadline(Number.isFinite(serverDeadline)
+        ? serverDeadline
+        : Date.now() + approvalTimeoutSeconds * 1000);
+    }
+  }, [lines, run?.id, run?.approvalExpiresAt, approvalTimeoutSeconds]);
+
+  useEffect(() => {
+    if (approvalPending && approvalDeadline === null) {
+      setApprovalDeadline(Date.now() + approvalTimeoutSeconds * 1000);
+    }
+  }, [approvalPending, approvalDeadline, approvalTimeoutSeconds]);
+
+  useEffect(() => {
+    if (!approvalPending || !run?.approvalExpiresAt) return;
+    const serverDeadline = new Date(run.approvalExpiresAt).getTime();
+    if (Number.isFinite(serverDeadline)) setApprovalDeadline(serverDeadline);
+  }, [approvalPending, run?.approvalExpiresAt]);
+
+  useEffect(() => {
+    if (!approvalPending || approvalDeadline === null || clock < approvalDeadline) return;
+    gateRef.current = { ...gateRef.current, pending: false };
+    setApprovalPending(false);
+  }, [approvalPending, approvalDeadline, clock]);
 
   // Force-clear the gate when a run finishes (no more input possible).
   useEffect(() => {
     if (!run || run.status !== 'running') {
       gateRef.current = { ...gateRef.current, pending: false };
       setApprovalPending(false);
+      setApprovalDeadline(null);
     }
   }, [run?.status]);
 
@@ -538,6 +644,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     answeredSeenRef.current = gateRef.current.seenCount;
     gateRef.current = { ...gateRef.current, pending: false };
     setApprovalPending(false);
+    setApprovalDeadline(null);
     setApprovalSubmitting(true);
     try {
       await api.sendRunInput(run.id, value);
@@ -607,6 +714,9 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             <div className="sp-approval-title">
               Approval required
               <span className={`sp-approval-cmd${ctx.destructive ? ' bad' : ''}`}>{verb}</span>
+              {approvalDeadline !== null && (
+                <span className="sp-approval-countdown">Expires in {countdownLabel(approvalDeadline, clock)}</span>
+              )}
             </div>
             <div className="sp-approval-sub">
               Review the plan below, then choose whether to {verb} these changes{ctx.env ? <> to <strong>{ctx.env}</strong></> : null}.
@@ -662,6 +772,29 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
       ? origOrder.filter(n => failedNames.includes(n))
       : failedNames;
     onRerun({ ...run, request: { ...run.request, envFilter: failedNames.join(','), promotionOrder } });
+  }
+
+  function rerunAs(nextCommand: string) {
+    if (!run || !onRerun) return;
+    if (nextCommand === command) {
+      onRerun(run);
+      return;
+    }
+    const sequential = nextCommand === 'apply' || nextCommand === 'destroy' || nextCommand === 'auto';
+    onRerun({
+      ...run,
+      command: nextCommand,
+      request: {
+        ...run.request,
+        command: nextCommand,
+        extraArgs: [],
+        parallel: sequential ? false : run.request.parallel,
+        autoApprove: nextCommand === 'apply' || nextCommand === 'auto' ? run.request.autoApprove : false,
+        planRunId: undefined,
+        lockIds: undefined,
+        importAddrs: undefined,
+      },
+    });
   }
 
   function openFullscreen(env: string, profile: string, sectionName: string | null) {
@@ -1061,15 +1194,37 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                       </>
                     ) : (
                       <>
-                        {onApplyPlan && run.request?.command === 'plan' && run.status === 'success' && run.savedPlanReady && (
-                          <button className="btn btn-primary btn-sm" onClick={() => setConfirmApplyPlan(true)}>{I.check}Apply reviewed plan</button>
+                        {onApplyPlan && reviewedPlanAvailable && (
+                          <button className="btn btn-primary btn-sm" onClick={() => setConfirmApplyPlan(true)}>
+                            {I.check}Apply reviewed plan
+                            {savedPlanDeadline !== null && <small className="reviewed-plan-countdown">{countdownLabel(savedPlanDeadline, clock)}</small>}
+                          </button>
                         )}
                         {onRerun && fail > 0 && (
                       <button className="btn btn-danger-outline btn-sm" onClick={retryFailed} title={`Re-run ${fail} failed target${fail === 1 ? '' : 's'}`}>
                         {I.retry}Retry failed
                       </button>
                     )}
-                    {onRerun && <button className="btn btn-normal btn-sm" onClick={() => onRerun(run)}>{I.refresh}Re-run</button>}
+                    {onRerun && (
+                      <details className="rerun-menu" ref={rerunMenuRef}>
+                        <summary className="btn btn-normal btn-sm">{I.refresh}Re-run{I.chev}</summary>
+                        <div className="rerun-menu-pop">
+                          {[command, ...RERUN_COMMANDS.filter(item => item !== command)].map(item => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => {
+                                rerunMenuRef.current?.removeAttribute('open');
+                                rerunAs(item);
+                              }}
+                            >
+                              <span>Run <strong>{item}</strong></span>
+                              {item === command && <small>same command</small>}
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                         {run.reportPath && (
                           <button className="btn btn-normal btn-sm" onClick={() => navigate({ id: 'report', name: run.reportPath! })}>{I.report}View report</button>
                         )}
@@ -1117,7 +1272,14 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                   })}
                 </div>
 
-                <div className="sp-filter-bar">
+                <div className="sp-view-tabs">
+                  <button className={panelView === 'terminal' ? 'active' : ''} onClick={() => setPanelView('terminal')}>Terminal</button>
+                  {run.hasGraph && <button className={panelView === 'graph' ? 'active' : ''} onClick={() => setPanelView('graph')}>Graph</button>}
+                </div>
+
+                {panelView === 'terminal' ? (
+                  <>
+                  <div className="sp-filter-bar">
                   <div className="sp-search-wrap">
                     <span className="sp-search-icon">{I.search}</span>
                     <input
@@ -1153,6 +1315,12 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                 {output}
 
                 {approvalBar('sp')}
+                  </>
+                ) : graphDoc ? (
+                  <GraphView document={graphDoc} compact onOpenFullPage={() => navigate({ id: 'graph', runId: run.id })} />
+                ) : (
+                  <div className="sp-graph-empty">{graphError || 'Loading graph…'}</div>
+                )}
               </div>
             </>
           )}

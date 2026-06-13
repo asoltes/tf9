@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/andres/tf9/internal/config"
+	graphdata "github.com/andres/tf9/internal/graph"
 	"github.com/andres/tf9/internal/report"
 	"github.com/andres/tf9/internal/runner"
 )
@@ -49,32 +50,63 @@ type RunRequest struct {
 
 // Run represents a single terraform execution.
 type Run struct {
-	ID             string             `json:"id"`
-	StartedAt      time.Time          `json:"startedAt"`
-	FinishedAt     *time.Time         `json:"finishedAt,omitempty"`
-	Status         RunStatus          `json:"status"`
-	Request        RunRequest         `json:"request"`
-	ReportPath     string             `json:"reportPath,omitempty"`
-	Results        []report.EnvResult `json:"results,omitempty"`
-	GitBranch      string             `json:"gitBranch,omitempty"`
-	SavedPlanReady bool               `json:"savedPlanReady,omitempty"`
+	ID                 string             `json:"id"`
+	StartedAt          time.Time          `json:"startedAt"`
+	FinishedAt         *time.Time         `json:"finishedAt,omitempty"`
+	Status             RunStatus          `json:"status"`
+	Request            RunRequest         `json:"request"`
+	ReportPath         string             `json:"reportPath,omitempty"`
+	Results            []report.EnvResult `json:"results,omitempty"`
+	GitBranch          string             `json:"gitBranch,omitempty"`
+	SavedPlanReady     bool               `json:"savedPlanReady,omitempty"`
+	SavedPlanExpiresAt *time.Time         `json:"savedPlanExpiresAt,omitempty"`
 
-	AwaitingInput bool `json:"awaitingInput"` // true while terraform is blocked on the approval prompt
+	AwaitingInput     bool       `json:"awaitingInput"` // true while terraform is blocked on the approval prompt
+	ApprovalExpiresAt *time.Time `json:"approvalExpiresAt,omitempty"`
 
-	mu      sync.RWMutex
-	lines   []string
-	cancel  context.CancelFunc
-	inputCh chan string // receives "yes"/"no" from the frontend when terraform prompts
-	denied  bool        // set when the user explicitly sends "no" to the approval gate
-	forced  bool        // set by ForceKill so the goroutine's finish logic does not override status
-	pgid    int         // current terraform process-group leader PID, for force-kill
+	mu                  sync.RWMutex
+	lines               []string
+	cancel              context.CancelFunc
+	inputCh             chan string // receives "yes"/"no" from the frontend when terraform prompts
+	approvalTimeout     time.Duration
+	reviewedPlanTimeout time.Duration
+	approvalGeneration  uint64
+	denied              bool // set when the user explicitly sends "no" to the approval gate
+	forced              bool // set by ForceKill so the goroutine's finish logic does not override status
+	pgid                int  // current terraform process-group leader PID, for force-kill
 }
 
 // setAwaiting records whether terraform is currently blocked on the approval gate.
 func (r *Run) setAwaiting(waiting bool) {
 	r.mu.Lock()
+	r.approvalGeneration++
+	generation := r.approvalGeneration
 	r.AwaitingInput = waiting
+	r.ApprovalExpiresAt = nil
+	timeout := r.approvalTimeout
+	if waiting && timeout > 0 {
+		expiresAt := time.Now().UTC().Add(timeout)
+		r.ApprovalExpiresAt = &expiresAt
+	}
 	r.mu.Unlock()
+	if waiting && timeout > 0 {
+		go func() {
+			timer := time.NewTimer(timeout)
+			defer timer.Stop()
+			<-timer.C
+			r.expireApproval(generation)
+		}()
+	}
+}
+
+func (r *Run) expireApproval(generation uint64) {
+	r.mu.RLock()
+	active := r.AwaitingInput && r.approvalGeneration == generation
+	r.mu.RUnlock()
+	if !active || !r.SendInput("no") {
+		return
+	}
+	r.appendLine("  [DENIED] approval timed out before input was received")
 }
 
 // setPgid records the PID of the currently running terraform process group.
@@ -112,21 +144,19 @@ func (r *Run) appendLine(line string) {
 // SendInput feeds a user response ("yes" or "no") to a run that is waiting
 // for terraform interactive approval. Returns false if the run is not waiting.
 func (r *Run) SendInput(value string) bool {
-	r.mu.RLock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	ch := r.inputCh
-	awaiting := r.AwaitingInput
-	r.mu.RUnlock()
-	if ch == nil || !awaiting {
+	if ch == nil || !r.AwaitingInput {
 		return false
 	}
 	select {
 	case ch <- value:
-		r.mu.Lock()
 		r.AwaitingInput = false
+		r.ApprovalExpiresAt = nil
 		if strings.TrimSpace(value) != "yes" {
 			r.denied = true
 		}
-		r.mu.Unlock()
 		return true
 	default:
 		return false
@@ -154,16 +184,17 @@ func (w *lineWriter) Write(p []byte) (int, error) {
 
 // runRecord is the on-disk representation of a finished Run.
 type runRecord struct {
-	ID             string             `json:"id"`
-	StartedAt      time.Time          `json:"startedAt"`
-	FinishedAt     *time.Time         `json:"finishedAt,omitempty"`
-	Status         RunStatus          `json:"status"`
-	Request        RunRequest         `json:"request"`
-	ReportPath     string             `json:"reportPath,omitempty"`
-	Results        []report.EnvResult `json:"results,omitempty"`
-	Lines          []string           `json:"lines,omitempty"`
-	GitBranch      string             `json:"gitBranch,omitempty"`
-	SavedPlanReady bool               `json:"savedPlanReady,omitempty"`
+	ID                 string             `json:"id"`
+	StartedAt          time.Time          `json:"startedAt"`
+	FinishedAt         *time.Time         `json:"finishedAt,omitempty"`
+	Status             RunStatus          `json:"status"`
+	Request            RunRequest         `json:"request"`
+	ReportPath         string             `json:"reportPath,omitempty"`
+	Results            []report.EnvResult `json:"results,omitempty"`
+	Lines              []string           `json:"lines,omitempty"`
+	GitBranch          string             `json:"gitBranch,omitempty"`
+	SavedPlanReady     bool               `json:"savedPlanReady,omitempty"`
+	SavedPlanExpiresAt *time.Time         `json:"savedPlanExpiresAt,omitempty"`
 }
 
 const (
@@ -214,17 +245,18 @@ func (m *RunManager) loadFromDisk() {
 			}
 		}
 		run := &Run{
-			ID:             rec.ID,
-			StartedAt:      rec.StartedAt,
-			FinishedAt:     finishedAt,
-			Status:         status,
-			Request:        rec.Request,
-			ReportPath:     rec.ReportPath,
-			Results:        rec.Results,
-			GitBranch:      rec.GitBranch,
-			SavedPlanReady: rec.SavedPlanReady,
-			lines:          rec.Lines,
-			cancel:         func() {}, // no-op for restored runs
+			ID:                 rec.ID,
+			StartedAt:          rec.StartedAt,
+			FinishedAt:         finishedAt,
+			Status:             status,
+			Request:            rec.Request,
+			ReportPath:         rec.ReportPath,
+			Results:            rec.Results,
+			GitBranch:          rec.GitBranch,
+			SavedPlanReady:     rec.SavedPlanReady,
+			SavedPlanExpiresAt: rec.SavedPlanExpiresAt,
+			lines:              rec.Lines,
+			cancel:             func() {}, // no-op for restored runs
 		}
 		m.runs = append(m.runs, run)
 	}
@@ -250,16 +282,17 @@ func (m *RunManager) persist() {
 			lines = lines[len(lines)-maxPersistedLines:]
 		}
 		rec := runRecord{
-			ID:             r.ID,
-			StartedAt:      r.StartedAt,
-			FinishedAt:     r.FinishedAt,
-			Status:         r.Status,
-			Request:        r.Request,
-			ReportPath:     r.ReportPath,
-			Results:        r.Results,
-			GitBranch:      r.GitBranch,
-			SavedPlanReady: r.SavedPlanReady,
-			Lines:          lines,
+			ID:                 r.ID,
+			StartedAt:          r.StartedAt,
+			FinishedAt:         r.FinishedAt,
+			Status:             r.Status,
+			Request:            r.Request,
+			ReportPath:         r.ReportPath,
+			Results:            r.Results,
+			GitBranch:          r.GitBranch,
+			SavedPlanReady:     r.SavedPlanReady,
+			SavedPlanExpiresAt: r.SavedPlanExpiresAt,
+			Lines:              lines,
 		}
 		r.mu.RUnlock()
 		records = append(records, rec)
@@ -280,18 +313,20 @@ func (m *RunManager) persist() {
 }
 
 // Start launches a new terraform run in a background goroutine.
-func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir string) (*Run, error) {
+func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir string, web config.WebConfig) (*Run, error) {
 	m.mu.Lock()
 	m.seq++
 	id := fmt.Sprintf("run-%04d", m.seq)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultRunTimeout)
 
 	run := &Run{
-		ID:        id,
-		StartedAt: time.Now().UTC(),
-		Status:    StatusRunning,
-		Request:   req,
-		cancel:    cancel,
+		ID:                  id,
+		StartedAt:           time.Now().UTC(),
+		Status:              StatusRunning,
+		Request:             req,
+		cancel:              cancel,
+		approvalTimeout:     web.ApprovalTimeout(),
+		reviewedPlanTimeout: web.ReviewedPlanTimeout(),
 	}
 	m.runs = append(m.runs, run)
 	m.mu.Unlock()
@@ -320,6 +355,7 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 					run.Status = StatusFailed
 				}
 				run.AwaitingInput = false
+				run.ApprovalExpiresAt = nil
 				run.mu.Unlock()
 				m.persist()
 			}
@@ -352,6 +388,28 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 		}
 
 		run.GitBranch = gitBranch(searchRoot)
+
+		targetGroups := make(map[string]string)
+		for _, target := range explicitTargets {
+			group := strings.TrimSpace(target.Group)
+			if group == "" {
+				group = strings.Split(strings.Trim(target.Directory, "/"), "/")[0]
+			}
+			if group == "" {
+				group = target.Name
+			}
+			targetGroups[target.Name] = group
+		}
+		var graphMu sync.Mutex
+		onGraphReady := func(target, dir, planFile, command, output string, env []string) error {
+			targetGraph, err := graphdata.Extract(planFile, dir, repoLabel, targetGroups[target], target, command, output, env)
+			if err != nil {
+				return err
+			}
+			graphMu.Lock()
+			defer graphMu.Unlock()
+			return graphdata.SaveTarget(graphPath(id), id, repoLabel, targetGroups[target], target, targetGraph)
+		}
 
 		// Resolve Infracost settings when cost estimation is requested. A missing
 		// key is non-fatal: warn into the stream and run without cost.
@@ -393,6 +451,7 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 			Currency:        infracostCurrency,
 			SavePlanDir:     savePlanDir,
 			ApplyPlanFiles:  applyPlanFiles,
+			OnGraphReady:    onGraphReady,
 		}
 
 		var results []report.EnvResult
@@ -470,6 +529,7 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 				Currency:        infracostCurrency,
 				SavePlanDir:     savePlanDir,
 				ApplyPlanFiles:  applyPlanFiles,
+				OnGraphReady:    onGraphReady,
 			})
 		}
 
@@ -484,6 +544,7 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 		now := time.Now().UTC()
 		run.mu.Lock()
 		run.AwaitingInput = false
+		run.ApprovalExpiresAt = nil
 		if !run.forced {
 			// A force kill has already finalized the record; don't override it.
 			run.FinishedAt = &now
@@ -501,6 +562,8 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 				run.Status = StatusSuccess
 				if req.Command == "plan" && len(results) > 0 {
 					run.SavedPlanReady = true
+					expiresAt := now.Add(run.reviewedPlanTimeout)
+					run.SavedPlanExpiresAt = &expiresAt
 				}
 			}
 		}
@@ -524,6 +587,10 @@ func savedPlanPath(runID, target string) string {
 	return runner.SavedPlanFilePath(filepath.Join(config.SavedPlanDir(), runID), target)
 }
 
+func graphPath(runID string) string {
+	return filepath.Join(config.SavedPlanDir(), runID, "graph.json")
+}
+
 // PrepareReviewedApply validates and replaces an apply request with the exact
 // target selection and execution metadata from a successful reviewed plan.
 func (m *RunManager) PrepareReviewedApply(req RunRequest) (RunRequest, error) {
@@ -538,6 +605,9 @@ func (m *RunManager) PrepareReviewedApply(req RunRequest) (RunRequest, error) {
 	defer planRun.mu.RUnlock()
 	if planRun.Status != StatusSuccess || planRun.Request.Command != "plan" || !planRun.SavedPlanReady {
 		return req, fmt.Errorf("run %q does not have a successful saved plan", req.PlanRunID)
+	}
+	if planRun.SavedPlanExpiresAt != nil && !time.Now().UTC().Before(*planRun.SavedPlanExpiresAt) {
+		return req, fmt.Errorf("reviewed plan from run %q has expired; run plan again", req.PlanRunID)
 	}
 	targets := make([]string, 0, len(planRun.Results))
 	for _, result := range planRun.Results {
@@ -726,6 +796,7 @@ func (m *RunManager) ForceKill(id string) bool {
 	run.Status = StatusCancelled
 	run.FinishedAt = &now
 	run.AwaitingInput = false
+	run.ApprovalExpiresAt = nil
 	pgid := run.pgid
 	cancel := run.cancel
 	run.mu.Unlock()

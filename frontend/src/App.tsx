@@ -15,6 +15,7 @@ import LogsPage from './pages/Logs';
 import Help from './pages/Help';
 import Overview from './pages/Overview';
 import ProfileMappingsPage from './pages/ProfileMappings';
+import GraphPage from './pages/Graph';
 
 const RepositoryWorkspace = lazy(() => import('./pages/RepositoryWorkspace'));
 
@@ -59,6 +60,7 @@ function PageContent({
     case 'profile-mappings':  return <ProfileMappingsPage />;
     case 'reports':           return <ReportsPage />;
     case 'report':   return <ReportViewer name={page.name} mode={mode} />;
+    case 'graph':    return <GraphPage runId={page.runId} />;
     case 'cost':     return <CostPage />;
     case 'logs':     return <LogsPage />;
     case 'help':     return <Help />;
@@ -69,6 +71,8 @@ function parseHash(raw: string): Page {
   const h = raw.replace(/^#/, '');
   if (!h || h === 'overview') return { id: 'overview' };
   if (h.startsWith('report/')) return { id: 'report', name: h.slice(7) };
+  if (h === 'graph') return { id: 'graph' };
+  if (h.startsWith('graph?')) return { id: 'graph', runId: new URLSearchParams(h.slice(h.indexOf('?') + 1)).get('run') || undefined };
   if (h === 'workspace') return { id: 'workspace' };
   if (h.startsWith('workspace/')) return { id: 'workspace', name: decodeURIComponent(h.slice(10)) };
   if (h.startsWith('repo/')) return { id: 'workspace', name: decodeURIComponent(h.slice(5)) };
@@ -81,6 +85,7 @@ function parseHash(raw: string): Page {
     case 'config':            return { id: 'config' };
     case 'profile-mappings':  return { id: 'profile-mappings' };
     case 'reports':           return { id: 'reports' };
+    case 'graph':             return { id: 'graph' };
     case 'cost':              return { id: 'cost' };
     case 'logs':              return { id: 'logs' };
     case 'help':              return { id: 'help' };
@@ -90,6 +95,7 @@ function parseHash(raw: string): Page {
 
 function pageToHash(p: Page): string {
   if (p.id === 'report') return `#report/${p.name}`;
+  if (p.id === 'graph') return p.runId ? `#graph?run=${encodeURIComponent(p.runId)}` : '#graph';
   if (p.id === 'workspace') return p.name ? `#workspace/${encodeURIComponent(p.name)}` : '#workspace';
   if (p.id === 'runs' && p.newRun) return '#runs/new';
   if (p.id === 'runs' && p.filterQuery) return `#runs${p.filterQuery}`;

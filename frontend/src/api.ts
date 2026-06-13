@@ -32,12 +32,19 @@ export const api = {
     req<{ status: string }>('POST', `/api/runs/${encodeURIComponent(runId)}/kill`, {}),
 };
 
+export const graphApi = {
+  get: (runId: string) =>
+    api.get<import('./types').GraphDocument>(`/api/runs/${encodeURIComponent(runId)}/graph`),
+};
+
 // ── Shared YAML configuration ─────────────────────────────────────
 
 export const configApi = {
   get:  () => api.get<{ path: string; content: string; revision: string }>('/api/config'),
   save: (content: string, revision: string) =>
     api.put<{ revision: string }>('/api/config', { content, revision }),
+  format: (content: string) =>
+    api.post<{ content: string }>('/api/config/format', { content }),
 };
 
 // ── Profile mappings ──────────────────────────────────────────────

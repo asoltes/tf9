@@ -101,12 +101,10 @@ function renderAnsiLine(text: string, q: string, keyBase: string): ReactNode {
 }
 
 // ── status / helpers ────────────────────────────────────────────────────────
-interface StatusInfo { cls: string; label: string; dot: string; }
-function statusOf(r: ReportEnvResult): StatusInfo {
-  if (r.failed) return { cls: 'sb-failed', label: 'Failed', dot: 'var(--rv-red)' };
-  if (r.noChanges || (r.add === 0 && r.change === 0 && r.destroy === 0)) return { cls: 'sb-none', label: 'No changes', dot: 'var(--rv-faint)' };
-  if (r.destroy > 0) return { cls: 'sb-destroy', label: 'Has destroys', dot: 'var(--rv-red)' };
-  return { cls: 'sb-changes', label: 'Changes', dot: 'var(--rv-green)' };
+function statusDot(r: ReportEnvResult): string {
+  if (r.failed || r.destroy > 0) return 'var(--rv-red)';
+  if (r.noChanges || (r.add === 0 && r.change === 0 && r.destroy === 0)) return 'var(--rv-faint)';
+  return 'var(--rv-green)';
 }
 
 function fmtTime(iso?: string): string {
@@ -199,7 +197,7 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
   onScrollRef: (el: HTMLDivElement | null) => void;
 }) {
   const toast = useToast();
-  const s = statusOf(result);
+  const dot = statusDot(result);
   const [filter, setFilter] = useState<RvFilter>('all');
   const lines = useMemo(() => (result.output || '').split('\n').filter(line => {
     const text = stripAnsi(line).trim();
@@ -269,7 +267,7 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
       className={`env-block${open ? ' open' : ''}${hidden ? ' hidden' : ''}`}
     >
       <div className="env-hdr" onClick={onToggle}>
-        <span className="env-dot-lg" style={{ background: s.dot }} />
+        <span className="env-dot-lg" style={{ background: dot }} />
         <div className="env-hdr-left">
           <span className="env-nm">{result.env}</span>
           {result.profile && <span className="env-pr">{result.profile}</span>}
@@ -286,7 +284,9 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
             </span>
           )}
         </div>
-        <span className={`sb ${s.cls}`}><span className="d" />{s.label}</span>
+        <span className={`sb ${result.applied ? 'sb-changes' : 'sb-none'}`}>
+          <span className="d" />Applied: {result.applied ? 'True' : 'False'}
+        </span>
         <span className="chevron">{I.chevron}</span>
       </div>
       <div className="env-body">
@@ -300,7 +300,7 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
                 className={`rv-fp${filter === f ? ' active' : ''}`}
                 onClick={e => { e.stopPropagation(); setFilter(f); }}
               >
-                {f === 'all' ? 'All' : f === 'changes' ? 'Changes' : f === 'errors' ? 'Errors' : 'Summary'}
+                {f === 'all' ? 'Raw' : f === 'changes' ? 'Changes' : f === 'errors' ? 'Errors' : 'Summary'}
               </button>
             ))}
           </span>
@@ -528,7 +528,7 @@ export default function ReportViewer({ name }: { name: string; mode?: 'light' | 
                   </thead>
                   <tbody>
                     {results.map(r => {
-                      const s = statusOf(r);
+                      const dot = statusDot(r);
                       const tot = r.add + r.change + r.destroy || 1;
                       const n = (val: number, sym: string, cls: string) =>
                         val > 0 ? <span className={cls}>{sym}{val}</span> : <span className="n-zero">{sym}0</span>;
@@ -536,7 +536,7 @@ export default function ReportViewer({ name }: { name: string; mode?: 'light' | 
                         <tr key={r.env} onClick={() => jumpTo(r.env)}>
                           <td>
                             <span className="env-link">
-                              <span className="env-dot" style={{ background: s.dot }} />
+                              <span className="env-dot" style={{ background: dot }} />
                               <span className="env-name">{r.env}</span>
                             </span>
                           </td>

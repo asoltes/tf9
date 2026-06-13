@@ -94,6 +94,10 @@ version: 1
 web:
   # Require web applies to use the exact plan saved by a reviewed Plan run.
   saved_plan_apply: true
+  # Automatically deny an unattended Terraform approval prompt after 5 minutes.
+  approval_timeout_seconds: 300
+  # Keep the Apply reviewed plan action available for 1 hour.
+  reviewed_plan_timeout_seconds: 3600
 
 repositories:
   - name: infrastructure

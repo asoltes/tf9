@@ -23,6 +23,7 @@ import (
 	"github.com/andres/tf9/internal/config"
 	"github.com/andres/tf9/internal/cost"
 	"github.com/andres/tf9/internal/git"
+	graphdata "github.com/andres/tf9/internal/graph"
 	"github.com/andres/tf9/internal/report"
 )
 
@@ -55,7 +56,11 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
 			return
 		}
-		jsonOK(w, map[string]bool{"savedPlanApply": cfg.Web.SavedPlanApply})
+		jsonOK(w, map[string]any{
+			"savedPlanApply":             cfg.Web.SavedPlanApply,
+			"approvalTimeoutSeconds":     int(cfg.Web.ApprovalTimeout() / time.Second),
+			"reviewedPlanTimeoutSeconds": int(cfg.Web.ReviewedPlanTimeout() / time.Second),
+		})
 	})
 	mux.HandleFunc("/api/runs", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -80,6 +85,10 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 		}
 		if len(parts) == 2 && parts[1] == "kill" && r.Method == http.MethodPost {
 			forceKillRun(w, r, mgr, id)
+			return
+		}
+		if len(parts) == 2 && parts[1] == "graph" && r.Method == http.MethodGet {
+			getRunGraph(w, r, mgr, id)
 			return
 		}
 		switch r.Method {
@@ -203,6 +212,13 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 		default:
 			methodNotAllowed(w)
 		}
+	})
+	mux.HandleFunc("/api/config/format", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			methodNotAllowed(w)
+			return
+		}
+		formatConfigSource(w, r)
 	})
 
 	// Profile mappings
@@ -647,6 +663,22 @@ func saveConfigSource(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]string{"revision": revision})
 }
 
+func formatConfigSource(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonErr(w, "bad_request", "invalid request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	content, err := config.FormatRaw(body.Content)
+	if err != nil {
+		jsonErr(w, "invalid_yaml", err.Error(), http.StatusBadRequest)
+		return
+	}
+	jsonOK(w, map[string]string{"content": content})
+}
+
 // paginated is the standard envelope for list endpoints.
 type paginated struct {
 	Items any `json:"items"`
@@ -742,7 +774,7 @@ func startRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, reportDir
 		}
 	}
 
-	run, err := mgr.Start(req, searchRoot, repoLabel, reportDir)
+	run, err := mgr.Start(req, searchRoot, repoLabel, reportDir, cfg.Web)
 	if err != nil {
 		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
 		return
@@ -837,20 +869,22 @@ func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
 
 func listRuns(w http.ResponseWriter, r *http.Request, mgr *RunManager) {
 	type runSummary struct {
-		ID             string     `json:"id"`
-		Status         RunStatus  `json:"status"`
-		Command        string     `json:"command"`
-		EnvFilter      string     `json:"envFilter"`
-		Repo           string     `json:"repo"`
-		GitBranch      string     `json:"gitBranch,omitempty"`
-		StartedAt      time.Time  `json:"startedAt"`
-		FinishedAt     *time.Time `json:"finishedAt,omitempty"`
-		TargetDirs     []string   `json:"targetDirs"`
-		Request        RunRequest `json:"request"`
-		Add            int        `json:"add"`
-		Change         int        `json:"change"`
-		Destroy        int        `json:"destroy"`
-		SavedPlanReady bool       `json:"savedPlanReady,omitempty"`
+		ID                 string     `json:"id"`
+		Status             RunStatus  `json:"status"`
+		Command            string     `json:"command"`
+		EnvFilter          string     `json:"envFilter"`
+		Repo               string     `json:"repo"`
+		GitBranch          string     `json:"gitBranch,omitempty"`
+		StartedAt          time.Time  `json:"startedAt"`
+		FinishedAt         *time.Time `json:"finishedAt,omitempty"`
+		TargetDirs         []string   `json:"targetDirs"`
+		Request            RunRequest `json:"request"`
+		Add                int        `json:"add"`
+		Change             int        `json:"change"`
+		Destroy            int        `json:"destroy"`
+		SavedPlanReady     bool       `json:"savedPlanReady,omitempty"`
+		SavedPlanExpiresAt *time.Time `json:"savedPlanExpiresAt,omitempty"`
+		HasGraph           bool       `json:"hasGraph,omitempty"`
 	}
 	match, err := parseRunFilter(r)
 	if err != nil {
@@ -869,20 +903,22 @@ func listRuns(w http.ResponseWriter, r *http.Request, mgr *RunManager) {
 			destroy += res.Destroy
 		}
 		out[i] = runSummary{
-			ID:             run.ID,
-			Status:         run.Status,
-			Command:        run.Request.Command,
-			EnvFilter:      run.Request.EnvFilter,
-			Repo:           run.Request.Repo,
-			GitBranch:      run.GitBranch,
-			StartedAt:      run.StartedAt,
-			FinishedAt:     run.FinishedAt,
-			TargetDirs:     resolveTargetDirs(run.Request),
-			Request:        run.Request,
-			Add:            add,
-			Change:         change,
-			Destroy:        destroy,
-			SavedPlanReady: run.SavedPlanReady,
+			ID:                 run.ID,
+			Status:             run.Status,
+			Command:            run.Request.Command,
+			EnvFilter:          run.Request.EnvFilter,
+			Repo:               run.Request.Repo,
+			GitBranch:          run.GitBranch,
+			StartedAt:          run.StartedAt,
+			FinishedAt:         run.FinishedAt,
+			TargetDirs:         resolveTargetDirs(run.Request),
+			Request:            run.Request,
+			Add:                add,
+			Change:             change,
+			Destroy:            destroy,
+			SavedPlanReady:     run.SavedPlanReady,
+			SavedPlanExpiresAt: run.SavedPlanExpiresAt,
+			HasGraph:           graphExists(run.ID),
 		}
 		run.mu.RUnlock()
 	}
@@ -897,32 +933,79 @@ func getRun(w http.ResponseWriter, _ *http.Request, mgr *RunManager, id string) 
 	}
 	run.mu.RLock()
 	resp := struct {
-		ID             string             `json:"id"`
-		StartedAt      time.Time          `json:"startedAt"`
-		FinishedAt     *time.Time         `json:"finishedAt,omitempty"`
-		Status         RunStatus          `json:"status"`
-		Request        RunRequest         `json:"request"`
-		ReportPath     string             `json:"reportPath,omitempty"`
-		Results        []report.EnvResult `json:"results,omitempty"`
-		GitBranch      string             `json:"gitBranch,omitempty"`
-		TargetDirs     []string           `json:"targetDirs"`
-		Lines          []string           `json:"lines"`
-		SavedPlanReady bool               `json:"savedPlanReady,omitempty"`
+		ID                 string             `json:"id"`
+		StartedAt          time.Time          `json:"startedAt"`
+		FinishedAt         *time.Time         `json:"finishedAt,omitempty"`
+		Status             RunStatus          `json:"status"`
+		Request            RunRequest         `json:"request"`
+		ReportPath         string             `json:"reportPath,omitempty"`
+		Results            []report.EnvResult `json:"results,omitempty"`
+		GitBranch          string             `json:"gitBranch,omitempty"`
+		TargetDirs         []string           `json:"targetDirs"`
+		Lines              []string           `json:"lines"`
+		SavedPlanReady     bool               `json:"savedPlanReady,omitempty"`
+		SavedPlanExpiresAt *time.Time         `json:"savedPlanExpiresAt,omitempty"`
+		AwaitingInput      bool               `json:"awaitingInput"`
+		ApprovalExpiresAt  *time.Time         `json:"approvalExpiresAt,omitempty"`
+		HasGraph           bool               `json:"hasGraph,omitempty"`
 	}{
-		ID:             run.ID,
-		StartedAt:      run.StartedAt,
-		FinishedAt:     run.FinishedAt,
-		Status:         run.Status,
-		Request:        run.Request,
-		ReportPath:     run.ReportPath,
-		Results:        run.Results,
-		GitBranch:      run.GitBranch,
-		TargetDirs:     resolveTargetDirs(run.Request),
-		Lines:          run.lines,
-		SavedPlanReady: run.SavedPlanReady,
+		ID:                 run.ID,
+		StartedAt:          run.StartedAt,
+		FinishedAt:         run.FinishedAt,
+		Status:             run.Status,
+		Request:            run.Request,
+		ReportPath:         run.ReportPath,
+		Results:            run.Results,
+		GitBranch:          run.GitBranch,
+		TargetDirs:         resolveTargetDirs(run.Request),
+		Lines:              run.lines,
+		SavedPlanReady:     run.SavedPlanReady,
+		SavedPlanExpiresAt: run.SavedPlanExpiresAt,
+		AwaitingInput:      run.AwaitingInput,
+		ApprovalExpiresAt:  run.ApprovalExpiresAt,
+		HasGraph:           graphExists(run.ID),
 	}
 	run.mu.RUnlock()
 	jsonOK(w, resp)
+}
+
+func getRunGraph(w http.ResponseWriter, _ *http.Request, mgr *RunManager, id string) {
+	run, ok := mgr.Get(id)
+	if !ok {
+		jsonErr(w, "not_found", "run not found", http.StatusNotFound)
+		return
+	}
+	run.mu.RLock()
+	sourceID := run.ID
+	planRunID := run.Request.PlanRunID
+	run.mu.RUnlock()
+
+	data, err := os.ReadFile(graphPath(sourceID))
+	if errors.Is(err, os.ErrNotExist) && planRunID != "" {
+		sourceID = planRunID
+		data, err = os.ReadFile(graphPath(sourceID))
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		jsonErr(w, "not_found", "graph unavailable for this run", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		slog.Error("read run graph failed", "run", sourceID, "err", err)
+		jsonErr(w, "internal", "failed to read graph", http.StatusInternalServerError)
+		return
+	}
+	var doc graphdata.Document
+	if err := json.Unmarshal(data, &doc); err != nil {
+		slog.Error("parse run graph failed", "run", sourceID, "err", err)
+		jsonErr(w, "internal", "failed to parse graph", http.StatusInternalServerError)
+		return
+	}
+	jsonOK(w, doc)
+}
+
+func graphExists(runID string) bool {
+	info, err := os.Stat(graphPath(runID))
+	return err == nil && !info.IsDir()
 }
 
 func streamRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, id string) {

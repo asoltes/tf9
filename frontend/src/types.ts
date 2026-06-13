@@ -50,15 +50,63 @@ export interface Run {
   gitBranch?: string;
   targetDirs?: string[];
   awaitingInput?: boolean;
+  approvalExpiresAt?: string;
   results?: ReportEnvResult[];
   add?: number;
   change?: number;
   destroy?: number;
   savedPlanReady?: boolean;
+  savedPlanExpiresAt?: string;
+  hasGraph?: boolean;
+}
+
+export type GraphAction = 'create' | 'update' | 'delete' | 'replace' | '';
+export type GraphNodeKind = 'repository' | 'group' | 'target' | 'module' | 'managed' | 'data';
+
+export interface GraphChangeDetail {
+  path: string;
+  kind: 'added' | 'removed' | 'updated';
+  sensitive?: boolean;
+  computed?: boolean;
+  replacement?: boolean;
+}
+
+export interface GraphNode {
+  id: string;
+  kind: GraphNodeKind;
+  label: string;
+  address?: string;
+  parent?: string;
+  repo?: string;
+  group?: string;
+  target?: string;
+  action?: GraphAction;
+  changes?: GraphChangeDetail[];
+  command?: string;
+  result?: string;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  kind: 'containment' | 'dependency';
+}
+
+export interface GraphDocument {
+  runId: string;
+  repo: string;
+  revision: number;
+  updatedAt?: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  errors?: string[];
 }
 
 export interface WebSettings {
   savedPlanApply: boolean;
+  approvalTimeoutSeconds: number;
+  reviewedPlanTimeoutSeconds: number;
 }
 
 export interface Repo {
@@ -78,6 +126,9 @@ export interface RepoTarget {
 }
 
 export interface RepoConfig {
+  default_aws_profile?: string;
+  default_account_id?: string;
+  default_region?: string;
   targets: RepoTarget[];
 }
 
@@ -259,6 +310,7 @@ export type Page =
   | { id: 'profile-mappings' }
   | { id: 'reports' }
   | { id: 'report'; name: string }
+  | { id: 'graph'; runId?: string }
   | { id: 'cost' }
   | { id: 'logs' }
   | { id: 'help' };

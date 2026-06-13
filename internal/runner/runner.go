@@ -66,6 +66,7 @@ type Options struct {
 	Currency        string                // currency code for cost estimates (default USD)
 	SavePlanDir     string                // directory for per-target terraform plan -out files
 	ApplyPlanFiles  map[string]string     // target label → reviewed plan path for terraform apply
+	OnGraphReady    func(target, dir, planFile, command, output string, env []string) error
 }
 
 // ApprovalSentinel is emitted as a line to the output stream when terraform
@@ -608,6 +609,12 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 				break
 			}
 		} else {
+			if supportsGraph(opts.TfCommand) && opts.OnGraphReady != nil {
+				if graphErr := opts.OnGraphReady(env, dir, savedPlanFile, "terraform "+cmdDisplay, res.output, terraformEnv(meta)); graphErr != nil {
+					fmt.Fprintf(out, "  [WARN] graph extraction failed for %s: %v\n", env, graphErr)
+					slog.Warn("graph extraction failed", "env", env, "err", graphErr)
+				}
+			}
 			if opts.Cost && summary != nil && !summary.noChanges {
 				if cost, cerr := runInfracost(ctx, dir, costPlanFile, meta, opts); cerr != nil {
 					fmt.Fprintf(out, "  [WARN] cost estimation failed for %s: %v\n", env, cerr)
@@ -1087,17 +1094,25 @@ func runParallel(
 			if exitCode != 0 {
 				fmt.Fprintf(prefixedOut, "[FAILED] %s\n", env)
 				res.failed = true
-			} else if opts.Cost && summary != nil && !summary.noChanges {
-				if cost, cerr := runInfracost(ctx, dir, costPlanFile, meta, opts); cerr != nil {
-					fmt.Fprintf(prefixedOut, "[WARN] cost estimation failed for %s: %v\n", env, cerr)
-					slog.Warn("infracost failed", "env", env, "err", cerr)
-				} else {
-					res.cost = cost
-					fmt.Fprintf(prefixedOut, "Cost: %s %.2f/mo", cost.Currency, cost.TotalMonthly)
-					if cost.HasDiff {
-						fmt.Fprintf(prefixedOut, " (%+.2f)", cost.DiffMonthly)
+			} else {
+				if supportsGraph(opts.TfCommand) && opts.OnGraphReady != nil {
+					if graphErr := opts.OnGraphReady(env, dir, savedPlanFile, "terraform "+cmdDisplay, res.output, terraformEnv(meta)); graphErr != nil {
+						fmt.Fprintf(prefixedOut, "[WARN] graph extraction failed for %s: %v\n", env, graphErr)
+						slog.Warn("graph extraction failed", "env", env, "err", graphErr)
 					}
-					fmt.Fprintln(prefixedOut)
+				}
+				if opts.Cost && summary != nil && !summary.noChanges {
+					if cost, cerr := runInfracost(ctx, dir, costPlanFile, meta, opts); cerr != nil {
+						fmt.Fprintf(prefixedOut, "[WARN] cost estimation failed for %s: %v\n", env, cerr)
+						slog.Warn("infracost failed", "env", env, "err", cerr)
+					} else {
+						res.cost = cost
+						fmt.Fprintf(prefixedOut, "Cost: %s %.2f/mo", cost.Currency, cost.TotalMonthly)
+						if cost.HasDiff {
+							fmt.Fprintf(prefixedOut, " (%+.2f)", cost.DiffMonthly)
+						}
+						fmt.Fprintln(prefixedOut)
+					}
 				}
 			}
 
@@ -1124,6 +1139,15 @@ func runParallel(
 		}
 	}
 	return results, failed
+}
+
+func supportsGraph(command string) bool {
+	switch command {
+	case "plan", "apply", "destroy":
+		return true
+	default:
+		return false
+	}
 }
 
 // SavedPlanFilePath returns the collision-resistant plan filename for a target.

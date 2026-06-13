@@ -21,6 +21,19 @@ type nopWriteCloser struct {
 
 func (nopWriteCloser) Close() error { return nil }
 
+func TestSupportsGraph(t *testing.T) {
+	for _, command := range []string{"plan", "apply", "destroy"} {
+		if !supportsGraph(command) {
+			t.Errorf("supportsGraph(%q) = false", command)
+		}
+	}
+	for _, command := range []string{"init", "validate", "import", "state"} {
+		if supportsGraph(command) {
+			t.Errorf("supportsGraph(%q) = true", command)
+		}
+	}
+}
+
 // writeFakeBin writes an executable shell script to dir/name.
 func writeFakeBin(t *testing.T, dir, name, script string) {
 	t.Helper()

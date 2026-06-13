@@ -21,6 +21,11 @@ import (
 
 const currentVersion = 1
 
+const (
+	DefaultApprovalTimeoutSeconds     = 300
+	DefaultReviewedPlanTimeoutSeconds = 3600
+)
+
 var (
 	ErrRevisionConflict = errors.New("config changed since it was loaded")
 	pathOverride        string
@@ -78,14 +83,35 @@ type Config struct {
 }
 
 type WebConfig struct {
-	SavedPlanApply bool `yaml:"saved_plan_apply,omitempty" json:"saved_plan_apply,omitempty"`
+	SavedPlanApply             bool `yaml:"saved_plan_apply,omitempty" json:"saved_plan_apply,omitempty"`
+	ApprovalTimeoutSeconds     int  `yaml:"approval_timeout_seconds,omitempty" json:"approval_timeout_seconds,omitempty"`
+	ReviewedPlanTimeoutSeconds int  `yaml:"reviewed_plan_timeout_seconds,omitempty" json:"reviewed_plan_timeout_seconds,omitempty"`
+}
+
+func (w WebConfig) ApprovalTimeout() time.Duration {
+	seconds := w.ApprovalTimeoutSeconds
+	if seconds == 0 {
+		seconds = DefaultApprovalTimeoutSeconds
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+func (w WebConfig) ReviewedPlanTimeout() time.Duration {
+	seconds := w.ReviewedPlanTimeoutSeconds
+	if seconds == 0 {
+		seconds = DefaultReviewedPlanTimeoutSeconds
+	}
+	return time.Duration(seconds) * time.Second
 }
 
 type Repository struct {
-	Name     string       `yaml:"name" json:"name"`
-	Path     string       `yaml:"path" json:"path"`
-	Targets  []RepoTarget `yaml:"targets,omitempty" json:"targets"`
-	Disabled bool         `yaml:"disabled,omitempty" json:"disabled,omitempty"`
+	Name              string       `yaml:"name" json:"name"`
+	Path              string       `yaml:"path" json:"path"`
+	DefaultAWSProfile string       `yaml:"default_aws_profile,omitempty" json:"default_aws_profile,omitempty"`
+	DefaultAccountID  string       `yaml:"default_account_id,omitempty" json:"default_account_id,omitempty"`
+	DefaultRegion     string       `yaml:"default_region,omitempty" json:"default_region,omitempty"`
+	Targets           []RepoTarget `yaml:"targets,omitempty" json:"targets"`
+	Disabled          bool         `yaml:"disabled,omitempty" json:"disabled,omitempty"`
 }
 
 // RepoTarget maps a Terraform directory relative to its repository root.
@@ -101,7 +127,10 @@ type RepoTarget struct {
 
 // RepoConfig preserves the existing API envelope while groups are removed.
 type RepoConfig struct {
-	Targets []RepoTarget `json:"targets"`
+	DefaultAWSProfile string       `json:"default_aws_profile,omitempty"`
+	DefaultAccountID  string       `json:"default_account_id,omitempty"`
+	DefaultRegion     string       `json:"default_region,omitempty"`
+	Targets           []RepoTarget `json:"targets"`
 }
 
 // SetPath overrides the configuration path for the current process.
@@ -280,6 +309,30 @@ func ReadRaw() (path, content, revision string, err error) {
 	return path, string(data), revisionFor(data), nil
 }
 
+// FormatRaw parses YAML and returns a consistently indented document without
+// writing it. yaml.Node preserves mapping order and comments.
+func FormatRaw(content string) (string, error) {
+	var document yaml.Node
+	decoder := yaml.NewDecoder(strings.NewReader(content))
+	if err := decoder.Decode(&document); err != nil {
+		return "", fmt.Errorf("parse YAML: %w", err)
+	}
+	if len(document.Content) == 0 {
+		return "", fmt.Errorf("parse YAML: document is empty")
+	}
+
+	var formatted bytes.Buffer
+	encoder := yaml.NewEncoder(&formatted)
+	encoder.SetIndent(2)
+	if err := encoder.Encode(&document); err != nil {
+		return "", fmt.Errorf("format YAML: %w", err)
+	}
+	if err := encoder.Close(); err != nil {
+		return "", fmt.Errorf("finish formatting YAML: %w", err)
+	}
+	return formatted.String(), nil
+}
+
 // WriteRaw validates and atomically saves YAML without reformatting it.
 func WriteRaw(content, expectedRevision string) (string, error) {
 	storeMu.Lock()
@@ -408,6 +461,12 @@ func validate(cfg *Config) error {
 	default:
 		return fmt.Errorf("invalid log_level %q (expected debug, info, warn, or error)", cfg.LogLevel)
 	}
+	if cfg.Web.ApprovalTimeoutSeconds < 0 {
+		return fmt.Errorf("web.approval_timeout_seconds must be zero or greater")
+	}
+	if cfg.Web.ReviewedPlanTimeoutSeconds < 0 {
+		return fmt.Errorf("web.reviewed_plan_timeout_seconds must be zero or greater")
+	}
 	repoNames := map[string]bool{}
 	for ri := range cfg.Repositories {
 		repo := &cfg.Repositories[ri]
@@ -426,6 +485,12 @@ func validate(cfg *Config) error {
 			return fmt.Errorf("duplicate repository %q", repo.Name)
 		}
 		repoNames[repo.Name] = true
+		repo.DefaultAWSProfile = strings.TrimSpace(repo.DefaultAWSProfile)
+		repo.DefaultAccountID = strings.TrimSpace(repo.DefaultAccountID)
+		repo.DefaultRegion = strings.TrimSpace(repo.DefaultRegion)
+		if repo.DefaultAccountID != "" && !accountIDRE.MatchString(repo.DefaultAccountID) {
+			return fmt.Errorf("repository %q default_account_id must be 12 digits", repo.Name)
+		}
 
 		targetNames := map[string]bool{}
 		targetDirs := map[string]bool{}
@@ -615,6 +680,9 @@ func SaveRepoConfig(name string, repoCfg RepoConfig) error {
 	return Update(func(cfg *Config) error {
 		for i := range cfg.Repositories {
 			if cfg.Repositories[i].Name == name {
+				cfg.Repositories[i].DefaultAWSProfile = repoCfg.DefaultAWSProfile
+				cfg.Repositories[i].DefaultAccountID = repoCfg.DefaultAccountID
+				cfg.Repositories[i].DefaultRegion = repoCfg.DefaultRegion
 				cfg.Repositories[i].Targets = repoCfg.Targets
 				return nil
 			}
@@ -631,7 +699,12 @@ func LoadRepoConfig(name string) (RepoConfig, error) {
 	if !ok {
 		return RepoConfig{}, fmt.Errorf("repo %q not found", name)
 	}
-	return RepoConfig{Targets: repo.Targets}, nil
+	return RepoConfig{
+		DefaultAWSProfile: repo.DefaultAWSProfile,
+		DefaultAccountID:  repo.DefaultAccountID,
+		DefaultRegion:     repo.DefaultRegion,
+		Targets:           repo.Targets,
+	}, nil
 }
 
 func AddTarget(repoName string, target RepoTarget, after string) error {

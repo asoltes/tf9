@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Shell from '../Shell';
 import { configApi } from '../api';
+import { useNav } from '../nav';
 import './ConfigYaml.css';
 
 /* =========================================================================
@@ -20,8 +21,6 @@ const I = {
   refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>',
   save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>',
   format: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="18" y2="18"/></svg>',
-  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>',
-  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
   wrap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="3" y1="6" x2="21" y2="6"/><path d="M3 12h15a3 3 0 1 1 0 6h-4"/><polyline points="16 16 14 18 16 20"/><line x1="3" y1="18" x2="10" y2="18"/></svg>',
   err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
   warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
@@ -90,8 +89,8 @@ function validate(value: string): Problem[] {
     if (/^    groups:/.test(ln)) {
       probs.push({ line: i + 1, sev: 'err', msg: 'Repository-level "groups" is unsupported. Define each target group with its "group" field.' });
     }
-    const ai = ln.match(/^\s*account_id:\s*(\d{6,})\s*(#.*)?$/);
-    if (ai) probs.push({ line: i + 1, sev: 'warn', msg: 'Quote account_id ("' + ai[1] + '") to preserve leading zeros.' });
+    const ai = ln.match(/^\s*((?:default_)?account_id):\s*(\d{6,})\s*(#.*)?$/);
+    if (ai) probs.push({ line: i + 1, sev: 'warn', msg: 'Quote ' + ai[1] + ' ("' + ai[2] + '") to preserve leading zeros.' });
     const rn = ln.match(/^  - name:\s*(\S+)/);
     if (rn) { if (repoNames[rn[1]]) probs.push({ line: i + 1, sev: 'err', msg: 'Duplicate repository name "' + rn[1] + '".' }); repoNames[rn[1]] = true; }
   });
@@ -120,6 +119,7 @@ function validate(value: string): Problem[] {
 }
 
 export default function ConfigYaml() {
+  const { mode } = useNav();
   const [path, setPath] = useState('~/.config/tf9/config.yaml');
   const [content, setContent] = useState('');
   const [saved, setSaved] = useState('');
@@ -127,8 +127,8 @@ export default function ConfigYaml() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [curLine, setCurLine] = useState(0);
   const [pos, setPos] = useState({ line: 1, col: 1 });
-  const [edTheme, setEdTheme] = useState<'light' | 'dark'>('light');
   const [wrap, setWrap] = useState(false);
+  const [formatting, setFormatting] = useState(false);
   const [showProblems, setShowProblems] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastOn, setToastOn] = useState(false);
@@ -175,7 +175,7 @@ export default function ConfigYaml() {
   useEffect(() => { setProblems(validate(content)); }, [content]);
 
   // Re-sync transforms after render (content / theme / wrap changes).
-  useEffect(() => { syncScroll(); }, [content, edTheme, wrap, curLine, syncScroll]);
+  useEffect(() => { syncScroll(); }, [content, mode, wrap, curLine, syncScroll]);
 
   useEffect(() => {
     window.addEventListener('resize', syncScroll);
@@ -250,11 +250,17 @@ export default function ConfigYaml() {
     }
   }, [content, problems, revision, toast]);
 
-  const format = useCallback(() => {
-    const lines = content.split('\n').map((l) => l.replace(/\s+$/, ''));
-    while (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
-    setContent(lines.join('\n') + '\n');
-    toast('Formatted');
+  const format = useCallback(async () => {
+    setFormatting(true);
+    try {
+      const res = await configApi.format(content);
+      setContent(res.content);
+      toast('Document formatted');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not format document');
+    } finally {
+      setFormatting(false);
+    }
   }, [content, toast]);
 
   /* ---- goto line (problems pane click) --------------------------------- */
@@ -271,7 +277,7 @@ export default function ConfigYaml() {
     syncScroll();
   }, [updateCaret, syncScroll]);
 
-  /* ---- keydown (Tab → 2 spaces, ⌘/Ctrl-S → save) ----------------------- */
+  /* ---- keydown (Tab, save, and format shortcuts) ----------------------- */
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const inp = inpRef.current;
     if (!inp) return;
@@ -290,7 +296,11 @@ export default function ConfigYaml() {
       e.preventDefault();
       save();
     }
-  }, [save, updateCaret, syncScroll]);
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      format();
+    }
+  }, [format, save, updateCaret, syncScroll]);
 
   /* ---- gutter rows ----------------------------------------------------- */
   const lineCount = content.split('\n').length;
@@ -334,7 +344,12 @@ export default function ConfigYaml() {
           </div>
 
           <div style={{ padding: 14 }}>
-            <div className={`editor${wrap ? ' wrap' : ''}${showProblems ? ' show-problems' : ''}`} data-theme={edTheme} ref={editorRef}>
+            <div
+              className={`editor${wrap ? ' wrap' : ''}${showProblems ? ' show-problems' : ''}`}
+              data-theme={mode === 'light' ? 'light' : 'dark'}
+              data-variant={mode}
+              ref={editorRef}
+            >
               <div className="ed-main">
                 <div className="ed-gutter">
                   <div className="ed-gutter-inner" ref={gutterInnerRef}>
@@ -389,12 +404,6 @@ export default function ConfigYaml() {
                 >
                   <span style={{ display: 'flex' }} dangerouslySetInnerHTML={{ __html: I.wrap }} />
                 </span>
-                <span
-                  className="seg btn-seg"
-                  title="Toggle theme"
-                  onClick={() => setEdTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-                  dangerouslySetInnerHTML={{ __html: edTheme === 'dark' ? I.moon : I.sun }}
-                />
               </div>
 
               <div className="ed-problems">
@@ -419,11 +428,12 @@ export default function ConfigYaml() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-              <button className="btn btn-normal btn-sm" onClick={format}>
-                <span style={{ display: 'flex' }} dangerouslySetInnerHTML={{ __html: I.format }} />Format document
+              <button className="btn btn-normal btn-sm" onClick={format} disabled={formatting}>
+                <span style={{ display: 'flex' }} dangerouslySetInnerHTML={{ __html: I.format }} />
+                {formatting ? 'Formatting…' : 'Format document'}
               </button>
               <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                Validated against the tf9 schema · Tab inserts 2 spaces · ⌘S to save
+                Validated against the tf9 schema · Tab inserts 2 spaces · ⌘S to save · ⇧⌘F to format
               </span>
             </div>
           </div>

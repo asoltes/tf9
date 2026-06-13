@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Shell from '../Shell';
-import { api, awsApi } from '../api';
+import { api, awsApi, type AWSProfileDetail } from '../api';
 import type { Repo, RepoConfig, RepoTarget, BrowseResult, Paginated } from '../types';
 import {
   IconRepo, IconKey, IconGlobe, IconId, IconArrow, IconPlus, IconEdit,
@@ -29,6 +29,13 @@ const OVR_KEY = 'tf9-repo-overrides';
 const GROUP_OVR_KEY = 'tf9-group-overrides';
 
 type TargetWithGate = RepoTarget & { gated?: boolean };
+type RepoDefaults = Pick<RepoConfig, 'default_aws_profile' | 'default_account_id' | 'default_region'>;
+
+const EMPTY_REPO_DEFAULTS: RepoDefaults = {
+  default_aws_profile: '',
+  default_account_id: '',
+  default_region: '',
+};
 
 // ── localStorage overrides ────────────────────────────────────────────────
 
@@ -310,10 +317,13 @@ interface ConfigureProps {
   repo: Repo;
   targets: RepoTarget[];
   awsProfiles: string[];
+  profileDetails: Record<string, AWSProfileDetail>;
+  defaults: RepoDefaults;
   saving: boolean;
   view: 'pipeline' | 'table';
   setView: (v: 'pipeline' | 'table') => void;
   onTargetsChange: (next: RepoTarget[], persistOverrides?: boolean) => void;
+  onDefaultsChange: (next: RepoDefaults) => void;
   onSave: () => void;
   onEdit: (idx: number) => void;
   onAddStageGroup: (group: string) => void;
@@ -323,8 +333,8 @@ interface ConfigureProps {
 }
 
 function ConfigureSection({
-  repo, targets, saving, view, setView,
-  onTargetsChange, onSave, onEdit, onAddStageGroup, onDeleteTarget, onDeleteGroup, toast,
+  repo, targets, awsProfiles, profileDetails, defaults, saving, view, setView,
+  onTargetsChange, onDefaultsChange, onSave, onEdit, onAddStageGroup, onDeleteTarget, onDeleteGroup, toast,
 }: ConfigureProps) {
   const pipelineRef = useRef<HTMLDivElement>(null);
   const drag = useRef<DragState | null>(null);
@@ -443,6 +453,20 @@ function ConfigureSection({
     onTargetsChange(reorderWithinGroup(targets, gk, pos, pos + delta), true);
   }
 
+  function setDefaultProfile(profile: string) {
+    const detail = profileDetails[profile];
+    onDefaultsChange({
+      ...defaults,
+      default_aws_profile: profile,
+      default_region: detail?.region || defaults.default_region,
+      default_account_id: detail?.account_id || defaults.default_account_id,
+    });
+  }
+
+  const profileOptions = defaults.default_aws_profile && !awsProfiles.includes(defaults.default_aws_profile)
+    ? [defaults.default_aws_profile, ...awsProfiles]
+    : awsProfiles;
+
   return (
     <section id="cfgSection">
       <div className="container">
@@ -464,12 +488,52 @@ function ConfigureSection({
               </button>
             </div>
             <button className="btn btn-primary btn-sm" disabled={saving} onClick={onSave}>
-              {saving ? 'Saving…' : 'Save targets'}
+              {saving ? 'Saving…' : 'Save configuration'}
             </button>
           </div>
         </div>
 
         <div className="c-body">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 14,
+            padding: 14,
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            background: 'var(--surface-2)',
+          }}>
+            <div>
+              <label className="field-label" htmlFor="repo-default-profile">Default AWS profile</label>
+              <select id="repo-default-profile" className="sel" value={defaults.default_aws_profile || ''} onChange={e => setDefaultProfile(e.target.value)}>
+                <option value="">— select profile —</option>
+                {profileOptions.map(profile => <option key={profile} value={profile}>{profile}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="repo-default-region">Default region</label>
+              <input
+                id="repo-default-region"
+                className="inp mono"
+                value={defaults.default_region || ''}
+                onChange={e => onDefaultsChange({ ...defaults, default_region: e.target.value })}
+                placeholder="e.g. eu-west-2"
+              />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="repo-default-account">Default account ID</label>
+              <input
+                id="repo-default-account"
+                className="inp mono"
+                value={defaults.default_account_id || ''}
+                onChange={e => onDefaultsChange({ ...defaults, default_account_id: e.target.value })}
+                placeholder="Optional 12-digit account ID"
+              />
+            </div>
+            <div className="field-hint" style={{ gridColumn: '1 / -1', margin: 0 }}>
+              New pipeline targets inherit these values. Existing targets are not changed.
+            </div>
+          </div>
           <div className="pipe-toolbar" style={{ marginTop: 14 }}>
             <div className="seq-summary">
               <span style={{ fontWeight: 600, color: 'var(--text)' }}>
@@ -805,9 +869,11 @@ export default function Repos() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [repoTargets, setRepoTargets] = useState<Record<string, RepoTarget[]>>({});
   const [awsProfiles, setAwsProfiles] = useState<string[]>([]);
+  const [profileDetails, setProfileDetails] = useState<Record<string, AWSProfileDetail>>({});
 
   const [cfgRepo, setCfgRepo] = useState<Repo | null>(null);
   const [cfgTargets, setCfgTargets] = useState<RepoTarget[]>([]);
+  const [cfgDefaults, setCfgDefaults] = useState<RepoDefaults>(EMPTY_REPO_DEFAULTS);
   const [cfgError, setCfgError] = useState('');
   const [cfgSaving, setCfgSaving] = useState(false);
   const [view, setView] = useState<'pipeline' | 'table'>('pipeline');
@@ -827,6 +893,7 @@ export default function Repos() {
 
   useEffect(() => {
     awsApi.profiles().then(setAwsProfiles).catch(() => setAwsProfiles([]));
+    awsApi.profileDetails().then(details => setProfileDetails(details ?? {})).catch(() => setProfileDetails({}));
   }, []);
 
   const loadRepos = useCallback(() => {
@@ -863,6 +930,11 @@ export default function Repos() {
     setView('pipeline');
     const cfg = await api.get<RepoConfig>(`/api/repos/${encodeURIComponent(repo.name)}/config`).catch(() => ({ targets: [] } as RepoConfig));
     const targets = applyOverrides(repo.name, cfg.targets || []);
+    setCfgDefaults({
+      default_aws_profile: cfg.default_aws_profile || '',
+      default_account_id: cfg.default_account_id || '',
+      default_region: cfg.default_region || '',
+    });
     setCfgTargets(targets);
     setRepoTargets(prev => ({ ...prev, [repo.name]: targets }));
     await loadBrowse(repo.name, '');
@@ -912,7 +984,11 @@ export default function Repos() {
   async function removeRepo(name: string) {
     await api.delete(`/api/repos/${encodeURIComponent(name)}`).catch(() => {});
     setConfirmRemove(null);
-    if (cfgRepo?.name === name) { setCfgRepo(null); setCfgTargets([]); }
+    if (cfgRepo?.name === name) {
+      setCfgRepo(null);
+      setCfgTargets([]);
+      setCfgDefaults(EMPTY_REPO_DEFAULTS);
+    }
     loadRepos();
     toast(`Removed ${name}`);
   }
@@ -947,12 +1023,22 @@ export default function Repos() {
       setCfgError(`Target "${invalid.name || invalid.directory || '(unnamed)'}" needs an AWS profile before it can be saved to config.yaml.`);
       return;
     }
+    const defaultAccountID = (cfgDefaults.default_account_id || '').trim();
+    if (defaultAccountID && !/^\d{12}$/.test(defaultAccountID)) {
+      setCfgError('Default account ID must be exactly 12 digits.');
+      return;
+    }
     setCfgError('');
     setCfgSaving(true);
     try {
-      await api.put(`/api/repos/${encodeURIComponent(cfgRepo.name)}/config`, { targets: next });
+      await api.put(`/api/repos/${encodeURIComponent(cfgRepo.name)}/config`, { ...cfgDefaults, targets: next });
       const cfg = await api.get<RepoConfig>(`/api/repos/${encodeURIComponent(cfgRepo.name)}/config`);
       const saved = applyOverrides(cfgRepo.name, cfg.targets || []);
+      setCfgDefaults({
+        default_aws_profile: cfg.default_aws_profile || '',
+        default_account_id: cfg.default_account_id || '',
+        default_region: cfg.default_region || '',
+      });
       setCfgTargets(saved);
       setRepoTargets(prev => ({ ...prev, [cfgRepo.name]: saved }));
       toast(successMsg);
@@ -966,8 +1052,16 @@ export default function Repos() {
   function addTarget(directory: string) {
     if (cfgTargets.some(t => t.directory === directory)) return;
     const name = directory.split('/').pop() || directory;
-    const matchingProfile = awsProfiles.find(p => p === name) || (awsProfiles.length === 1 ? awsProfiles[0] : '');
-    const next = [...cfgTargets, { name, directory, aws_profile: matchingProfile } as RepoTarget];
+    const matchingProfile = cfgDefaults.default_aws_profile
+      || awsProfiles.find(p => p === name)
+      || (awsProfiles.length === 1 ? awsProfiles[0] : '');
+    const next = [...cfgTargets, {
+      name,
+      directory,
+      aws_profile: matchingProfile,
+      account_id: cfgDefaults.default_account_id || undefined,
+      region: cfgDefaults.default_region || undefined,
+    } as RepoTarget];
     persistTargets(next, `Added ${name} to the ${groupKeyOf({ name, directory, aws_profile: '' })}/ pipeline`);
   }
 
@@ -993,7 +1087,7 @@ export default function Repos() {
   }
 
   function saveTargets() {
-    return persistTargets(cfgTargets, `Targets for ${cfgRepo?.name} saved to config.yaml`);
+    return persistTargets(cfgTargets, `Configuration for ${cfgRepo?.name} saved to config.yaml`);
   }
 
   function handleEditSave(updated: RepoTarget) {
@@ -1065,10 +1159,13 @@ export default function Repos() {
             repo={cfgRepo}
             targets={cfgTargets}
             awsProfiles={awsProfiles}
+            profileDetails={profileDetails}
+            defaults={cfgDefaults}
             saving={cfgSaving}
             view={view}
             setView={setView}
             onTargetsChange={changeTargets}
+            onDefaultsChange={setCfgDefaults}
             onSave={saveTargets}
             onEdit={setEditIdx}
             onAddStageGroup={onAddStageGroup}

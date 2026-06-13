@@ -1,9 +1,14 @@
 version: 1
 web:
   saved_plan_apply: true
+  approval_timeout_seconds: 300
+  reviewed_plan_timeout_seconds: 3600
 repositories:
   - name: infrastructure
     path: /home/andres/tf-companion/examples/infrastructure
+    default_aws_profile: example-dev
+    default_region: eu-west-2
+    # default_account_id: "123456789012"
     targets:
       - name: dev
         directory: environments/dev
@@ -12,6 +17,15 @@ repositories:
       - name: prod
         directory: environments/prod
         aws_profile: example-prod
+        region: eu-west-2
+  # Large, credential-free Terraform plan for testing the Graph View blast
+  # radius (see examples/blast-radius/README.md). Adjust path to your checkout.
+  - name: blast-radius
+    path: /home/andres/tf9/examples
+    targets:
+      - name: demo
+        directory: blast-radius
+        aws_profile: example-dev
         region: eu-west-2
 
 # Global directory → AWS profile mappings. Used by `tf9 plan --recursive` (-R):

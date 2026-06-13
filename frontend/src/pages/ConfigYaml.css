@@ -26,6 +26,11 @@
   --t-pun:#8b949e; --t-val:#c9d1d9;
   --ed-status-bg:#161b22; --ed-border:#21262d;
 }
+.config-page .editor[data-variant="dim"]{
+  --ed-bg:#161b22; --ed-text:#d0d7de; --ed-gutter-bg:#1c2128; --ed-gutter-text:#8c959f;
+  --ed-curline:#22272e; --ed-curgutter:#272c33; --ed-caret:#58a6ff; --ed-sel:rgba(56,139,253,.34);
+  --ed-status-bg:#1c2128; --ed-border:#30363d;
+}
 
 .config-page .ed-main{display:flex;position:relative;min-height:0;flex:1;background:var(--ed-bg)}
 /* gutter */

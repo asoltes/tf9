@@ -22,15 +22,44 @@ test('config editor loads the YAML and saves an edit', async ({ page }) => {
   await shot(page, 'config-saved');
 });
 
-test('format document tidies trailing whitespace', async ({ page }) => {
+test('format document normalizes YAML indentation and preserves comments', async ({ page }) => {
   await page.goto('/#config');
   const editor = page.locator('.ed-input');
   await expect(editor).toContainText('version: 1');
 
-  const current = await editor.inputValue();
-  await editor.fill(current.replace(/\n*$/, '') + '   \n\n\n');
+  await editor.fill([
+    '# keep this comment',
+    'version: 1',
+    'repositories:',
+    '    - name: infra',
+    '      path: /tmp/infra',
+    '',
+  ].join('\n'));
   await page.getByRole('button', { name: 'Format document' }).click();
-  await expect(page.locator('.toast.show')).toContainText('Formatted');
+  await expect(page.locator('.toast.show')).toContainText('Document formatted');
+  await expect(editor).toHaveValue([
+    '# keep this comment',
+    'version: 1',
+    'repositories:',
+    '  - name: infra',
+    '    path: /tmp/infra',
+    '',
+  ].join('\n'));
+});
+
+test('config editor follows the application theme', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('tf9-color-mode', 'light'));
+  await page.goto('/#config');
+  const editor = page.locator('.editor');
+  await expect(editor).toHaveAttribute('data-theme', 'light');
+
+  await page.getByRole('button', { name: 'Cycle theme' }).click();
+  await expect(editor).toHaveAttribute('data-theme', 'dark');
+  await expect(editor).toHaveAttribute('data-variant', 'dark');
+
+  await page.getByRole('button', { name: 'Cycle theme' }).click();
+  await expect(editor).toHaveAttribute('data-theme', 'dark');
+  await expect(editor).toHaveAttribute('data-variant', 'dim');
 });
 
 test('invalid schema surfaces problems and blocks save', async ({ page }) => {

@@ -67,6 +67,45 @@ func TestPrepareReviewedApplyRejectsMissingPlanID(t *testing.T) {
 	}
 }
 
+func TestPrepareReviewedApplyRejectsExpiredPlan(t *testing.T) {
+	expired := time.Now().UTC().Add(-time.Second)
+	plan := &Run{
+		ID:                 "run-expired",
+		Status:             StatusSuccess,
+		SavedPlanReady:     true,
+		SavedPlanExpiresAt: &expired,
+		Request:            RunRequest{Command: "plan"},
+	}
+	m := &RunManager{runs: []*Run{plan}}
+	if _, err := m.PrepareReviewedApply(RunRequest{Command: "apply", PlanRunID: plan.ID}); err == nil {
+		t.Fatal("expected expired reviewed plan to be rejected")
+	}
+}
+
+func TestApprovalTimeoutAutomaticallyDenies(t *testing.T) {
+	run := &Run{
+		Status:          StatusRunning,
+		inputCh:         make(chan string, 1),
+		approvalTimeout: 20 * time.Millisecond,
+	}
+	run.setAwaiting(true)
+
+	select {
+	case got := <-run.inputCh:
+		if got != "no" {
+			t.Fatalf("approval timeout sent %q, want no", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("approval timeout did not send a denial")
+	}
+
+	run.mu.RLock()
+	defer run.mu.RUnlock()
+	if run.AwaitingInput || !run.denied || run.ApprovalExpiresAt != nil {
+		t.Fatalf("approval timeout state = awaiting %v denied %v expires %v", run.AwaitingInput, run.denied, run.ApprovalExpiresAt)
+	}
+}
+
 func TestForceKillFinalizesRunningRun(t *testing.T) {
 	// Redirect persistence to a temp file so the test never touches real state.
 	config.SetPath(filepath.Join(t.TempDir(), "config.yaml"))

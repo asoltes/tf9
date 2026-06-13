@@ -67,3 +67,59 @@ test('deletes a stage from the pipeline after confirmation', async ({ page }) =>
     await page.request.put('/api/repos/e2e-repo/config', { data: originalConfig });
   }
 });
+
+test('repository defaults populate newly added targets', async ({ page }) => {
+  const configResponse = await page.request.get('/api/repos/e2e-repo/config');
+  const originalConfig = await configResponse.json();
+
+  try {
+    await page.request.put('/api/repos/e2e-repo/config', {
+      data: {
+        default_aws_profile: '',
+        default_account_id: '',
+        default_region: '',
+        targets: [],
+      },
+    });
+    await page.route('**/api/aws/profile-details', route => route.fulfill({
+      json: {
+        'e2e-profile': {
+          region: 'us-west-2',
+          account_id: '123456789012',
+        },
+      },
+    }));
+    await page.route('**/api/aws/profiles', route => route.fulfill({
+      json: ['e2e-profile'],
+    }));
+
+    await page.goto('/#repos');
+    const row = page.locator('table.tbl tbody tr', { hasText: 'e2e-repo' });
+    await row.getByRole('button', { name: 'Configure' }).click();
+
+    await page.getByLabel('Default AWS profile').selectOption('e2e-profile');
+    await expect(page.getByLabel('Default region')).toHaveValue('us-west-2');
+    await expect(page.getByLabel('Default account ID')).toHaveValue('123456789012');
+
+    const environments = page.locator('.dir-row', { hasText: 'environments' });
+    await environments.getByRole('button', { name: 'Open' }).click();
+    const dev = page.locator('.dir-row', { hasText: 'dev' });
+    await dev.getByRole('button', { name: 'Add to pipeline' }).click();
+    await expect(page.locator('.toast.show')).toContainText('Added dev');
+
+    const savedResponse = await page.request.get('/api/repos/e2e-repo/config');
+    const saved = await savedResponse.json();
+    expect(saved.default_aws_profile).toBe('e2e-profile');
+    expect(saved.default_region).toBe('us-west-2');
+    expect(saved.default_account_id).toBe('123456789012');
+    expect(saved.targets).toEqual([expect.objectContaining({
+      name: 'dev',
+      directory: 'environments/dev',
+      aws_profile: 'e2e-profile',
+      region: 'us-west-2',
+      account_id: '123456789012',
+    })]);
+  } finally {
+    await page.request.put('/api/repos/e2e-repo/config', { data: originalConfig });
+  }
+});

@@ -1,0 +1,7 @@
+.terraform/
+.terraform.lock.hcl
+crash.log
+
+# The "before" state is committed on purpose so the blast-radius plan is
+# reproducible out of the box. Re-include it despite the repo-wide *.tfstate rule.
+!terraform.tfstate

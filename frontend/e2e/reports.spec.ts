@@ -35,6 +35,8 @@ test('a plan run produces a report that opens in the viewer', async ({ page }) =
   await page.locator('.rh-card').first().click();
   await expect(page.locator('.report-viewer')).toBeVisible();
   await expect(page.locator('.report-viewer table thead')).toContainText('Applied');
+  await expect(page.locator('.report-viewer .env-hdr .sb').first()).toContainText('Applied: False');
+  await expect(page.locator('.report-viewer .rv-fp').first()).toHaveText('Raw');
   await expect(page.getByRole('button', { name: /Back to Reports/ })).toBeVisible();
   await shot(page, 'report-viewer');
 });

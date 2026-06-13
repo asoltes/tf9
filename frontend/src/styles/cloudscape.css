@@ -70,6 +70,9 @@
   --tf-change:var(--amber);
   --tf-destroy:var(--red);
   --tf-replace:var(--purple);
+  /* Graph View (canvas paints these as resolved JS strings; see useThemeTokens) */
+  --gv-canvas:#eef1f5; --gv-neutral:#9aa3af; --gv-highlight:#e07b00;
+  --gv-link:rgba(75,91,112,.42); --gv-link-dep:rgba(9,94,180,.58); --gv-link-muted:rgba(90,103,120,.20);
 }
 
 /* ── Accessibility foundations ──────────────────────────────────────────── */

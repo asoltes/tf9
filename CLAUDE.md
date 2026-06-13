@@ -236,6 +236,7 @@ exit code sets `StatusDenied` instead of `StatusFailed` when `denied` is true.
 | `POST` | `/api/runs` | Start a new run |
 | `GET` | `/api/runs/{id}` | Get a single run |
 | `GET` | `/api/runs/{id}/stream` | SSE stream of output lines |
+| `GET` | `/api/runs/{id}/graph` | Sanitized repository/target/module/resource graph for a supported Terraform run |
 | `POST` | `/api/runs/{id}/cancel` | Cancel a running run |
 | `POST` | `/api/runs/{id}/input` | Send `{"value":"yes"/"no"}` to the approval gate |
 | `GET` | `/api/repos` | List configured repositories |
@@ -294,12 +295,29 @@ component imports have been removed.
 | `#config` | Configuration (YAML editor) |
 | `#reports` | Terraform Reports list |
 | `#report/<name>` | Report viewer |
+| `#graph?run=<id>` | Interactive Terraform relationship graph |
 | `#help` | Documentation |
 
-Visible navigation labels (route IDs unchanged): Dashboard, Run History,
+Visible navigation labels: Dashboard, Run History,
 Repository Workspace, Repositories, Configuration, AWS Profile Mappings,
-Terraform Reports, Cost Analysis, System Logs, Documentation — grouped in the
+Terraform Reports, Graph View, Cost Analysis, System Logs, Documentation — grouped in the
 sidebar as Operations / Configuration / Insights & Support.
+
+### Graph View
+
+Successful web `plan`, `apply`, and `destroy` runs save a sanitized
+`graph.json` under `~/.config/tf9/plans/<run-id>/`. Plans use their saved plan
+file; apply and destroy use the resulting Terraform state plus captured command
+output so removed resources remain represented. Unsupported commands and runs
+without a graph artifact do not expose Graph in the live terminal. The stored
+data contains node addresses, hierarchy, actions, value-free changed attribute
+paths, and dependency edges. Nodes also retain their exact ANSI-stripped
+resource block from Terraform's captured output for the details modal; do not
+reconstruct this text from Terraform JSON. Sensitive, computed, and
+replacement-causing paths are flagged without separately exposing JSON values.
+The React Graph View uses `react-force-graph-2d` for a canvas-based clustered
+graph with selectable node shapes, relationship highlighting, group filtering,
+and force/DAG layout modes; it does not display Terraform's native DOT graph.
 
 ### Key files
 

@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/andres/tf9/internal/config"
+	graphdata "github.com/andres/tf9/internal/graph"
 )
 
 func testHandler(t *testing.T) http.Handler {
@@ -92,6 +94,48 @@ func TestConfigAPIRejectsRevisionConflict(t *testing.T) {
 	}
 }
 
+func TestConfigAPIFormatsYAMLWithoutSaving(t *testing.T) {
+	handler := testHandler(t)
+	body, _ := json.Marshal(map[string]string{
+		"content": "# config\nversion: 1\nrepositories:\n    - name: infra\n      path: /work/infra\n",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/config/format", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("POST /api/config/format status = %d body=%s", res.Code, res.Body.String())
+	}
+	var got struct {
+		Content string `json:"content"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	want := "# config\nversion: 1\nrepositories:\n  - name: infra\n    path: /work/infra\n"
+	if got.Content != want {
+		t.Fatalf("formatted content = %q, want %q", got.Content, want)
+	}
+
+	_, saved, _, err := config.ReadRaw()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved == got.Content {
+		t.Fatal("format endpoint unexpectedly persisted content")
+	}
+}
+
+func TestConfigAPIRejectsInvalidYAMLFormat(t *testing.T) {
+	handler := testHandler(t)
+	body, _ := json.Marshal(map[string]string{"content": "version: ["})
+	req := httptest.NewRequest(http.MethodPost, "/api/config/format", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("POST invalid format status = %d body=%s", res.Code, res.Body.String())
+	}
+}
+
 func TestRepoAPIWritesRepositoryAndTargetsToSharedConfig(t *testing.T) {
 	handler := testHandler(t)
 
@@ -103,9 +147,14 @@ func TestRepoAPIWritesRepositoryAndTargetsToSharedConfig(t *testing.T) {
 		t.Fatalf("POST /api/repos status = %d body=%s", res.Code, res.Body.String())
 	}
 
-	body, _ = json.Marshal(config.RepoConfig{Targets: []config.RepoTarget{{
-		Name: "dev", Directory: "environments/dev", AWSProfile: "company-dev",
-	}}})
+	body, _ = json.Marshal(config.RepoConfig{
+		DefaultAWSProfile: "company-dev",
+		DefaultAccountID:  "123456789012",
+		DefaultRegion:     "eu-west-2",
+		Targets: []config.RepoTarget{{
+			Name: "dev", Directory: "environments/dev", AWSProfile: "company-dev",
+		}},
+	})
 	req = httptest.NewRequest(http.MethodPut, "/api/repos/infra/config", bytes.NewReader(body))
 	res = httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
@@ -123,6 +172,10 @@ func TestRepoAPIWritesRepositoryAndTargetsToSharedConfig(t *testing.T) {
 	if got := cfg.Repositories[0].Targets[0].AWSProfile; got != "company-dev" {
 		t.Fatalf("aws_profile = %q, want company-dev", got)
 	}
+	repo := cfg.Repositories[0]
+	if repo.DefaultAWSProfile != "company-dev" || repo.DefaultAccountID != "123456789012" || repo.DefaultRegion != "eu-west-2" {
+		t.Fatalf("repository defaults were not persisted: %#v", repo)
+	}
 }
 
 func TestRepoAPIRejectsTargetWithoutAWSProfile(t *testing.T) {
@@ -139,6 +192,21 @@ func TestRepoAPIRejectsTargetWithoutAWSProfile(t *testing.T) {
 	handler.ServeHTTP(res, req)
 	if res.Code != http.StatusBadRequest {
 		t.Fatalf("PUT invalid repo config status = %d body=%s", res.Code, res.Body.String())
+	}
+}
+
+func TestRepoAPIRejectsInvalidDefaultAccountID(t *testing.T) {
+	handler := testHandler(t)
+	if err := config.AddRepo("infra", "/work/infra"); err != nil {
+		t.Fatal(err)
+	}
+
+	body, _ := json.Marshal(config.RepoConfig{DefaultAccountID: "1234"})
+	req := httptest.NewRequest(http.MethodPut, "/api/repos/infra/config", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("PUT invalid default account ID status = %d body=%s", res.Code, res.Body.String())
 	}
 }
 
@@ -166,6 +234,87 @@ func TestDriftAPIIsRemoved(t *testing.T) {
 	handler.ServeHTTP(res, req)
 	if res.Code != http.StatusNotFound {
 		t.Fatalf("GET /api/drift status = %d, want 404", res.Code)
+	}
+}
+
+func TestRunGraphAPIReadsSavedGraph(t *testing.T) {
+	config.SetPath(filepath.Join(t.TempDir(), "config.yaml"))
+	t.Cleanup(func() { config.SetPath("") })
+	mgr := &RunManager{runs: []*Run{{
+		ID: "run-7", Status: StatusSuccess, Request: RunRequest{Command: "plan", Repo: "infra"},
+	}}}
+	doc := graphdata.Document{
+		RunID: "run-7", Repo: "infra", Revision: 1,
+		Nodes: []graphdata.Node{{ID: "target:dev:resource:aws_vpc.main", Kind: "managed", Label: "aws_vpc.main"}},
+	}
+	data, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(graphPath("run-7")), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(graphPath("run-7"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/runs/run-7/graph", nil)
+	res := httptest.NewRecorder()
+	Handler(mgr, t.TempDir()).ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", res.Code, res.Body.String())
+	}
+	var got graphdata.Document
+	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Revision != 1 || len(got.Nodes) != 1 {
+		t.Fatalf("graph = %#v", got)
+	}
+
+	runReq := httptest.NewRequest(http.MethodGet, "/api/runs/run-7", nil)
+	runRes := httptest.NewRecorder()
+	Handler(mgr, t.TempDir()).ServeHTTP(runRes, runReq)
+	if runRes.Code != http.StatusOK {
+		t.Fatalf("run status = %d body=%s", runRes.Code, runRes.Body.String())
+	}
+	var runBody struct {
+		HasGraph bool `json:"hasGraph"`
+	}
+	if err := json.Unmarshal(runRes.Body.Bytes(), &runBody); err != nil {
+		t.Fatal(err)
+	}
+	if !runBody.HasGraph {
+		t.Fatal("run hasGraph = false, want true")
+	}
+}
+
+func TestRunWithoutGraphReportsUnavailable(t *testing.T) {
+	config.SetPath(filepath.Join(t.TempDir(), "config.yaml"))
+	t.Cleanup(func() { config.SetPath("") })
+	mgr := &RunManager{runs: []*Run{{
+		ID: "run-8", Status: StatusSuccess, Request: RunRequest{Command: "validate", Repo: "infra"},
+	}}}
+	handler := Handler(mgr, t.TempDir())
+
+	req := httptest.NewRequest(http.MethodGet, "/api/runs/run-8", nil)
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	var runBody struct {
+		HasGraph bool `json:"hasGraph"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &runBody); err != nil {
+		t.Fatal(err)
+	}
+	if runBody.HasGraph {
+		t.Fatal("run hasGraph = true, want false")
+	}
+
+	graphReq := httptest.NewRequest(http.MethodGet, "/api/runs/run-8/graph", nil)
+	graphRes := httptest.NewRecorder()
+	handler.ServeHTTP(graphRes, graphReq)
+	if graphRes.Code != http.StatusNotFound {
+		t.Fatalf("graph status = %d, want 404", graphRes.Code)
 	}
 }
 
