@@ -182,6 +182,24 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 				return
 			}
 			pullRepo(w, r, name)
+		case "reconcile":
+			if r.Method != http.MethodGet {
+				methodNotAllowed(w)
+				return
+			}
+			reconcileStatus(w, r, name)
+		case "promote":
+			if r.Method != http.MethodPost {
+				methodNotAllowed(w)
+				return
+			}
+			promoteRepo(w, r, name)
+		case "active-branches":
+			if r.Method != http.MethodGet {
+				methodNotAllowed(w)
+				return
+			}
+			listActiveBranches(w, r, name)
 		case "config":
 			switch r.Method {
 			case http.MethodGet:
@@ -1111,10 +1129,12 @@ func listRepos(w http.ResponseWriter, r *http.Request) {
 		Name     string `json:"name"`
 		Path     string `json:"path"`
 		Disabled bool   `json:"disabled,omitempty"`
+		Provider string `json:"provider"`
 	}
 	out := make([]entry, 0, len(cfg.Repositories))
 	for _, repo := range cfg.Repositories {
-		out = append(out, entry{Name: repo.Name, Path: repo.Path, Disabled: repo.Disabled})
+		provider := git.DetectProvider(git.RemoteURL(repo.Path))
+		out = append(out, entry{Name: repo.Name, Path: repo.Path, Disabled: repo.Disabled, Provider: provider})
 	}
 	page, limit := parsePage(r)
 	items, total := paginate(out, page, limit)
@@ -2033,6 +2053,192 @@ func checkoutRepo(w http.ResponseWriter, r *http.Request, name string) {
 		return
 	}
 	jsonOK(w, map[string]string{"output": output})
+}
+
+// currentBranch resolves the checked-out branch name for repoDir.
+func currentBranch(ctx context.Context, dir string) string {
+	out, err := exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--abbrev-ref", "HEAD").Output()
+	if err != nil {
+		slog.Warn("could not resolve current branch", "dir", dir, "err", err)
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// integrationSettings returns the integration branch and active-branch window/
+// limit for a repo, falling back to defaults when the repo is unknown.
+func integrationSettings(name string) (branch string, windowDays, limit int) {
+	repo, ok, err := config.FindRepository(name)
+	if err != nil || !ok {
+		return config.DefaultIntegrationBranch, config.DefaultActiveBranchWindowDays, config.DefaultActiveBranchLimit
+	}
+	return repo.IntegrationBranchOrDefault(), repo.ActiveWindowDays(), repo.ActiveLimit()
+}
+
+// reconcileStatus reports how the current branch relates to the integration
+// branch on origin: how far ahead/behind it is, the divergent commits, and a
+// recommended action. It powers the Reconcile panel and the pre-apply guard.
+func reconcileStatus(w http.ResponseWriter, r *http.Request, name string) {
+	dir, err := repoPath(name)
+	if err != nil {
+		jsonErr(w, "not_found", err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Fetch so the comparison reflects what teammates pushed. Best-effort.
+	if err := git.Fetch(r.Context(), dir); err != nil {
+		slog.Debug("reconcile: git fetch failed", "repo", name, "err", err)
+	}
+
+	integration, _, _ := integrationSettings(name)
+	current := currentBranch(r.Context(), dir)
+
+	// Prefer the remote integration ref (shared truth); fall back to the local
+	// branch when origin has no such ref (e.g. a local-only repo).
+	ref := "origin/" + integration
+	ahead, behind, abErr := git.AheadBehind(r.Context(), dir, ref, "HEAD")
+	if abErr != nil {
+		ref = integration
+		ahead, behind, abErr = git.AheadBehind(r.Context(), dir, ref, "HEAD")
+	}
+	if abErr != nil {
+		// No integration ref reachable — report a benign "unknown" status rather
+		// than failing the whole request.
+		jsonOK(w, map[string]any{
+			"integrationBranch": integration,
+			"currentBranch":     current,
+			"hasIntegration":    false,
+			"recommend":         "unknown",
+		})
+		return
+	}
+
+	// behindCommits: on integration but not on HEAD — what you'd revert if you
+	// applied now. aheadCommits: your work not yet promoted to integration.
+	behindCommits, _ := git.ListCommitsBetween(dir, "HEAD", ref)
+	aheadCommits, _ := git.ListCommitsBetween(dir, ref, "HEAD")
+	if behindCommits == nil {
+		behindCommits = []git.Commit{}
+	}
+	if aheadCommits == nil {
+		aheadCommits = []git.Commit{}
+	}
+
+	recommend := "clean"
+	switch {
+	case behind > 0:
+		recommend = "rebase"
+	case ahead > 0:
+		recommend = "promote"
+	}
+
+	jsonOK(w, map[string]any{
+		"integrationBranch": integration,
+		"integrationRef":    ref,
+		"currentBranch":     current,
+		"hasIntegration":    true,
+		"ahead":             ahead,
+		"behind":            behind,
+		"diverged":          ahead > 0 && behind > 0,
+		"behindCommits":     behindCommits,
+		"aheadCommits":      aheadCommits,
+		"recommend":         recommend,
+	})
+}
+
+// promoteRepo merges the current (or named) feature branch into the integration
+// branch and pushes it, so the integration branch reflects what was just
+// applied. The working tree must be clean. On failure it returns the output and
+// error so the user can resolve git state in the terminal.
+func promoteRepo(w http.ResponseWriter, r *http.Request, name string) {
+	dir, err := repoPath(name)
+	if err != nil {
+		jsonErr(w, "not_found", err.Error(), http.StatusNotFound)
+		return
+	}
+	var body struct {
+		Branch string `json:"branch"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body) // branch is optional; default to current
+	feature := strings.TrimSpace(body.Branch)
+	if feature == "" {
+		feature = currentBranch(r.Context(), dir)
+	}
+	if feature == "" || strings.HasPrefix(feature, "-") {
+		jsonErr(w, "bad_request", "invalid branch name", http.StatusBadRequest)
+		return
+	}
+
+	// Refuse on a dirty tree — checkout/merge would fail or lose work.
+	changed, _ := git.WorkingDirStatus(r.Context(), dir)
+	if len(changed) > 0 {
+		jsonErr(w, "dirty_worktree", "commit or stash your changes before promoting", http.StatusUnprocessableEntity)
+		return
+	}
+
+	integration, _, _ := integrationSettings(name)
+	if feature == integration {
+		jsonErr(w, "bad_request", "current branch is already the integration branch", http.StatusBadRequest)
+		return
+	}
+
+	var out strings.Builder
+	step := func(label, output string, stepErr error) bool {
+		out.WriteString("$ " + label + "\n" + output)
+		if !strings.HasSuffix(output, "\n") {
+			out.WriteString("\n")
+		}
+		return stepErr == nil
+	}
+
+	co, coErr := git.Checkout(r.Context(), dir, integration)
+	if !step("git checkout "+integration, co, coErr) {
+		slog.Warn("promote: checkout integration failed", "repo", name, "branch", integration, "err", coErr)
+		jsonOK(w, map[string]string{"output": out.String(), "error": coErr.Error()})
+		return
+	}
+	mg, mgErr := git.Merge(r.Context(), dir, feature)
+	if !step("git merge --no-edit "+feature, mg, mgErr) {
+		slog.Warn("promote: merge failed", "repo", name, "feature", feature, "err", mgErr)
+		// Leave the user on the integration branch to resolve the conflict.
+		jsonOK(w, map[string]string{"output": out.String(), "error": mgErr.Error()})
+		return
+	}
+	ps, psErr := git.Push(r.Context(), dir, integration)
+	if !step("git push origin "+integration, ps, psErr) {
+		slog.Warn("promote: push failed", "repo", name, "branch", integration, "err", psErr)
+		jsonOK(w, map[string]string{"output": out.String(), "error": psErr.Error()})
+		return
+	}
+	// Return to the feature branch so the user keeps working where they were.
+	if back, backErr := git.Checkout(r.Context(), dir, feature); backErr != nil {
+		step("git checkout "+feature, back, backErr)
+		slog.Warn("promote: return to feature branch failed", "repo", name, "feature", feature, "err", backErr)
+	}
+	jsonOK(w, map[string]string{"output": out.String()})
+}
+
+// listActiveBranches returns recently-committed branches (the AI auto-mode
+// drift feed) using the repo's configured window and limit.
+func listActiveBranches(w http.ResponseWriter, r *http.Request, name string) {
+	dir, err := repoPath(name)
+	if err != nil {
+		jsonErr(w, "not_found", err.Error(), http.StatusNotFound)
+		return
+	}
+	if err := git.Fetch(r.Context(), dir); err != nil {
+		slog.Debug("active branches: git fetch failed", "repo", name, "err", err)
+	}
+	_, windowDays, limit := integrationSettings(name)
+	branches, err := git.ActiveBranches(r.Context(), dir, windowDays, limit)
+	if err != nil {
+		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if branches == nil {
+		branches = []git.BranchInfo{}
+	}
+	jsonOK(w, map[string]any{"windowDays": windowDays, "limit": limit, "branches": branches})
 }
 
 // listAWSProfiles reads ~/.aws/config and ~/.aws/credentials and returns all

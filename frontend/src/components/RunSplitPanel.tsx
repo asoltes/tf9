@@ -865,7 +865,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     const head = (
       <div className="out-head">
         <div className="ot">
-          <span className="par-pill">{I.par}Parallel</span>
+          <span className="mode-cell" style={{ fontWeight: 700 }}>{I.par}Parallel</span>
           {envSections.length} target{envSections.length === 1 ? '' : 's'} running concurrently
         </div>
         <div className="view-toggle">
@@ -1218,7 +1218,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                                 rerunAs(item);
                               }}
                             >
-                              <span>Run <strong>{item}</strong></span>
+                              <span>Run <span className={`badge command-style ${commandStyleClass(item)}`}>{item}</span></span>
                               {item === command && <small>same command</small>}
                             </button>
                           ))}

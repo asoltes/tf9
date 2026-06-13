@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api, repoGit, costApi } from '../api';
-import type { Repo, Paginated, GitChangedFile, WebSettings } from '../types';
+import type { Repo, Paginated, GitChangedFile, ReconcileStatus, WebSettings } from '../types';
 import { useToast } from './ToastProvider';
+import { useNav } from '../nav';
 import {
   PRIMARY_COMMANDS,
   MORE_COMMANDS,
@@ -154,6 +155,7 @@ interface Props {
 
 export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const toast = useToast();
+  const { navigate } = useNav();
   const onCreatedRef = useRef(onCreated);
   useEffect(() => { onCreatedRef.current = onCreated; }, [onCreated]);
 
@@ -175,6 +177,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
 
   const [branches, setBranches] = useState<string[]>([]);
   const [repoStatus, setRepoStatus] = useState<RepoStatus | null>(null);
+  const [reconcile, setReconcile] = useState<ReconcileStatus | null>(null);
   const [pulling, setPulling] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [pendingBranch, setPendingBranch] = useState('');
@@ -203,12 +206,14 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     setGroups([]);
     setBranches([]);
     setRepoStatus(null);
+    setReconcile(null);
     if (!name) return;
     api.get<{ targets: RawTarget[] }>(`/api/repos/${encodeURIComponent(name)}/config`)
       .then(cfg => setGroups(buildGroups(name, cfg?.targets ?? [])))
       .catch(() => setGroups([]));
     repoGit.branches(name).then(setBranches).catch(() => setBranches([]));
     repoGit.status(name).then(setRepoStatus).catch(() => setRepoStatus(null));
+    repoGit.reconcile(name).then(setReconcile).catch(() => setReconcile(null));
   }, []);
 
   // Load repo list when the modal opens; reset transient state.
@@ -955,6 +960,22 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
               </div>
             </div>
             {sumWarn}
+            {(isApply || isAuto) && reconcile?.hasIntegration && (reconcile.behind ?? 0) > 0 && (
+              <div className="sum-warn amber reconcile-guard">
+                {I.warn}
+                <span>
+                  Branch <b>{reconcile.currentBranch}</b> is {reconcile.behind} commit
+                  {reconcile.behind === 1 ? '' : 's'} behind <b>{reconcile.integrationBranch}</b>.
+                  Applying now reverts deployed changes.
+                </span>
+                <button
+                  className="btn btn-normal reconcile-guard-btn"
+                  onClick={() => { onDismiss(); navigate({ id: 'workspace', name: repoName }); }}
+                >
+                  Reconcile first
+                </button>
+              </div>
+            )}
           </aside>
         </div>
 

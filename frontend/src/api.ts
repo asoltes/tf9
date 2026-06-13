@@ -130,6 +130,12 @@ export const repoGit = {
     api.post<{ output: string }>(`/api/repos/${encodeURIComponent(name)}/pull`, {}),
   checkout:   (name: string, branch: string)           =>
     api.post<{ output: string }>(`/api/repos/${encodeURIComponent(name)}/checkout`, { branch }),
+  reconcile:  (name: string)                           =>
+    api.get<import('./types').ReconcileStatus>(`/api/repos/${encodeURIComponent(name)}/reconcile`),
+  promote:    (name: string, branch?: string)          =>
+    api.post<{ output?: string; error?: string }>(`/api/repos/${encodeURIComponent(name)}/promote`, branch ? { branch } : {}),
+  activeBranches: (name: string)                       =>
+    api.get<import('./types').ActiveBranches>(`/api/repos/${encodeURIComponent(name)}/active-branches`),
 };
 
 export const workspaceApi = {

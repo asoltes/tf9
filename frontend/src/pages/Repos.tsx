@@ -29,12 +29,15 @@ const OVR_KEY = 'tf9-repo-overrides';
 const GROUP_OVR_KEY = 'tf9-group-overrides';
 
 type TargetWithGate = RepoTarget & { gated?: boolean };
-type RepoDefaults = Pick<RepoConfig, 'default_aws_profile' | 'default_account_id' | 'default_region'>;
+type RepoDefaults = Pick<RepoConfig,
+  'default_aws_profile' | 'default_account_id' | 'default_region'
+  | 'integration_branch' | 'active_branch_window_days' | 'active_branch_limit'>;
 
 const EMPTY_REPO_DEFAULTS: RepoDefaults = {
   default_aws_profile: '',
   default_account_id: '',
   default_region: '',
+  integration_branch: '',
 };
 
 // ── localStorage overrides ────────────────────────────────────────────────
@@ -530,8 +533,43 @@ function ConfigureSection({
                 placeholder="Optional 12-digit account ID"
               />
             </div>
+            <div>
+              <label className="field-label" htmlFor="repo-integration-branch">Integration branch</label>
+              <input
+                id="repo-integration-branch"
+                className="inp mono"
+                value={defaults.integration_branch || ''}
+                onChange={e => onDefaultsChange({ ...defaults, integration_branch: e.target.value })}
+                placeholder="main"
+              />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="repo-active-window">Active branch window (days)</label>
+              <input
+                id="repo-active-window"
+                className="inp mono"
+                type="number"
+                min={1}
+                value={defaults.active_branch_window_days ?? ''}
+                onChange={e => onDefaultsChange({ ...defaults, active_branch_window_days: e.target.value ? Number(e.target.value) : undefined })}
+                placeholder="30"
+              />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="repo-active-limit">Active branches fed to AI</label>
+              <input
+                id="repo-active-limit"
+                className="inp mono"
+                type="number"
+                min={1}
+                value={defaults.active_branch_limit ?? ''}
+                onChange={e => onDefaultsChange({ ...defaults, active_branch_limit: e.target.value ? Number(e.target.value) : undefined })}
+                placeholder="20"
+              />
+            </div>
             <div className="field-hint" style={{ gridColumn: '1 / -1', margin: 0 }}>
-              New pipeline targets inherit these values. Existing targets are not changed.
+              New pipeline targets inherit the AWS defaults. The integration branch is what reconcile/drift
+              compares against; the active-branch window bounds which open branches AI auto-mode searches.
             </div>
           </div>
           <div className="pipe-toolbar" style={{ marginTop: 14 }}>
@@ -934,6 +972,9 @@ export default function Repos() {
       default_aws_profile: cfg.default_aws_profile || '',
       default_account_id: cfg.default_account_id || '',
       default_region: cfg.default_region || '',
+      integration_branch: cfg.integration_branch || '',
+      active_branch_window_days: cfg.active_branch_window_days,
+      active_branch_limit: cfg.active_branch_limit,
     });
     setCfgTargets(targets);
     setRepoTargets(prev => ({ ...prev, [repo.name]: targets }));

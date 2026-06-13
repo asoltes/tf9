@@ -7,7 +7,7 @@ import '@xterm/xterm/css/xterm.css';
 import Shell from '../Shell';
 import { api, ApiError, repoGit, workspaceApi, workspaceChatApi } from '../api';
 import type {
-  GitChangedFile, GitCommit, Paginated, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
+  GitChangedFile, GitCommit, Paginated, ReconcileStatus, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
   WorkspaceChatMode, WorkspaceEntry, WorkspaceFile,
 } from '../types';
 import { useNav } from '../nav';
@@ -433,7 +433,12 @@ type ChatToolActivity = {
   summary: string;
 };
 
-function WorkspaceChat({ repo, active }: { repo: string; active: boolean }) {
+function WorkspaceChat({ repo, active, seed, onSeedConsumed }: {
+  repo: string;
+  active: boolean;
+  seed?: string;
+  onSeedConsumed?: () => void;
+}) {
   const [messages, setMessages] = useState<WorkspaceChatMessage[]>([]);
   const [mode, setMode] = useState<WorkspaceChatMode>('review');
   const [available, setAvailable] = useState(false);
@@ -445,6 +450,15 @@ function WorkspaceChat({ repo, active }: { repo: string; active: boolean }) {
   const [error, setError] = useState('');
   const streamRef = useRef<EventSource | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Prefill the input when a drift-reconcile prompt is handed in from the
+  // Reconcile panel. The user reviews and sends it (we don't auto-send).
+  useEffect(() => {
+    if (seed) {
+      setDraft(seed);
+      onSeedConsumed?.();
+    }
+  }, [seed, onSeedConsumed]);
 
   const loadState = useCallback(async () => {
     const state = await workspaceChatApi.state(repo);
@@ -874,6 +888,165 @@ function GitOperationsModal({
   );
 }
 
+function ReconcileModal({
+  repo, blocked, onClose, onComplete, onAskAI,
+}: {
+  repo: string;
+  blocked: string;
+  onClose: () => void;
+  onComplete: () => Promise<void>;
+  onAskAI: (status: ReconcileStatus) => void;
+}) {
+  const [status, setStatus] = useState<ReconcileStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState('');
+  const [output, setOutput] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setStatus(await repoGit.reconcile(repo));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load reconcile status.');
+    } finally {
+      setLoading(false);
+    }
+  }, [repo]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !running) onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, running]);
+
+  async function run(action: 'rebase' | 'cherry-pick' | 'promote') {
+    if (!status || running) return;
+    const ref = status.integrationRef || status.integrationBranch;
+    const confirmMsg = action === 'rebase'
+      ? `Rebase ${status.currentBranch} onto ${ref}?`
+      : action === 'cherry-pick'
+        ? `Cherry-pick ${status.behindCommits?.length ?? 0} commit(s) from ${ref} onto ${status.currentBranch}?`
+        : `Merge ${status.currentBranch} into ${status.integrationBranch} and push?`;
+    if (!window.confirm(confirmMsg)) return;
+    setRunning(true);
+    setError('');
+    setOutput('');
+    try {
+      let result: { output?: string; error?: string };
+      if (action === 'rebase') {
+        result = await repoGit.rebase(repo, ref);
+      } else if (action === 'cherry-pick') {
+        // Apply oldest-first: ListCommitsBetween returns newest-first.
+        const shas = (status.behindCommits ?? []).map(c => c.Hash).reverse();
+        result = await repoGit.cherryPick(repo, shas);
+      } else {
+        result = await repoGit.promote(repo);
+      }
+      setOutput((result.output || '').trim());
+      await onComplete();
+      if (result.error) {
+        setError(`${result.error}. Resolve the Git state in the workspace terminal, then refresh.`);
+        return;
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Git ${action} failed.`);
+      await onComplete();
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const behind = status?.behind ?? 0;
+  const ahead = status?.ahead ?? 0;
+
+  return (
+    <div className="overlay show rw-git-ops-overlay" onClick={event => {
+      if (event.target === event.currentTarget && !running) onClose();
+    }}>
+      <div className="modal rw-git-ops-modal" role="dialog" aria-modal="true" aria-label="Reconcile branch">
+        <div className="modal-head">Reconcile branch</div>
+        <div className="modal-body">
+          {loading ? (
+            <div className="rw-git-ops-empty">Checking integration branch…</div>
+          ) : !status?.hasIntegration ? (
+            <div className="rw-git-ops-warning">
+              No integration branch found on origin for <strong>{status?.integrationBranch}</strong>.
+              Configure <code>integration_branch</code> for this repository, or push it to origin.
+            </div>
+          ) : (
+            <>
+              <div className="rw-reconcile-summary">
+                <span><strong>{status.currentBranch}</strong> vs <strong>{status.integrationRef}</strong></span>
+                <span className={behind > 0 ? 'rw-reconcile-badge warn' : 'rw-reconcile-badge ok'}>{behind} behind</span>
+                <span className="rw-reconcile-badge">{ahead} ahead</span>
+              </div>
+
+              {behind > 0 ? (
+                <p className="rw-git-ops-help">
+                  Your branch is missing {behind} commit{behind === 1 ? '' : 's'} that are already on the
+                  integration branch — applying now would revert that deployed work. Reconcile first.
+                </p>
+              ) : ahead > 0 ? (
+                <p className="rw-git-ops-help">
+                  Your branch is up to date and has {ahead} commit{ahead === 1 ? '' : 's'} not yet on
+                  <strong> {status.integrationBranch}</strong>. After you apply, promote so the integration
+                  branch reflects what's deployed.
+                </p>
+              ) : (
+                <p className="rw-git-ops-help">Up to date with <strong>{status.integrationRef}</strong>. Nothing to reconcile.</p>
+              )}
+
+              {blocked && <div className="rw-git-ops-warning">{blocked}</div>}
+              {error && <div className="rw-git-ops-error">{error}</div>}
+
+              {behind > 0 && (status.behindCommits?.length ?? 0) > 0 && (
+                <div className="rw-commit-picker">
+                  <div className="rw-commit-picker-head"><span>Commits to reconcile (on {status.integrationBranch}, missing here)</span></div>
+                  {(status.behindCommits ?? []).map(commit => (
+                    <div className="rw-commit-row" key={commit.Hash}>
+                      <code>{commit.Hash.slice(0, 7)}</code>
+                      <span><strong>{commit.Subject}</strong><small>{commit.Author} · {commit.Date}</small></span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {output && <pre className="rw-git-ops-output">{output}</pre>}
+            </>
+          )}
+        </div>
+        <div className="modal-foot">
+          <button className="btn btn-normal" disabled={running} onClick={onClose}>Close</button>
+          {status?.hasIntegration && behind > 0 && (
+            <>
+              <button className="btn btn-normal" disabled={running || !!blocked} onClick={() => void run('cherry-pick')}>
+                Cherry-pick missing
+              </button>
+              <button className="btn btn-normal" disabled={running} onClick={() => onAskAI(status)}>
+                Reconcile with AI
+              </button>
+              <button className="btn btn-primary" disabled={running || !!blocked} onClick={() => void run('rebase')}>
+                {running ? 'Running…' : `Rebase onto ${status.integrationBranch}`}
+              </button>
+            </>
+          )}
+          {status?.hasIntegration && behind === 0 && ahead > 0 && (
+            <button className="btn btn-primary" disabled={running || !!blocked} onClick={() => void run('promote')}>
+              {running ? 'Running…' : `Promote to ${status.integrationBranch}`}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WorkspaceEntryModal({
   entry, onClose, onTerminal, onRename, onDelete,
 }: {
@@ -1073,6 +1246,8 @@ function Workbench({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [gitOperationsOpen, setGitOperationsOpen] = useState(false);
+  const [reconcileOpen, setReconcileOpen] = useState(false);
+  const [chatSeed, setChatSeed] = useState('');
   const [entryModal, setEntryModal] = useState<WorkspaceEntry | null>(null);
   const [explorerWidth, setExplorerWidth] = useState(250);
   const [diffWidth, setDiffWidth] = useState(initialDiffWidth);
@@ -1421,6 +1596,43 @@ function Workbench({
     await refresh();
   }
 
+  // askAIReconcile builds a structured drift prompt — seeded with the reconcile
+  // status and the active/open branches — and hands it to the AI chat so Claude
+  // can locate the reconciling code across branches and propose/execute the fix.
+  async function askAIReconcile(status: ReconcileStatus) {
+    let activeList = '';
+    try {
+      const active = await repoGit.activeBranches(name);
+      activeList = active.branches
+        .map(b => `- ${b.name} @ ${b.hash.slice(0, 7)} (${b.author}, ${b.date}): ${b.subject}`)
+        .join('\n');
+    } catch {
+      activeList = '(could not list active branches)';
+    }
+    const behind = (status.behindCommits ?? [])
+      .map(c => `- ${c.Hash.slice(0, 7)} ${c.Subject} (${c.Author})`).join('\n') || '(none)';
+    const prompt = [
+      `I need help reconciling drift on the Terraform repo "${name}".`,
+      `Current branch: ${status.currentBranch}. Integration branch: ${status.integrationRef || status.integrationBranch}.`,
+      `My branch is ${status.behind ?? 0} commit(s) behind and ${status.ahead ?? 0} ahead of the integration branch.`,
+      '',
+      'Commits on the integration branch that are missing from my branch (these would be reverted if I apply now):',
+      behind,
+      '',
+      'Active/open branches in this repo (the reconciling code may live in one of these, unmerged):',
+      activeList,
+      '',
+      'Investigate the active branches with read-only git commands (git log, git diff, git show <branch>:<file>),',
+      'find which branch + commit contains the Terraform code needed to reconcile each drifted resource, then',
+      'propose the minimal rebase or cherry-pick. Switch me to autoApply mode and I will approve before you run',
+      'any git rebase/cherry-pick. Do not push or run terraform apply.',
+    ].join('\n');
+    setReconcileOpen(false);
+    setRightPanelTab('chat');
+    setDiffVisible(true);
+    setChatSeed(prompt);
+  }
+
   const changeByPath = useMemo(
     () => new Map(changedFiles.map(file => [changedFilePath(file.path), file.xy])),
     [changedFiles],
@@ -1489,6 +1701,9 @@ function Workbench({
           <button className={sidebarView === 'source' ? 'active' : ''} onClick={() => setSidebarView('source')}><WorkbenchIcon name="source" /> Changes ({changedFiles.length})</button>
           <button title="Rebase or cherry-pick" onClick={() => setGitOperationsOpen(true)}>
             <WorkbenchIcon name="branch" /> Git ops
+          </button>
+          <button title="Reconcile with the integration branch" onClick={() => setReconcileOpen(true)}>
+            <WorkbenchIcon name="branch" /> Reconcile
           </button>
           <button
             className={diffVisible ? 'active' : ''}
@@ -1693,7 +1908,7 @@ function Workbench({
                     <button title="Close right panel" onClick={() => setDiffVisible(false)}><WorkbenchIcon name="close" /></button>
                   </div>
                   <div className="rw-dock-content" hidden={rightPanelTab !== 'chat'}>
-                    <WorkspaceChat repo={name} active={active && rightPanelTab === 'chat'} />
+                    <WorkspaceChat repo={name} active={active && rightPanelTab === 'chat'} seed={chatSeed} onSeedConsumed={() => setChatSeed('')} />
                   </div>
                   <div className="rw-dock-content rw-diff" hidden={rightPanelTab !== 'diff'}>
                     <div className="rw-diff-code">
@@ -1771,6 +1986,15 @@ function Workbench({
           blocked={gitOperationBlocked}
           onClose={() => setGitOperationsOpen(false)}
           onComplete={refreshAfterGitOperation}
+        />
+      )}
+      {reconcileOpen && (
+        <ReconcileModal
+          repo={name}
+          blocked={gitOperationBlocked}
+          onClose={() => setReconcileOpen(false)}
+          onComplete={refreshAfterGitOperation}
+          onAskAI={status => void askAIReconcile(status)}
         />
       )}
       {entryModal && (

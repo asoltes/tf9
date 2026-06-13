@@ -3,12 +3,14 @@ package git
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var validSHA = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
@@ -66,6 +68,32 @@ func ListBranches(repoDir string) ([]string, error) {
 		result = append(result, name)
 	}
 	return result, nil
+}
+
+// RemoteURL returns the configured origin remote URL for the repo at repoDir,
+// or an empty string if there is no origin remote (a local-only repo).
+func RemoteURL(repoDir string) string {
+	out, err := exec.Command("git", "-C", repoDir, "config", "--get", "remote.origin.url").Output()
+	if err != nil {
+		slog.Debug("git: no origin remote", "dir", repoDir, "err", err)
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// DetectProvider classifies a git remote URL into a known hosting provider.
+// It returns "github", "gitlab", or "git" as a generic fallback (also used
+// when the URL is empty, i.e. a local-only repo).
+func DetectProvider(remoteURL string) string {
+	host := strings.ToLower(remoteURL)
+	switch {
+	case strings.Contains(host, "github"):
+		return "github"
+	case strings.Contains(host, "gitlab"):
+		return "gitlab"
+	default:
+		return "git"
+	}
 }
 
 // CreateWorktree creates a git worktree for branch at worktreePath and returns
@@ -319,4 +347,137 @@ func ListCommitsBetween(repoDir, base, head string) ([]Commit, error) {
 		})
 	}
 	return commits, nil
+}
+
+// validRef guards against git option injection — a ref passed as an exec arg
+// must not start with "-", which git would otherwise parse as a flag.
+func validRef(ref string) bool {
+	ref = strings.TrimSpace(ref)
+	return ref != "" && !strings.HasPrefix(ref, "-")
+}
+
+// AheadBehind reports how many commits head is ahead of and behind base, using
+// `git rev-list --left-right --count base...head`. ahead = commits in head not
+// in base; behind = commits in base not in head.
+func AheadBehind(ctx context.Context, repoDir, base, head string) (ahead, behind int, err error) {
+	if !validRef(base) || !validRef(head) {
+		return 0, 0, fmt.Errorf("invalid git ref")
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", repoDir, "rev-list",
+		"--left-right", "--count", base+"..."+head)
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, 0, fmt.Errorf("git rev-list: %w", err)
+	}
+	// Output is "<left>\t<right>": left = base-only (behind), right = head-only (ahead).
+	fields := strings.Fields(strings.TrimSpace(string(out)))
+	if len(fields) != 2 {
+		return 0, 0, fmt.Errorf("unexpected rev-list output %q", string(out))
+	}
+	if behind, err = strconv.Atoi(fields[0]); err != nil {
+		return 0, 0, fmt.Errorf("parse behind count: %w", err)
+	}
+	if ahead, err = strconv.Atoi(fields[1]); err != nil {
+		return 0, 0, fmt.Errorf("parse ahead count: %w", err)
+	}
+	return ahead, behind, nil
+}
+
+// IsAncestor reports whether ancestor is an ancestor of descendant, using
+// `git merge-base --is-ancestor` (exit 0 = yes, exit 1 = no).
+func IsAncestor(ctx context.Context, repoDir, ancestor, descendant string) (bool, error) {
+	if !validRef(ancestor) || !validRef(descendant) {
+		return false, fmt.Errorf("invalid git ref")
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", repoDir, "merge-base",
+		"--is-ancestor", ancestor, descendant)
+	err := cmd.Run()
+	if err == nil {
+		return true, nil
+	}
+	var exit *exec.ExitError
+	if errors.As(err, &exit) && exit.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("git merge-base --is-ancestor: %w", err)
+}
+
+// Push runs `git push origin <branch>` in repoDir and returns combined output.
+// Used only by the explicit human "promote" action — never by the AI.
+func Push(ctx context.Context, repoDir, branch string) (string, error) {
+	if !validRef(branch) {
+		return "", fmt.Errorf("invalid branch name %q", branch)
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", repoDir, "push", "origin", branch)
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	if err := cmd.Run(); err != nil {
+		return buf.String(), fmt.Errorf("git push: %w", err)
+	}
+	return buf.String(), nil
+}
+
+// BranchInfo describes an active branch for AI drift reconciliation.
+type BranchInfo struct {
+	Name    string `json:"name"`    // clean name, no remote prefix
+	Hash    string `json:"hash"`    // latest commit hash
+	Author  string `json:"author"`  // last committer name
+	Date    string `json:"date"`    // last commit date (ISO-8601)
+	Subject string `json:"subject"` // last commit subject
+}
+
+// ActiveBranches returns local and origin branches whose latest commit is newer
+// than windowDays, most-recent first, deduped (first occurrence per clean name
+// wins), capped at limit. windowDays<=0 disables the time filter; limit<=0
+// disables the cap. This is the "active/open branches" feed for AI auto-mode
+// drift reconciliation.
+func ActiveBranches(ctx context.Context, repoDir string, windowDays, limit int) ([]BranchInfo, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", repoDir, "for-each-ref",
+		"--sort=-committerdate",
+		"--format=%(refname:short)\x1f%(objectname)\x1f%(committername)\x1f%(committerdate:iso-strict)\x1f%(committerdate:unix)\x1f%(contents:subject)",
+		"refs/heads", "refs/remotes/origin")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git for-each-ref: %w", err)
+	}
+	var cutoff int64
+	if windowDays > 0 {
+		cutoff = time.Now().AddDate(0, 0, -windowDays).Unix()
+	}
+	seen := map[string]bool{}
+	var branches []BranchInfo
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\x1f", 6)
+		if len(parts) != 6 {
+			continue
+		}
+		name := strings.TrimSpace(parts[0])
+		// refs/remotes/origin/foo → "origin/foo"; strip to clean "foo".
+		if strings.HasPrefix(name, "origin/") {
+			name = strings.TrimPrefix(name, "origin/")
+		}
+		if name == "" || name == "HEAD" || seen[name] {
+			continue
+		}
+		unix, _ := strconv.ParseInt(strings.TrimSpace(parts[4]), 10, 64)
+		if cutoff > 0 && unix < cutoff {
+			continue // older than the active window
+		}
+		seen[name] = true
+		branches = append(branches, BranchInfo{
+			Name:    name,
+			Hash:    parts[1],
+			Author:  parts[2],
+			Date:    parts[3],
+			Subject: parts[5],
+		})
+		if limit > 0 && len(branches) >= limit {
+			break
+		}
+	}
+	return branches, nil
 }

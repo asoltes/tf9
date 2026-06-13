@@ -286,6 +286,10 @@ func appendHistory(messages []workspaceChatMessage, message workspaceChatMessage
 
 var workspaceChatAllowedTools = []string{
 	"Read", "Glob", "Grep",
+	// git is allowed broadly so the AI can investigate branches and reconcile
+	// drift (fetch, log, diff, show, for-each-ref, rebase, cherry-pick, merge).
+	// Pushing is denied below — promoting to the integration branch is a human
+	// action, not the AI's.
 	"Bash(git *)",
 	"Bash(go test *)", "Bash(go vet *)", "Bash(go build *)",
 	"Bash(npm test *)", "Bash(npm run test *)", "Bash(npm run build *)", "Bash(npx tsc *)",
@@ -294,6 +298,11 @@ var workspaceChatAllowedTools = []string{
 
 var workspaceChatDeniedTools = []string{
 	"Bash(rm *)", "Bash(sudo *)", "Bash(curl *)", "Bash(wget *)", "Bash(ssh *)", "Bash(scp *)",
+	// Drift reconciliation must never push or apply — these stay with the human
+	// (the Promote button and the terraform approval gate). Deny overrides allow.
+	"Bash(git push)", "Bash(git push *)",
+	"Bash(terraform apply *)", "Bash(terraform apply)",
+	"Bash(terraform destroy *)", "Bash(terraform destroy)",
 }
 
 func (m *workspaceChatManager) runTurn(
@@ -318,7 +327,8 @@ func (m *workspaceChatManager) runTurn(
 			"--allowedTools", strings.Join(workspaceChatAllowedTools, ","),
 			"--disallowedTools", strings.Join(workspaceChatDeniedTools, ","),
 			"--append-system-prompt",
-			"You are the tf9 workspace assistant. Work only inside the current repository. Never access credentials or paths outside it. Use only approved development commands. Explain blocked actions clearly.",
+			"You are the tf9 workspace assistant. Work only inside the current repository. Never access credentials or paths outside it. Use only approved development commands. Explain blocked actions clearly. " +
+				"For drift reconciliation: the integration branch (origin) reflects what is deployed. You may inspect any branch with read-only git commands (git fetch/log/diff/show/for-each-ref) and reconcile with git rebase/cherry-pick/merge. In review mode, propose the plan first; the user approves by switching to autoApply mode. Never run `git push` or `terraform apply`/`terraform destroy` — promoting and applying are the user's responsibility.",
 		}
 		if sessionID != "" {
 			args = append(args, "--resume", sessionID)

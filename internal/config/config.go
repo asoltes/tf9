@@ -105,13 +105,56 @@ func (w WebConfig) ReviewedPlanTimeout() time.Duration {
 }
 
 type Repository struct {
-	Name              string       `yaml:"name" json:"name"`
-	Path              string       `yaml:"path" json:"path"`
-	DefaultAWSProfile string       `yaml:"default_aws_profile,omitempty" json:"default_aws_profile,omitempty"`
-	DefaultAccountID  string       `yaml:"default_account_id,omitempty" json:"default_account_id,omitempty"`
-	DefaultRegion     string       `yaml:"default_region,omitempty" json:"default_region,omitempty"`
+	Name              string `yaml:"name" json:"name"`
+	Path              string `yaml:"path" json:"path"`
+	DefaultAWSProfile string `yaml:"default_aws_profile,omitempty" json:"default_aws_profile,omitempty"`
+	DefaultAccountID  string `yaml:"default_account_id,omitempty" json:"default_account_id,omitempty"`
+	DefaultRegion     string `yaml:"default_region,omitempty" json:"default_region,omitempty"`
+	// IntegrationBranch is the branch that mirrors what is deployed; feature
+	// branches reconcile against origin/<IntegrationBranch> before apply.
+	IntegrationBranch string `yaml:"integration_branch,omitempty" json:"integration_branch,omitempty"`
+	// ActiveBranchWindowDays bounds how recently a branch must have been
+	// committed to count as "active/open" for AI auto-mode drift reconciliation.
+	ActiveBranchWindowDays int `yaml:"active_branch_window_days,omitempty" json:"active_branch_window_days,omitempty"`
+	// ActiveBranchLimit caps how many active branches are fed to the AI.
+	ActiveBranchLimit int          `yaml:"active_branch_limit,omitempty" json:"active_branch_limit,omitempty"`
 	Targets           []RepoTarget `yaml:"targets,omitempty" json:"targets"`
 	Disabled          bool         `yaml:"disabled,omitempty" json:"disabled,omitempty"`
+}
+
+// Defaults for branch-reconciliation settings, applied when the config value is
+// unset (zero) so a blank field falls back to a sensible value rather than 0.
+const (
+	DefaultIntegrationBranch      = "main"
+	DefaultActiveBranchWindowDays = 30
+	DefaultActiveBranchLimit      = 20
+)
+
+// IntegrationBranchOrDefault returns the configured integration branch or the
+// default ("main") when unset.
+func (r Repository) IntegrationBranchOrDefault() string {
+	if strings.TrimSpace(r.IntegrationBranch) == "" {
+		return DefaultIntegrationBranch
+	}
+	return r.IntegrationBranch
+}
+
+// ActiveWindowDays returns the configured active-branch window in days, or the
+// default when unset/non-positive.
+func (r Repository) ActiveWindowDays() int {
+	if r.ActiveBranchWindowDays <= 0 {
+		return DefaultActiveBranchWindowDays
+	}
+	return r.ActiveBranchWindowDays
+}
+
+// ActiveLimit returns the configured active-branch cap, or the default when
+// unset/non-positive.
+func (r Repository) ActiveLimit() int {
+	if r.ActiveBranchLimit <= 0 {
+		return DefaultActiveBranchLimit
+	}
+	return r.ActiveBranchLimit
 }
 
 // RepoTarget maps a Terraform directory relative to its repository root.
@@ -127,10 +170,13 @@ type RepoTarget struct {
 
 // RepoConfig preserves the existing API envelope while groups are removed.
 type RepoConfig struct {
-	DefaultAWSProfile string       `json:"default_aws_profile,omitempty"`
-	DefaultAccountID  string       `json:"default_account_id,omitempty"`
-	DefaultRegion     string       `json:"default_region,omitempty"`
-	Targets           []RepoTarget `json:"targets"`
+	DefaultAWSProfile      string       `json:"default_aws_profile,omitempty"`
+	DefaultAccountID       string       `json:"default_account_id,omitempty"`
+	DefaultRegion          string       `json:"default_region,omitempty"`
+	IntegrationBranch      string       `json:"integration_branch,omitempty"`
+	ActiveBranchWindowDays int          `json:"active_branch_window_days,omitempty"`
+	ActiveBranchLimit      int          `json:"active_branch_limit,omitempty"`
+	Targets                []RepoTarget `json:"targets"`
 }
 
 // SetPath overrides the configuration path for the current process.
@@ -683,6 +729,9 @@ func SaveRepoConfig(name string, repoCfg RepoConfig) error {
 				cfg.Repositories[i].DefaultAWSProfile = repoCfg.DefaultAWSProfile
 				cfg.Repositories[i].DefaultAccountID = repoCfg.DefaultAccountID
 				cfg.Repositories[i].DefaultRegion = repoCfg.DefaultRegion
+				cfg.Repositories[i].IntegrationBranch = repoCfg.IntegrationBranch
+				cfg.Repositories[i].ActiveBranchWindowDays = repoCfg.ActiveBranchWindowDays
+				cfg.Repositories[i].ActiveBranchLimit = repoCfg.ActiveBranchLimit
 				cfg.Repositories[i].Targets = repoCfg.Targets
 				return nil
 			}
@@ -700,10 +749,13 @@ func LoadRepoConfig(name string) (RepoConfig, error) {
 		return RepoConfig{}, fmt.Errorf("repo %q not found", name)
 	}
 	return RepoConfig{
-		DefaultAWSProfile: repo.DefaultAWSProfile,
-		DefaultAccountID:  repo.DefaultAccountID,
-		DefaultRegion:     repo.DefaultRegion,
-		Targets:           repo.Targets,
+		DefaultAWSProfile:      repo.DefaultAWSProfile,
+		DefaultAccountID:       repo.DefaultAccountID,
+		DefaultRegion:          repo.DefaultRegion,
+		IntegrationBranch:      repo.IntegrationBranch,
+		ActiveBranchWindowDays: repo.ActiveBranchWindowDays,
+		ActiveBranchLimit:      repo.ActiveBranchLimit,
+		Targets:                repo.Targets,
 	}, nil
 }
 

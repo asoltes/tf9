@@ -109,10 +109,13 @@ export interface WebSettings {
   reviewedPlanTimeoutSeconds: number;
 }
 
+export type GitProvider = 'github' | 'gitlab' | 'git';
+
 export interface Repo {
   name: string;
   path: string;
   disabled?: boolean;
+  provider?: GitProvider;
 }
 
 export interface RepoTarget {
@@ -129,6 +132,9 @@ export interface RepoConfig {
   default_aws_profile?: string;
   default_account_id?: string;
   default_region?: string;
+  integration_branch?: string;
+  active_branch_window_days?: number;
+  active_branch_limit?: number;
   targets: RepoTarget[];
 }
 
@@ -340,6 +346,44 @@ export interface Identity {
 export interface GitChangedFile {
   xy: string;   // two-char porcelain code, e.g. "M ", " M", "??"
   path: string;
+}
+
+// Commit as serialized by the reconcile/active-branches endpoints (Go git.Commit
+// has no json tags, so keys are capitalized).
+export interface ReconcileCommit {
+  Hash: string;
+  Subject: string;
+  Author: string;
+  Date: string;
+}
+
+// ReconcileStatus describes how the current branch relates to the integration
+// branch on origin. recommend drives the Reconcile panel's primary action.
+export interface ReconcileStatus {
+  integrationBranch: string;
+  integrationRef?: string;
+  currentBranch: string;
+  hasIntegration: boolean;
+  ahead?: number;
+  behind?: number;
+  diverged?: boolean;
+  behindCommits?: ReconcileCommit[];
+  aheadCommits?: ReconcileCommit[];
+  recommend: 'clean' | 'rebase' | 'promote' | 'unknown';
+}
+
+export interface ActiveBranch {
+  name: string;
+  hash: string;
+  author: string;
+  date: string;
+  subject: string;
+}
+
+export interface ActiveBranches {
+  windowDays: number;
+  limit: number;
+  branches: ActiveBranch[];
 }
 
 export interface WorkspaceEntry {

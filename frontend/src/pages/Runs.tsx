@@ -9,7 +9,7 @@ import {
   type RunFilters,
 } from '../lib/runFilters';
 import { commandStyleClass } from '../lib/commandStyle';
-import type { Run, RunStatus, Paginated } from '../types';
+import type { Run, RunStatus, Paginated, Repo, GitProvider } from '../types';
 import './Runs.css';
 
 // ── Inline icons (stroke=currentColor), ported from runs-history.js ─────────
@@ -40,6 +40,25 @@ const ICON_STOP = (
 const ICON_BAN = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><line x1="6.3" y1="6.3" x2="17.7" y2="17.7" /></svg>
 );
+
+// ── Git-provider marks (filled brand glyphs, fill=currentColor) ─────────────
+// Distinct from ICON_GIT (the branch glyph used in the Branch column): the repo
+// fallback below is the git logo, not the branch icon.
+const ICON_GITHUB = (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.2 3.44 9.6 8.21 11.16.6.11.82-.25.82-.56 0-.27-.01-1-.02-1.96-3.34.71-4.04-1.58-4.04-1.58-.55-1.36-1.34-1.73-1.34-1.73-1.09-.73.08-.72.08-.72 1.2.08 1.84 1.21 1.84 1.21 1.07 1.8 2.81 1.28 3.5.98.11-.76.42-1.28.76-1.57-2.67-.3-5.47-1.31-5.47-5.83 0-1.29.47-2.34 1.24-3.17-.13-.3-.54-1.52.12-3.16 0 0 1.01-.32 3.3 1.21a11.6 11.6 0 0 1 6 0c2.29-1.53 3.3-1.21 3.3-1.21.66 1.64.24 2.86.12 3.16.77.83 1.23 1.88 1.23 3.17 0 4.53-2.81 5.53-5.49 5.82.43.37.81 1.1.81 2.22 0 1.6-.01 2.9-.01 3.29 0 .31.22.68.83.56C20.57 21.88 24 17.49 24 12.29 24 5.78 18.63.5 12 .5z" /></svg>
+);
+const ICON_GITLAB = (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.955 13.587l-1.342-4.135-2.664-8.189a.455.455 0 0 0-.867 0L16.418 9.45H7.582L4.919 1.263a.455.455 0 0 0-.867 0L1.388 9.452.044 13.587a.924.924 0 0 0 .331 1.023L12 23.054l11.625-8.444a.92.92 0 0 0 .33-1.023" /></svg>
+);
+const ICON_GIT_LOGO = (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.546 10.93 13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9.43 1.85 1.85 0 0 1 0 2.61c-.726.726-1.911.726-2.638 0a1.85 1.85 0 0 1-.4-2.009l-2.477-2.476v6.518c.179.088.348.21.494.357a1.85 1.85 0 0 1 0 2.609c-.726.726-1.911.726-2.638 0a1.85 1.85 0 0 1 0-2.609c.182-.181.388-.318.605-.408V8.835a1.84 1.84 0 0 1-.998-2.421L7.799 3.701.45 11.05a1.55 1.55 0 0 0 0 2.188l10.48 10.477a1.55 1.55 0 0 0 2.187 0l10.43-10.43a1.55 1.55 0 0 0 0-2.355" /></svg>
+);
+
+const PROVIDER_ICON: Record<GitProvider, JSX.Element> = {
+  github: ICON_GITHUB,
+  gitlab: ICON_GITLAB,
+  git: ICON_GIT_LOGO,
+};
 
 type Dock = 'bottom' | 'side';
 
@@ -275,6 +294,20 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
   const [run, setRun] = useState<Run | null>(null);
   const [lines, setLines] = useState<string[]>([]);
   const sseRef = useRef<EventSource | null>(null);
+
+  // Map repo name → detected git provider, used to badge the Repo column.
+  const [providers, setProviders] = useState<Record<string, GitProvider>>({});
+  useEffect(() => {
+    api.get<Paginated<Repo>>('/api/repos')
+      .then(res => {
+        const map: Record<string, GitProvider> = {};
+        for (const repo of res?.items || []) {
+          if (repo.provider) map[repo.name] = repo.provider;
+        }
+        setProviders(map);
+      })
+      .catch(() => { /* provider badges are best-effort; fall back to git icon */ });
+  }, []);
 
   const loadRuns = useCallback(() => {
     setError(null);
@@ -515,7 +548,19 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                             <span className="run-id">{r.status === 'running' && <span className="live" />}{r.id}</span>
                           </td>
                           <td style={{ width: 96 }}><span className={`run-command command-style ${commandStyleClass(command)}`}>{command}</span></td>
-                          <td style={{ width: 160 }}><span className="mono-cell repo" title={r.repo || r.request?.repo || ''}>{r.repo || r.request?.repo || '—'}</span></td>
+                          <td style={{ width: 160 }}>
+                            {(() => {
+                              const repoName = r.repo || r.request?.repo || '';
+                              if (!repoName) return <span className="mono-cell repo">—</span>;
+                              const provider: GitProvider = providers[repoName] || 'git';
+                              return (
+                                <span className="mono-cell repo" title={`${repoName} · ${provider}`}>
+                                  <span className={`repo-provider provider-${provider}`}>{PROVIDER_ICON[provider]}</span>
+                                  <span className="repo-name">{repoName}</span>
+                                </span>
+                              );
+                            })()}
+                          </td>
                           <td style={{ width: 118 }}><span className="branch-cell">{ICON_GIT}{r.gitBranch || '—'}</span></td>
                           <td style={{ width: 170 }}>
                             <span className="tgt-chips">

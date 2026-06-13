@@ -92,7 +92,13 @@ html[data-theme="dark"] .runs-page .runs-tbl tbody tr.is-running td{background:#
 @keyframes runsPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(9,114,211,.5)}50%{opacity:.4;box-shadow:0 0 0 4px rgba(9,114,211,0)}}
 .runs-page .mono-cell{font-family:var(--mono);font-size:12px;color:var(--text-2)}
 .runs-page .run-command{color:var(--command-color);font-size:12px;font-weight:600;white-space:nowrap}
-.runs-page .mono-cell.repo{display:inline-block;max-width:148px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:var(--text)}
+.runs-page .mono-cell.repo{display:inline-flex;align-items:center;gap:6px;max-width:148px;vertical-align:middle;color:var(--text)}
+.runs-page .mono-cell.repo .repo-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.runs-page .repo-provider{display:inline-flex;flex-shrink:0}
+.runs-page .repo-provider svg{width:14px;height:14px}
+.runs-page .repo-provider.provider-github{color:var(--text)}
+.runs-page .repo-provider.provider-gitlab{color:#fc6d26}
+.runs-page .repo-provider.provider-git{color:var(--text-3)}
 .runs-page .branch-cell{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--text)}
 .runs-page .branch-cell svg{width:13px;height:13px;color:var(--text-3);flex-shrink:0}
 .runs-page .tgt-chips{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
@@ -100,8 +106,8 @@ html[data-theme="dark"] .runs-page .runs-tbl tbody tr.is-running td{background:#
 html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .tgt-more{font-size:11px;color:var(--link);font-weight:600}
 .runs-page .mode-cell{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}
-.runs-page .mode-cell svg{width:14px;height:14px}
-.runs-page .mode-cell.par{color:var(--purple)}
+.runs-page .mode-cell svg{width:14px;height:14px;color:var(--text-3)}
+/* Both modes share one consistent text + icon color (no purple for parallel). */
 /* result mini bar */
 .runs-page .ts-cell{font-family:var(--sans);font-size:12.5px;color:var(--text-2);white-space:nowrap}
 /* status */
@@ -165,6 +171,8 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
   font:inherit;font-size:12.5px;text-align:left;cursor:pointer;
 }
 .runs-page .rerun-menu-pop button:hover{background:var(--surface-2)}
+.runs-page .rerun-menu-pop button>span:first-child{display:inline-flex;align-items:center;gap:7px}
+.runs-page .rerun-menu-pop button .badge.command-style{font-size:11px;padding:1px 7px}
 .runs-page .rerun-menu-pop small{color:var(--text-2);font-size:10.5px;white-space:nowrap}
 .runs-page .dock-toggle{display:inline-flex;border:2px solid var(--input-border);border-radius:var(--radius-i);overflow:hidden}
 .runs-page .dock-toggle button{border:none;background:var(--container);color:var(--text-2);padding:5px 8px;cursor:pointer;display:flex;align-items:center}
@@ -313,9 +321,6 @@ html[data-theme="dark"] .runs-page .progress-bar{background:#1c2430}
 /* output header (view switch) */
 .runs-page .out-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .runs-page .out-head .ot{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
-.runs-page .out-head .ot .par-pill{font-size:11px;font-weight:700;color:var(--purple);background:#f1e9fb;border:1px solid #ddc9f5;border-radius:999px;padding:2px 9px;display:inline-flex;align-items:center;gap:5px}
-html[data-theme="dark"] .runs-page .out-head .ot .par-pill{background:#241a36;border-color:#3a2b54}
-.runs-page .out-head .ot .par-pill svg{width:12px;height:12px}
 .runs-page .view-toggle{display:inline-flex;border:2px solid var(--input-border);border-radius:var(--radius-i);overflow:hidden}
 .runs-page .view-toggle button{border:none;background:var(--container);color:var(--text-2);font-size:13px;font-weight:600;padding:5px 12px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .runs-page .view-toggle button svg{width:14px;height:14px}

@@ -116,7 +116,10 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 		!strings.Contains(logText, "--permission-mode acceptEdits") ||
 		!strings.Contains(logText, "--resume 11111111-1111-1111-1111-111111111111") ||
 		!strings.Contains(logText, "Bash(git *)") ||
-		strings.Contains(logText, "Bash(git push *)") {
+		// git is allowed so the AI can reconcile drift, but push is explicitly
+		// denied — promoting to the integration branch is the human's action.
+		!strings.Contains(logText, "--disallowedTools") ||
+		!strings.Contains(logText, "Bash(git push *)") {
 		t.Fatalf("claude invocation was not scoped as expected:\n%s", logText)
 	}
 

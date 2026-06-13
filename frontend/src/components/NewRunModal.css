@@ -220,6 +220,8 @@
 .run-overlay .sum-warn svg{width:15px;height:15px;flex-shrink:0;margin-top:1px}
 .run-overlay .sum-warn.amber{background:var(--amber-bg);color:#5c4a05}
 .run-overlay .sum-warn.red{background:var(--red-bg);color:#8b1414}
+.run-overlay .sum-warn.reconcile-guard{flex-wrap:wrap}
+.run-overlay .sum-warn.reconcile-guard .reconcile-guard-btn{margin-left:auto;font-size:11px;padding:3px 10px}
 
 /* confirm state in footer */
 .run-overlay .confirm-bar{display:flex;align-items:center;gap:12px;width:100%;justify-content:space-between}
