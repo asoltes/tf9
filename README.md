@@ -25,10 +25,13 @@ local web UI share one YAML configuration file and the same binary.
 
 ## Screenshots
 
-### Overview
-![Overview](docs/screenshots/01-overview.png)
+### Dashboard
+![Dashboard](docs/screenshots/01-overview.png)
 
-### Runs history with live split panel
+### Run History
+![Run History](docs/screenshots/02-runs.png)
+
+### Run detail — live split panel
 ![Runs detail](docs/screenshots/03-runs-detail.png)
 
 ### New Run modal — command, repo, branch, targets
@@ -37,11 +40,32 @@ local web UI share one YAML configuration file and the same binary.
 ### Repositories
 ![Repositories](docs/screenshots/05-repositories.png)
 
+### Repository Workspace
+![Repository Workspace](docs/screenshots/12-workspace.png)
+
 ### Config YAML editor
 ![Config YAML editor](docs/screenshots/06-config-yaml.png)
 
-### Reports
-![Reports](docs/screenshots/07-reports.png)
+### AWS Profile Mappings
+![AWS Profile Mappings](docs/screenshots/09-profile-mappings.png)
+
+### Terraform Reports
+![Terraform Reports](docs/screenshots/07-reports.png)
+
+### Report viewer
+![Report viewer](docs/screenshots/13-report-viewer.png)
+
+### Graph View
+![Graph View](docs/screenshots/14-graph-view.png)
+
+### Cost Analysis
+![Cost Analysis](docs/screenshots/15-cost-analysis.png)
+
+### System Logs
+![System Logs](docs/screenshots/10-logs.png)
+
+### Documentation
+![Documentation](docs/screenshots/11-help.png)
 
 ### Collapsible sidebar
 ![Sidebar collapsed](docs/screenshots/08-sidebar-collapsed.png)
