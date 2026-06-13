@@ -7,9 +7,12 @@ import '@xterm/xterm/css/xterm.css';
 import Shell from '../Shell';
 import { api, ApiError, repoGit, workspaceApi, workspaceChatApi } from '../api';
 import type {
-  GitChangedFile, GitCommit, Paginated, ReconcileStatus, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
+  ActiveBranches, GitChangedFile, GitCommit, Paginated, ReconcileStatus, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
   WorkspaceChatMode, WorkspaceEntry, WorkspaceFile,
 } from '../types';
+import { buildReconcilePrompt } from '../lib/reconcilePrompt';
+import { takePendingChatSeed } from '../lib/pendingChat';
+import { stripAnsi } from '../lib/runStatus';
 import { useNav } from '../nav';
 import { parseGitDiff } from '../lib/gitDiff';
 import { clampDiffWidth, resizedWidth, storedDiffWidth } from '../lib/workspaceLayout';
@@ -433,6 +436,64 @@ type ChatToolActivity = {
   summary: string;
 };
 
+function ChatInline({ text }: { text: string }) {
+  return text.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={index}>{part.slice(1, -1)}</code>;
+    }
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function ChatProse({ text }: { text: string }) {
+  const lines = text.split('\n');
+  return (
+    <div className="rw-chat-prose">
+      {lines.map((line, index) => {
+        if (!line.trim()) return <span className="rw-chat-space" key={index} />;
+        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        if (heading) return <strong className="rw-chat-heading" key={index}><ChatInline text={heading[2]} /></strong>;
+        const bullet = line.match(/^\s*[-*]\s+(.+)$/);
+        if (bullet) return <span className="rw-chat-list-item" key={index}><ChatInline text={bullet[1]} /></span>;
+        return <span className="rw-chat-line" key={index}><ChatInline text={line} /></span>;
+      })}
+    </div>
+  );
+}
+
+function ChatContent({ content, live = false }: { content: string; live?: boolean }) {
+  const cleanContent = stripAnsi(content);
+  const blocks: React.ReactNode[] = [];
+  const fence = /```([^\n`]*)\n([\s\S]*?)(?:```|$)/g;
+  let offset = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = fence.exec(cleanContent)) !== null) {
+    if (match.index > offset) {
+      blocks.push(<ChatProse key={`text-${offset}`} text={cleanContent.slice(offset, match.index)} />);
+    }
+    blocks.push(
+      <div className="rw-chat-code" key={`code-${match.index}`}>
+        <div className="rw-chat-code-head">
+          <span>{match[1].trim() || 'code'}</span>
+        </div>
+        <pre><code>{match[2].replace(/\n$/, '')}</code></pre>
+      </div>,
+    );
+    offset = fence.lastIndex;
+  }
+
+  if (offset < cleanContent.length) {
+    blocks.push(<ChatProse key={`text-${offset}`} text={cleanContent.slice(offset)} />);
+  }
+  if (blocks.length === 0 && cleanContent) blocks.push(<ChatProse key="text" text={cleanContent} />);
+
+  return <div className="rw-chat-content">{blocks}{live && <i className="rw-chat-cursor" />}</div>;
+}
+
 function WorkspaceChat({ repo, active, seed, onSeedConsumed }: {
   repo: string;
   active: boolean;
@@ -602,20 +663,27 @@ function WorkspaceChat({ repo, active, seed, onSeedConsumed }: {
         )}
         {messages.map(message => (
           <article key={message.id} className={`rw-chat-message ${message.role}`}>
-            <header>{message.role === 'user' ? 'You' : 'Claude'}</header>
-            <div>{message.content}</div>
+            <header>
+              <span className="rw-chat-avatar">{message.role === 'user' ? 'Y' : 'C'}</span>
+              <span>{message.role === 'user' ? 'You' : 'Claude'}</span>
+            </header>
+            <ChatContent content={message.content} />
           </article>
         ))}
         {running && (
           <article className="rw-chat-message assistant live">
-            <header>Claude <span>working</span></header>
+            <header>
+              <span className="rw-chat-avatar">C</span>
+              <span>Claude</span>
+              <em>Working</em>
+            </header>
             {tools.map((tool, index) => (
               <div className="rw-chat-tool" key={`${tool.tool}-${index}`}>
                 <WorkbenchIcon name={tool.tool === 'Edit' || tool.tool === 'Write' ? 'save' : 'terminal'} />
                 <span><strong>{tool.tool}</strong>{tool.summary}</span>
               </div>
             ))}
-            <div>{liveText}<i className="rw-chat-cursor" /></div>
+            <ChatContent content={liveText} live />
           </article>
         )}
         <div ref={endRef} />
@@ -1010,7 +1078,7 @@ function ReconcileModal({
                 <div className="rw-commit-picker">
                   <div className="rw-commit-picker-head"><span>Commits to reconcile (on {status.integrationBranch}, missing here)</span></div>
                   {(status.behindCommits ?? []).map(commit => (
-                    <div className="rw-commit-row" key={commit.Hash}>
+                    <div className="rw-commit-row rw-reconcile-commit" key={commit.Hash}>
                       <code>{commit.Hash.slice(0, 7)}</code>
                       <span><strong>{commit.Subject}</strong><small>{commit.Author} · {commit.Date}</small></span>
                     </div>
@@ -1269,6 +1337,17 @@ function Workbench({
     : changedFiles.length > 0
       ? 'Commit, stash, or discard working-tree changes before running Git operations.'
       : '';
+
+  // A "Reconcile with AI" click in the live terminal stashes a prompt and
+  // navigates here. Pick it up once on mount, open the chat panel, and seed it.
+  useEffect(() => {
+    const seed = takePendingChatSeed(name);
+    if (seed) {
+      setRightPanelTab('chat');
+      setDiffVisible(true);
+      setChatSeed(seed);
+    }
+  }, [name]);
 
   function openTerminal(directory = '') {
     const session = { id: nextTerminalId.current, directory };
@@ -1600,37 +1679,16 @@ function Workbench({
   // status and the active/open branches — and hands it to the AI chat so Claude
   // can locate the reconciling code across branches and propose/execute the fix.
   async function askAIReconcile(status: ReconcileStatus) {
-    let activeList = '';
+    let active: ActiveBranches | null = null;
     try {
-      const active = await repoGit.activeBranches(name);
-      activeList = active.branches
-        .map(b => `- ${b.name} @ ${b.hash.slice(0, 7)} (${b.author}, ${b.date}): ${b.subject}`)
-        .join('\n');
+      active = await repoGit.activeBranches(name);
     } catch {
-      activeList = '(could not list active branches)';
+      active = null;
     }
-    const behind = (status.behindCommits ?? [])
-      .map(c => `- ${c.Hash.slice(0, 7)} ${c.Subject} (${c.Author})`).join('\n') || '(none)';
-    const prompt = [
-      `I need help reconciling drift on the Terraform repo "${name}".`,
-      `Current branch: ${status.currentBranch}. Integration branch: ${status.integrationRef || status.integrationBranch}.`,
-      `My branch is ${status.behind ?? 0} commit(s) behind and ${status.ahead ?? 0} ahead of the integration branch.`,
-      '',
-      'Commits on the integration branch that are missing from my branch (these would be reverted if I apply now):',
-      behind,
-      '',
-      'Active/open branches in this repo (the reconciling code may live in one of these, unmerged):',
-      activeList,
-      '',
-      'Investigate the active branches with read-only git commands (git log, git diff, git show <branch>:<file>),',
-      'find which branch + commit contains the Terraform code needed to reconcile each drifted resource, then',
-      'propose the minimal rebase or cherry-pick. Switch me to autoApply mode and I will approve before you run',
-      'any git rebase/cherry-pick. Do not push or run terraform apply.',
-    ].join('\n');
     setReconcileOpen(false);
     setRightPanelTab('chat');
     setDiffVisible(true);
-    setChatSeed(prompt);
+    setChatSeed(buildReconcilePrompt(name, status, active));
   }
 
   const changeByPath = useMemo(

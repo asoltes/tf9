@@ -136,7 +136,7 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .run-dist-counts .d{color:var(--red)}
 
 /* ── Split panel (side or bottom dock) ──────────────────────────────────── */
-.runs-page .splitpanel{flex-shrink:0;background:var(--container);display:flex;min-width:0}
+.runs-page .splitpanel{position:relative;flex-shrink:0;background:var(--container);display:flex;min-width:0}
 .runs-page .sp-view-tabs{display:flex;gap:4px;padding:0 12px 8px;border-bottom:1px solid var(--border)}
 .runs-page .sp-view-tabs button{padding:6px 13px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--text-2);font-weight:650;cursor:pointer}
 .runs-page .sp-view-tabs button.active{border-bottom-color:var(--blue);color:var(--blue)}
@@ -180,6 +180,23 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .dock-toggle button.on{background:var(--blue);color:#fff}
 .runs-page .sp-body{flex:1;overflow:auto;padding:16px 20px;min-height:0}
 .runs-page .sp-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-2);font-size:14px}
+.runs-page .sp-reconcile-ai{
+  position:absolute;right:26px;bottom:24px;z-index:12;width:54px;height:54px;
+  display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--blue) 72%,var(--border));
+  border-radius:50%;background:linear-gradient(145deg,var(--blue),color-mix(in srgb,var(--blue) 62%,var(--purple)));
+  color:#fff;cursor:pointer;
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--blue) 12%,transparent),0 0 22px color-mix(in srgb,var(--blue) 58%,transparent),0 8px 22px rgba(0,0,0,.24);
+  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+  animation:sp-ai-glow 2.6s ease-in-out infinite;
+}
+.runs-page .sp-reconcile-ai svg{width:25px;height:25px;stroke-width:1.9}
+.runs-page .sp-reconcile-ai:hover{transform:translateY(-2px) scale(1.04);filter:brightness(1.08);box-shadow:0 0 0 7px color-mix(in srgb,var(--blue) 15%,transparent),0 0 30px color-mix(in srgb,var(--blue) 72%,transparent),0 11px 26px rgba(0,0,0,.3)}
+.runs-page .sp-reconcile-ai:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 38%,transparent);outline-offset:4px}
+.runs-page .sp-reconcile-ai:disabled{cursor:wait;opacity:.8}
+.runs-page .sp-reconcile-ai.loading svg{animation:sp-ai-spin 1.2s linear infinite}
+@keyframes sp-ai-glow{0%,100%{box-shadow:0 0 0 5px color-mix(in srgb,var(--blue) 10%,transparent),0 0 18px color-mix(in srgb,var(--blue) 48%,transparent),0 8px 22px rgba(0,0,0,.24)}50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--blue) 16%,transparent),0 0 30px color-mix(in srgb,var(--blue) 68%,transparent),0 8px 24px rgba(0,0,0,.28)}}
+@keyframes sp-ai-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.runs-page .sp-reconcile-ai,.runs-page .sp-reconcile-ai.loading svg{animation:none}}
 
 /* Inline terraform approval panel */
 .runs-page .sp-approval-bar{
@@ -190,6 +207,11 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
   animation:runsApprovalGlow 1.6s ease-in-out infinite;
 }
 .runs-page .sp-approval-bar.destructive{--approval-glow:var(--red);border-color:var(--red)}
+.runs-page .sp-approval-bar.destructive.final-confirm{
+  background:color-mix(in srgb,var(--red) 12%,var(--container));
+  border-width:2px;
+}
+.runs-page .sp-approval-bar.destructive.final-confirm .sp-approval-title{color:var(--red)}
 @keyframes runsApprovalGlow{
   0%,100%{
     box-shadow:0 0 0 3px color-mix(in srgb,var(--approval-glow) 12%,transparent),
@@ -616,6 +638,10 @@ html[data-theme="dark"] .fs-backdrop{background:rgba(0,0,0,.75)}
 
 /* ── Resource change table (.rct) ────────────────────────────────────────── */
 .rct-wrap{overflow:auto}
+.rct-toolbar{position:sticky;top:0;z-index:2;display:flex;justify-content:flex-end;padding:7px 0;background:var(--tc-card-bg)}
+.rct-toolbar label{display:flex;align-items:center;gap:7px;color:var(--text-3);font:600 10px var(--sans);text-transform:uppercase;letter-spacing:.04em}
+.rct-toolbar select{height:27px;padding:2px 25px 2px 8px;border:1px solid var(--divider);border-radius:6px;outline:none;background:var(--container);color:var(--text-1);font:11px var(--sans)}
+.rct-toolbar select:focus{border-color:var(--blue)}
 .rct{width:100%;border-collapse:collapse;font-size:12.5px}
 .rct th{text-align:left;font-family:var(--sans);font-size:11px;font-weight:700;
   text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);
@@ -641,6 +667,8 @@ html[data-theme="dark"] .fs-backdrop{background:rgba(0,0,0,.75)}
   background:var(--tc-card-bg);white-space:pre-wrap;word-break:break-word}
 /* Fullscreen has room — let big nested diffs expand much further. */
 .fs-modal .rct-block-body{max-height:70vh}
+.fs-modal .rct-toolbar{background:var(--container)}
+.fs-modal .rct-toolbar select{background:var(--container);color:var(--text-1);border-color:var(--divider)}
 /* Dark context (fullscreen modal) */
 .fs-modal .rct th{color:#6e7681;border-bottom-color:#1d2736}
 .fs-modal .rct td{border-bottom-color:#1d2736}

@@ -140,9 +140,16 @@ func changesTable(output string) template.HTML {
 		return template.HTML(`<div class="rct-none">No resource changes detected.</div>`)
 	}
 	var sb strings.Builder
+	sb.WriteString(`<div class="rct-toolbar"><label>Sort <select onchange="sortRct(this)"><option value="plan">Plan order</option><option value="action">Action</option><option value="resource">Resource A-Z</option></select></label></div>`)
 	sb.WriteString(`<table class="rct"><tbody>`)
-	for _, b := range blocks {
-		sb.WriteString(`<tr class="rct-row" onclick="toggleRct(this)"><td><span class="rct-badge `)
+	for i, b := range blocks {
+		sb.WriteString(`<tr class="rct-row" data-order="`)
+		sb.WriteString(strconv.Itoa(i))
+		sb.WriteString(`" data-action="`)
+		sb.WriteString(template.HTMLEscapeString(b.Action))
+		sb.WriteString(`" data-resource="`)
+		sb.WriteString(template.HTMLEscapeString(strings.ToLower(b.Resource)))
+		sb.WriteString(`" onclick="toggleRct(this)"><td><span class="rct-badge `)
 		sb.WriteString(b.Action)
 		sb.WriteString(`">`)
 		sb.WriteString(template.HTMLEscapeString(changeBadgeLabel(b.Action)))
@@ -652,6 +659,10 @@ tr:hover td{background:var(--hover)}
 .env-empty{display:none;padding:16px 20px;background:var(--term-bg);color:var(--muted);font-style:italic;font-size:12px}
 /* ── Changes (resource-change table) ── */
 .env-changes{display:none;background:var(--surface)}
+.rct-toolbar{display:flex;justify-content:flex-end;padding:8px 16px;border-bottom:1px solid var(--border2);background:var(--surface)}
+.rct-toolbar label{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.rct-toolbar select{height:27px;padding:2px 26px 2px 8px;border:1px solid var(--border);border-radius:6px;outline:none;background:var(--surface);color:var(--text);font:11px inherit}
+.rct-toolbar select:focus{border-color:var(--blue)}
 .rct{width:100%;border-collapse:collapse;font-size:12px}
 .rct-row{cursor:pointer;transition:background .15s}
 .rct-row>td{padding:9px 16px;border-top:1px solid var(--border2);vertical-align:middle}
@@ -880,6 +891,29 @@ function toggleRct(row) {
   var open = row.classList.toggle('open');
   var blk = row.nextElementSibling;
   if (blk && blk.classList.contains('rct-block')) blk.classList.toggle('open', open);
+}
+function sortRct(select) {
+  var table = select.closest('.env-changes').querySelector('.rct');
+  if (!table) return;
+  var body = table.tBodies[0];
+  var rows = Array.prototype.slice.call(body.querySelectorAll('.rct-row'));
+  var actionOrder = { add: 0, change: 1, replace: 2, destroy: 3 };
+  rows.sort(function(a, b) {
+    if (select.value === 'action') {
+      return actionOrder[a.dataset.action] - actionOrder[b.dataset.action] ||
+        parseInt(a.dataset.order, 10) - parseInt(b.dataset.order, 10);
+    }
+    if (select.value === 'resource') {
+      return a.dataset.resource.localeCompare(b.dataset.resource) ||
+        parseInt(a.dataset.order, 10) - parseInt(b.dataset.order, 10);
+    }
+    return parseInt(a.dataset.order, 10) - parseInt(b.dataset.order, 10);
+  });
+  rows.forEach(function(row) {
+    var block = row.nextElementSibling;
+    body.appendChild(row);
+    if (block && block.classList.contains('rct-block')) body.appendChild(block);
+  });
 }
 function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t);

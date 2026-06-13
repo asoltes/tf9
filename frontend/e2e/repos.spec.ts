@@ -97,9 +97,21 @@ test('repository defaults populate newly added targets', async ({ page }) => {
     const row = page.locator('table.tbl tbody tr', { hasText: 'e2e-repo' });
     await row.getByRole('button', { name: 'Configure' }).click();
 
+    await expect(page.getByRole('heading', { name: /Global settings/ })).toBeVisible();
+    await expect(page.getByText('AWS defaults', { exact: true })).toBeVisible();
+    await expect(page.getByText('Branch discovery', { exact: true })).toBeVisible();
     await page.getByLabel('Default AWS profile').selectOption('e2e-profile');
     await expect(page.getByLabel('Default region')).toHaveValue('us-west-2');
     await expect(page.getByLabel('Default account ID')).toHaveValue('123456789012');
+    await page.getByLabel('Deployment baseline').fill('trunk');
+    await page.getByLabel('Recent branch window').fill('21');
+    await page.getByLabel('Maximum AI branches').fill('12');
+    await page.getByRole('button', { name: 'Save settings' }).click();
+    await expect(page.locator('.toast.show')).toContainText('saved');
+    await expect(page.getByLabel('Deployment baseline')).toHaveValue('trunk');
+    await expect(page.getByLabel('Recent branch window')).toHaveValue('21');
+    await expect(page.getByLabel('Maximum AI branches')).toHaveValue('12');
+    await shot(page, 'repos-global-settings');
 
     const environments = page.locator('.dir-row', { hasText: 'environments' });
     await environments.getByRole('button', { name: 'Open' }).click();
@@ -112,6 +124,9 @@ test('repository defaults populate newly added targets', async ({ page }) => {
     expect(saved.default_aws_profile).toBe('e2e-profile');
     expect(saved.default_region).toBe('us-west-2');
     expect(saved.default_account_id).toBe('123456789012');
+    expect(saved.integration_branch).toBe('trunk');
+    expect(saved.active_branch_window_days).toBe(21);
+    expect(saved.active_branch_limit).toBe(12);
     expect(saved.targets).toEqual([expect.objectContaining({
       name: 'dev',
       directory: 'environments/dev',

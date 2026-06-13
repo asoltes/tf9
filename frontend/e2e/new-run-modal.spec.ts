@@ -12,6 +12,12 @@ test('new run modal loads repo targets and command chips', async ({ page }) => {
   for (const cmd of ['auto', 'init', 'plan', 'apply', 'destroy']) {
     await expect(modal.locator(`.cmd-chip.${cmd}`)).toBeVisible();
   }
+  await expect(modal.locator('.command-description')).toContainText('Initializes Terraform');
+
+  const moreCommands = modal.locator('.command-select');
+  await expect(moreCommands.locator('option')).toHaveCount(9);
+  await moreCommands.selectOption('force-unlock');
+  await expect(modal.locator('.command-description')).toContainText('Manually removes a Terraform state lock');
   await shot(page, 'new-run-modal');
 });
 
@@ -40,6 +46,10 @@ test('"Skip prod" unchecks production targets', async ({ page }) => {
 test('command selection switches run mode and submit label', async ({ page }) => {
   const modal = await openNewRunModal(page);
 
+  await expect(modal.locator('.auto-steps .as-init')).toHaveCSS('background-color', 'rgb(9, 105, 218)');
+  await expect(modal.locator('.auto-steps .as-plan')).toHaveCSS('background-color', 'rgb(26, 127, 55)');
+  await expect(modal.locator('.auto-steps .as-apply')).toHaveCSS('background-color', 'rgb(188, 76, 0)');
+
   await pickCommand(page, 'apply');
   await expect(modal.locator('.tile', { hasText: 'Promotion' })).toHaveClass(/\bon\b/);
   await expect(modal.locator('.aa-control')).toBeVisible(); // --auto-approve toggle
@@ -47,6 +57,9 @@ test('command selection switches run mode and submit label', async ({ page }) =>
 
   await pickCommand(page, 'destroy');
   await expect(modal.locator('.destroy-warn')).toBeVisible();
+  await expect(modal).toHaveClass(/\bis-destroy\b/);
+  await expect(modal.locator('.command-description.danger')).toContainText('Permanently removes');
+  await expect(modal.getByRole('button', { name: /^Run destroy$/ })).toHaveClass(/\bbtn-danger\b/);
 });
 
 test('modal closes via the close button', async ({ page }) => {

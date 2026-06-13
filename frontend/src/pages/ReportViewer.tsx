@@ -4,7 +4,13 @@ import Shell from '../Shell';
 import { useNav } from '../nav';
 import { useToast } from '../components/ToastProvider';
 import { reportsApi } from '../api';
-import { parseResourceChanges, rctBadgeLabel, type ResourceChange } from '../lib/planChanges';
+import {
+  parseResourceChanges,
+  rctBadgeLabel,
+  sortResourceChanges,
+  type ResourceChange,
+  type ResourceChangeSort,
+} from '../lib/planChanges';
 import type { ReportData, ReportEnvResult } from '../types';
 import './ReportViewer.css';
 
@@ -132,10 +138,14 @@ function shouldAutoOpen(r: ReportEnvResult): boolean {
 // ── resource change table (report context) ───────────────────────────────────
 type RvFilter = 'all' | 'changes' | 'errors' | 'plan';
 
-function RvResourceTable({ changes, query, wrap }: { changes: ResourceChange[]; query: string; wrap: boolean }) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+export function RvResourceTable({ changes, query, wrap }: { changes: ResourceChange[]; query: string; wrap: boolean }) {
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [sort, setSort] = useState<ResourceChangeSort>('plan');
   const term = query.trim().toLowerCase();
-  const filtered = term ? changes.filter(c => c.resource.toLowerCase().includes(term)) : changes;
+  const filtered = sortResourceChanges(
+    term ? changes.filter(c => c.resource.toLowerCase().includes(term)) : changes,
+    sort,
+  );
   if (filtered.length === 0) {
     return (
       <div className="rv-rct-empty">
@@ -145,17 +155,31 @@ function RvResourceTable({ changes, query, wrap }: { changes: ResourceChange[]; 
   }
   return (
     <div className="rv-rct">
+      <div className="rv-rct-toolbar">
+        <label>
+          Sort
+          <select value={sort} onChange={event => setSort(event.target.value as ResourceChangeSort)}>
+            <option value="plan">Plan order</option>
+            <option value="action">Action</option>
+            <option value="resource">Resource A-Z</option>
+          </select>
+        </label>
+      </div>
       <table>
         <thead><tr><th>Action</th><th>Resource</th><th /></tr></thead>
         <tbody>
           {filtered.flatMap((c, i) => {
             const key = `${c.action}:${c.resource}`;
-            const isOpen = expanded === key;
+            const isOpen = expanded.has(key);
             const rows: ReactNode[] = [
               <tr
-                key={`r${i}`}
+                key={`r:${key}`}
                 className={`rv-rct-row${isOpen ? ' open' : ''}`}
-                onClick={() => setExpanded(isOpen ? null : key)}
+                onClick={() => setExpanded(previous => {
+                  const next = new Set(previous);
+                  if (next.has(key)) next.delete(key); else next.add(key);
+                  return next;
+                })}
               >
                 <td><span className={`rv-rct-badge ${c.action}`}>{rctBadgeLabel(c.action)}</span></td>
                 <td className="rv-rct-res">{c.resource}</td>
@@ -164,7 +188,7 @@ function RvResourceTable({ changes, query, wrap }: { changes: ResourceChange[]; 
             ];
             if (isOpen) {
               rows.push(
-                <tr key={`e${i}`}>
+                <tr key={`e:${key}`}>
                   <td colSpan={3} className="rv-rct-block">
                     <div className={`rv-rct-term${wrap ? ' wrap-on' : ''}`}>
                       <div className="term-inner">

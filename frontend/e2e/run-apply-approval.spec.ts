@@ -21,6 +21,7 @@ test('apply approval gate — Deny marks the run denied', async ({ page }) => {
 
   const bar = panel.locator('.sp-approval-bar');
   await expect(bar).toBeVisible({ timeout: 45_000 });
+  await expect(panel.getByRole('button', { name: /Reconcile with AI/ })).toHaveCount(0);
   await shot(page, 'run-apply-approval-bar');
 
   await bar.getByRole('button', { name: 'Deny' }).click();

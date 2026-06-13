@@ -55,6 +55,40 @@ func TestGenerateShowsAppliedBoolean(t *testing.T) {
 	}
 }
 
+func TestGenerateChangesTableSupportsSortingAndPersistentExpansion(t *testing.T) {
+	output := `# terraform_data.updated will be updated in-place
+~ resource "terraform_data" "updated" {
+}
+# terraform_data.created will be created
++ resource "terraform_data" "created" {
+}`
+	path, err := Generate([]EnvResult{
+		{Env: "dev", Profile: "test", Change: 1, Add: 1, Output: output},
+	}, Options{
+		Command:   "plan",
+		RunAt:     time.Date(2026, time.June, 12, 3, 4, 5, 0, time.UTC),
+		OutputDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(data)
+	if !containsAll(html,
+		`onchange="sortRct(this)"`,
+		`data-action="change"`,
+		`data-action="add"`,
+		`data-order="0"`,
+		`function sortRct(select)`,
+		`body.appendChild(block)`,
+	) {
+		t.Fatalf("generated report does not contain sortable persistent change rows")
+	}
+}
+
 func TestParseReportNameUsesTF9Prefix(t *testing.T) {
 	cmd, runAt, live := ParseReportName("tf9-apply-20260612-030405.html")
 	if cmd != "apply" || live || runAt.UTC().Format("20060102-150405") != "20260612-030405" {

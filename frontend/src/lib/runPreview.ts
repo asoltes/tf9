@@ -31,6 +31,81 @@ export const MORE_COMMANDS = [
   'force-unlock',
 ] as const;
 
+export interface RunCommandInfo {
+  label: string;
+  short: string;
+  description: string;
+}
+
+/** User-facing command guidance shared by the New Run command picker. */
+export const RUN_COMMAND_INFO: Record<string, RunCommandInfo> = {
+  auto: {
+    label: 'auto',
+    short: 'init → plan → apply',
+    description: 'Initializes Terraform, previews the proposed changes, then applies them in sequence. Apply pauses for approval unless auto-approve is enabled.',
+  },
+  init: {
+    label: 'init',
+    short: 'Initialize directory',
+    description: 'Prepares each target directory by configuring the backend and installing the required providers and modules.',
+  },
+  plan: {
+    label: 'plan',
+    short: 'Preview changes',
+    description: 'Compares configuration with current state and shows the actions Terraform would take without changing infrastructure.',
+  },
+  apply: {
+    label: 'apply',
+    short: 'Provision changes',
+    description: 'Executes the proposed infrastructure changes for the selected targets. Terraform requests approval unless auto-approve is enabled.',
+  },
+  destroy: {
+    label: 'destroy',
+    short: 'Tear down resources',
+    description: 'Permanently removes all Terraform-managed resources in the selected targets. This action requires an additional confirmation.',
+  },
+  validate: {
+    label: 'validate',
+    short: 'Check configuration',
+    description: 'Checks Terraform files for syntax and internal consistency without accessing remote services or changing infrastructure.',
+  },
+  refresh: {
+    label: 'refresh',
+    short: 'Synchronize state',
+    description: 'Reads real infrastructure and updates Terraform state to match it. This can modify state but does not change remote resources.',
+  },
+  'state list': {
+    label: 'state list',
+    short: 'List tracked resources',
+    description: 'Lists every resource address currently tracked in Terraform state for the selected targets.',
+  },
+  output: {
+    label: 'output',
+    short: 'Show output values',
+    description: 'Displays the root module output values stored in Terraform state.',
+  },
+  import: {
+    label: 'import',
+    short: 'Track existing resources',
+    description: 'Associates an existing infrastructure object with a Terraform resource address without creating the object.',
+  },
+  taint: {
+    label: 'taint',
+    short: 'Mark for replacement',
+    description: 'Marks a resource as degraded so Terraform proposes replacing it during the next plan and apply.',
+  },
+  untaint: {
+    label: 'untaint',
+    short: 'Cancel replacement mark',
+    description: 'Removes a taint mark so Terraform no longer forces replacement of that resource.',
+  },
+  'force-unlock': {
+    label: 'force-unlock',
+    short: 'Remove a state lock',
+    description: 'Manually removes a Terraform state lock. Use only when no other process is actively operating on that state.',
+  },
+};
+
 /**
  * Normalizes a UI command selection into the actual terraform command plus any
  * leading args. `state list` becomes command `state` with a leading `list` arg

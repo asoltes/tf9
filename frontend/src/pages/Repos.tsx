@@ -24,6 +24,7 @@ import {
   stageColor, groupKeyOf, deriveGroups, reorderWithinGroup, leafDir,
 } from '../components/repos/repoModel';
 import EditStageModal from '../components/repos/EditStageModal';
+import './Repos.css';
 
 const OVR_KEY = 'tf9-repo-overrides';
 const GROUP_OVR_KEY = 'tf9-group-overrides';
@@ -319,15 +320,9 @@ interface DragState {
 interface ConfigureProps {
   repo: Repo;
   targets: RepoTarget[];
-  awsProfiles: string[];
-  profileDetails: Record<string, AWSProfileDetail>;
-  defaults: RepoDefaults;
-  saving: boolean;
   view: 'pipeline' | 'table';
   setView: (v: 'pipeline' | 'table') => void;
   onTargetsChange: (next: RepoTarget[], persistOverrides?: boolean) => void;
-  onDefaultsChange: (next: RepoDefaults) => void;
-  onSave: () => void;
   onEdit: (idx: number) => void;
   onAddStageGroup: (group: string) => void;
   onDeleteTarget: (idx: number) => void;
@@ -336,8 +331,8 @@ interface ConfigureProps {
 }
 
 function ConfigureSection({
-  repo, targets, awsProfiles, profileDetails, defaults, saving, view, setView,
-  onTargetsChange, onDefaultsChange, onSave, onEdit, onAddStageGroup, onDeleteTarget, onDeleteGroup, toast,
+  repo, targets, view, setView, onTargetsChange, onEdit, onAddStageGroup,
+  onDeleteTarget, onDeleteGroup, toast,
 }: ConfigureProps) {
   const pipelineRef = useRef<HTMLDivElement>(null);
   const drag = useRef<DragState | null>(null);
@@ -456,20 +451,6 @@ function ConfigureSection({
     onTargetsChange(reorderWithinGroup(targets, gk, pos, pos + delta), true);
   }
 
-  function setDefaultProfile(profile: string) {
-    const detail = profileDetails[profile];
-    onDefaultsChange({
-      ...defaults,
-      default_aws_profile: profile,
-      default_region: detail?.region || defaults.default_region,
-      default_account_id: detail?.account_id || defaults.default_account_id,
-    });
-  }
-
-  const profileOptions = defaults.default_aws_profile && !awsProfiles.includes(defaults.default_aws_profile)
-    ? [defaults.default_aws_profile, ...awsProfiles]
-    : awsProfiles;
-
   return (
     <section id="cfgSection">
       <div className="container">
@@ -490,89 +471,11 @@ function ConfigureSection({
                 <span style={{ display: 'flex' }}><IconList /></span>Table
               </button>
             </div>
-            <button className="btn btn-primary btn-sm" disabled={saving} onClick={onSave}>
-              {saving ? 'Saving…' : 'Save configuration'}
-            </button>
           </div>
         </div>
 
         <div className="c-body">
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 14,
-            padding: 14,
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            background: 'var(--surface-2)',
-          }}>
-            <div>
-              <label className="field-label" htmlFor="repo-default-profile">Default AWS profile</label>
-              <select id="repo-default-profile" className="sel" value={defaults.default_aws_profile || ''} onChange={e => setDefaultProfile(e.target.value)}>
-                <option value="">— select profile —</option>
-                {profileOptions.map(profile => <option key={profile} value={profile}>{profile}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="field-label" htmlFor="repo-default-region">Default region</label>
-              <input
-                id="repo-default-region"
-                className="inp mono"
-                value={defaults.default_region || ''}
-                onChange={e => onDefaultsChange({ ...defaults, default_region: e.target.value })}
-                placeholder="e.g. eu-west-2"
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="repo-default-account">Default account ID</label>
-              <input
-                id="repo-default-account"
-                className="inp mono"
-                value={defaults.default_account_id || ''}
-                onChange={e => onDefaultsChange({ ...defaults, default_account_id: e.target.value })}
-                placeholder="Optional 12-digit account ID"
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="repo-integration-branch">Integration branch</label>
-              <input
-                id="repo-integration-branch"
-                className="inp mono"
-                value={defaults.integration_branch || ''}
-                onChange={e => onDefaultsChange({ ...defaults, integration_branch: e.target.value })}
-                placeholder="main"
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="repo-active-window">Active branch window (days)</label>
-              <input
-                id="repo-active-window"
-                className="inp mono"
-                type="number"
-                min={1}
-                value={defaults.active_branch_window_days ?? ''}
-                onChange={e => onDefaultsChange({ ...defaults, active_branch_window_days: e.target.value ? Number(e.target.value) : undefined })}
-                placeholder="30"
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="repo-active-limit">Active branches fed to AI</label>
-              <input
-                id="repo-active-limit"
-                className="inp mono"
-                type="number"
-                min={1}
-                value={defaults.active_branch_limit ?? ''}
-                onChange={e => onDefaultsChange({ ...defaults, active_branch_limit: e.target.value ? Number(e.target.value) : undefined })}
-                placeholder="20"
-              />
-            </div>
-            <div className="field-hint" style={{ gridColumn: '1 / -1', margin: 0 }}>
-              New pipeline targets inherit the AWS defaults. The integration branch is what reconcile/drift
-              compares against; the active-branch window bounds which open branches AI auto-mode searches.
-            </div>
-          </div>
-          <div className="pipe-toolbar" style={{ marginTop: 14 }}>
+          <div className="pipe-toolbar">
             <div className="seq-summary">
               <span style={{ fontWeight: 600, color: 'var(--text)' }}>
                 {groups.length} promotion pipeline{groups.length === 1 ? '' : 's'}
@@ -719,6 +622,107 @@ function ConfigureSection({
               })}
             </div>
           )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function GlobalSettings({
+  repo, awsProfiles, profileDetails, defaults, saving, onChange, onSave,
+}: {
+  repo: Repo;
+  awsProfiles: string[];
+  profileDetails: Record<string, AWSProfileDetail>;
+  defaults: RepoDefaults;
+  saving: boolean;
+  onChange: (next: RepoDefaults) => void;
+  onSave: () => void;
+}) {
+  const profileOptions = defaults.default_aws_profile && !awsProfiles.includes(defaults.default_aws_profile)
+    ? [defaults.default_aws_profile, ...awsProfiles]
+    : awsProfiles;
+
+  function setDefaultProfile(profile: string) {
+    const detail = profileDetails[profile];
+    onChange({
+      ...defaults,
+      default_aws_profile: profile,
+      default_region: detail?.region || defaults.default_region,
+      default_account_id: detail?.account_id || defaults.default_account_id,
+    });
+  }
+
+  return (
+    <section className="container repos-global-settings" aria-labelledby="repo-global-settings-title">
+      <div className="c-head">
+        <div>
+          <h2 className="c-title" id="repo-global-settings-title">
+            Global settings
+            <span className="repos-settings-repo">{repo.name}</span>
+          </h2>
+          <div className="c-desc">Defaults and branch discovery rules shared by this repository's Terraform targets.</div>
+        </div>
+        <button className="btn btn-primary btn-sm" disabled={saving} onClick={onSave}>
+          {saving ? 'Saving…' : 'Save settings'}
+        </button>
+      </div>
+      <div className="repos-settings-grid">
+        <div className="repos-settings-group">
+          <div className="repos-settings-group-head">
+            <span className="repos-settings-icon"><IconKey /></span>
+            <div>
+              <strong>AWS defaults</strong>
+              <span>Applied automatically when new pipeline targets are created.</span>
+            </div>
+          </div>
+          <div className="repos-settings-fields aws">
+            <label>
+              <span>Default AWS profile</span>
+              <select className="sel" value={defaults.default_aws_profile || ''} onChange={e => setDefaultProfile(e.target.value)}>
+                <option value="">Select a profile</option>
+                {profileOptions.map(profile => <option key={profile} value={profile}>{profile}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Default region</span>
+              <input className="inp mono" value={defaults.default_region || ''} onChange={e => onChange({ ...defaults, default_region: e.target.value })} placeholder="eu-west-2" />
+            </label>
+            <label>
+              <span>Default account ID</span>
+              <input className="inp mono" value={defaults.default_account_id || ''} onChange={e => onChange({ ...defaults, default_account_id: e.target.value })} placeholder="Optional 12-digit ID" inputMode="numeric" />
+            </label>
+          </div>
+        </div>
+
+        <div className="repos-settings-group">
+          <div className="repos-settings-group-head">
+            <span className="repos-settings-icon ai"><IconFlow /></span>
+            <div>
+              <strong>Branch discovery</strong>
+              <span>Controls deployment checks and which recent teammate branches AI can inspect.</span>
+            </div>
+          </div>
+          <div className="repos-settings-fields branch">
+            <label>
+              <span>Deployment baseline</span>
+              <input className="inp mono" value={defaults.integration_branch || ''} onChange={e => onChange({ ...defaults, integration_branch: e.target.value })} placeholder="main" />
+              <small>Used by the pre-apply deployment guard, not as the AI reconciliation source.</small>
+            </label>
+            <label>
+              <span>Recent branch window</span>
+              <div className="repos-input-suffix">
+                <input className="inp mono" type="number" min={1} value={defaults.active_branch_window_days ?? ''} onChange={e => onChange({ ...defaults, active_branch_window_days: e.target.value ? Number(e.target.value) : undefined })} placeholder="30" />
+                <b>days</b>
+              </div>
+              <small>Only branches updated within this period are considered.</small>
+            </label>
+            <label>
+              <span>Maximum AI branches</span>
+              <input className="inp mono" type="number" min={1} value={defaults.active_branch_limit ?? ''} onChange={e => onChange({ ...defaults, active_branch_limit: e.target.value ? Number(e.target.value) : undefined })} placeholder="20" />
+              <small>Caps the local and optional origin branch candidates sent to AI.</small>
+            </label>
+          </div>
         </div>
       </div>
     </section>
@@ -1079,6 +1083,9 @@ export default function Repos() {
         default_aws_profile: cfg.default_aws_profile || '',
         default_account_id: cfg.default_account_id || '',
         default_region: cfg.default_region || '',
+        integration_branch: cfg.integration_branch || '',
+        active_branch_window_days: cfg.active_branch_window_days,
+        active_branch_limit: cfg.active_branch_limit,
       });
       setCfgTargets(saved);
       setRepoTargets(prev => ({ ...prev, [cfgRepo.name]: saved }));
@@ -1196,18 +1203,21 @@ export default function Repos() {
               <div><div className="a-title">Targets not saved</div>{cfgError}</div>
             </div>
           )}
-          <ConfigureSection
+          <GlobalSettings
             repo={cfgRepo}
-            targets={cfgTargets}
             awsProfiles={awsProfiles}
             profileDetails={profileDetails}
             defaults={cfgDefaults}
             saving={cfgSaving}
+            onChange={setCfgDefaults}
+            onSave={saveTargets}
+          />
+          <ConfigureSection
+            repo={cfgRepo}
+            targets={cfgTargets}
             view={view}
             setView={setView}
             onTargetsChange={changeTargets}
-            onDefaultsChange={setCfgDefaults}
-            onSave={saveTargets}
             onEdit={setEditIdx}
             onAddStageGroup={onAddStageGroup}
             onDeleteTarget={setConfirmDeleteTarget}

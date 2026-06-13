@@ -378,6 +378,8 @@ export interface ActiveBranch {
   author: string;
   date: string;
   subject: string;
+  local: boolean;
+  remote: boolean;
 }
 
 export interface ActiveBranches {

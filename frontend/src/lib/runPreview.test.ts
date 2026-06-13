@@ -12,8 +12,21 @@ import {
   formatLockIdsFlag,
   buildCliPreview,
   tokenizePreview,
+  PRIMARY_COMMANDS,
+  MORE_COMMANDS,
+  RUN_COMMAND_INFO,
   type RawTarget,
 } from './runPreview';
+
+describe('RUN_COMMAND_INFO', () => {
+  it('documents every primary and secondary command', () => {
+    for (const command of [...PRIMARY_COMMANDS, ...MORE_COMMANDS]) {
+      expect(RUN_COMMAND_INFO[command]?.label).toBe(command);
+      expect(RUN_COMMAND_INFO[command]?.short.length).toBeGreaterThan(0);
+      expect(RUN_COMMAND_INFO[command]?.description.length).toBeGreaterThan(20);
+    }
+  });
+});
 
 describe('normalizeCommand', () => {
   it('passes through ordinary commands', () => {

@@ -6,6 +6,7 @@ import { useNav } from '../nav';
 import {
   PRIMARY_COMMANDS,
   MORE_COMMANDS,
+  RUN_COMMAND_INFO,
   normalizeCommand,
   deriveGroups,
   buildLockIds,
@@ -37,12 +38,12 @@ const I = {
   refresh: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>,
 };
 
-const COMMON: { id: string; desc: string; icon: keyof typeof I }[] = [
-  { id: 'auto', desc: 'init → plan → apply', icon: 'auto' },
-  { id: 'init', desc: 'Initialize directory', icon: 'init' },
-  { id: 'plan', desc: 'Preview changes', icon: 'plan' },
-  { id: 'apply', desc: 'Provision changes', icon: 'apply' },
-  { id: 'destroy', desc: 'Tear down resources', icon: 'destroy' },
+const COMMON: { id: string; icon: keyof typeof I }[] = [
+  { id: 'auto', icon: 'auto' },
+  { id: 'init', icon: 'init' },
+  { id: 'plan', icon: 'plan' },
+  { id: 'apply', icon: 'apply' },
+  { id: 'destroy', icon: 'destroy' },
 ];
 
 type Mode = 'promotion' | 'parallel';
@@ -618,10 +619,11 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
       : isAuto
         ? { background: '#ede9fe', color: '#5b21b6', borderColor: '#c4b5fd' }
         : undefined;
+  const commandInfo = RUN_COMMAND_INFO[cmd];
 
   return (
     <div className="run-overlay" onClick={e => { if (e.target === e.currentTarget) onDismiss(); }}>
-      <div className="run-modal" role="dialog" aria-label="New run">
+      <div className={`run-modal${isDestroy ? ' is-destroy' : ''}`} role="dialog" aria-label="New run">
         <div className="rm-head">
           <div>
             <div className="t">New run</div>
@@ -641,9 +643,13 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                     key={c.id}
                     className={`cmd-chip ${c.icon} command-style ${commandStyleClass(c.id)}${cmd === c.id ? ' on' : ''}`}
                     onClick={() => onSetCmd(c.id)}
+                    aria-describedby={`command-description-${c.id}`}
                   >
                     <span className="ic">{I[c.icon]}</span>
-                    <span><span className="cc-t">{c.id}</span><span className="cc-d">{c.desc}</span></span>
+                    <span>
+                      <span className="cc-t">{RUN_COMMAND_INFO[c.id].label}</span>
+                      <span className="cc-d" id={`command-description-${c.id}`}>{RUN_COMMAND_INFO[c.id].short}</span>
+                    </span>
                   </button>
                 ))}
                 <div className="cmd-more">
@@ -653,8 +659,17 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                     onChange={e => { if (e.target.value) onSetCmd(e.target.value); }}
                   >
                     <option value="" disabled>More commands…</option>
-                    {MORE_COMMANDS.map(m => <option key={m} value={m}>{m}</option>)}
+                    {MORE_COMMANDS.map(m => (
+                      <option key={m} value={m}>{RUN_COMMAND_INFO[m].label} — {RUN_COMMAND_INFO[m].short}</option>
+                    ))}
                   </select>
+                </div>
+              </div>
+              <div className={`command-description command-style ${commandStyleClass(cmd)}${isDestroy ? ' danger' : ''}`}>
+                <span className="command-description-icon">{isDestroy ? I.warn : I.info}</span>
+                <div>
+                  <strong>{commandInfo.label}</strong>
+                  <span>{commandInfo.description}</span>
                 </div>
               </div>
             </div>
@@ -865,9 +880,6 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                 )}
                 {isDestroy && (
                   <div className="destroy-warn">
-                    <div className="dw-top">
-                      <span className="dw-badge">IRREVERSIBLE</span>
-                    </div>
                     <div className="dw-row">
                       <span className="dw-icon">{I.warn}</span>
                       <div>
@@ -929,9 +941,9 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
             {isAuto && (
               <div className="auto-steps">
                 <div className="as-hdr">Pipeline</div>
-                <div className="as-row"><span className="as-num">1</span><span className="as-name">init</span></div>
+                <div className="as-row"><span className="as-num as-init">1</span><span className="as-name">init</span></div>
                 <div className="as-conn">{I.arrow}</div>
-                <div className="as-row"><span className="as-num">2</span><span className="as-name">plan</span></div>
+                <div className="as-row"><span className="as-num as-plan">2</span><span className="as-name">plan</span></div>
                 <div className="as-conn">{I.arrow}</div>
                 <div className="as-row"><span className="as-num as-apply">3</span><span className="as-name">apply</span><span className={`as-tag${autoApprove ? ' aa' : ''}`}>{autoApprove ? 'auto-approve' : 'needs approval'}</span></div>
               </div>
@@ -993,7 +1005,11 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
               </span>
               <div className="right">
                 <button className="btn btn-normal" onClick={() => setConfirm(false)}>Back</button>
-                <button className={`btn ${isDestroy ? 'btn-danger' : 'btn-primary'}`} disabled={submitting} onClick={doRun}>
+                <button
+                  className={`btn ${isDestroy ? 'btn-danger' : 'btn-primary'}`}
+                  disabled={submitting}
+                  onClick={doRun}
+                >
                   {isDestroy ? 'Yes, destroy' : isAuto ? 'Run pipeline' : 'Confirm run'}
                 </button>
               </div>
