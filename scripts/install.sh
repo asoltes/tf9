@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-repo="asoltes/tfops"
+repo="asoltes/tf9"
 install_dir="${INSTALL_DIR:-$HOME/.local/bin}"
 requested_version="${VERSION:-latest}"
 

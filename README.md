@@ -55,13 +55,13 @@ release, verifies its SHA-256 checksum, and installs `tf9` to
 `~/.local/bin/tf9`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/asoltes/tfops/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/asoltes/tf9/main/scripts/install.sh | sh
 ```
 
 Install to another directory or pin a release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/asoltes/tfops/main/scripts/install.sh |
+curl -fsSL https://raw.githubusercontent.com/asoltes/tf9/main/scripts/install.sh |
   INSTALL_DIR=/usr/local/bin VERSION=v1.2.3 sh
 ```
 
@@ -74,7 +74,7 @@ tf9 version
 ### Download a release archive
 
 Download the archive for your platform from
-[GitHub Releases](https://github.com/asoltes/tfops/releases), verify it against
+[GitHub Releases](https://github.com/asoltes/tf9/releases), verify it against
 `checksums.txt`, and extract the binary:
 
 ```bash
@@ -90,8 +90,8 @@ to a directory on your `PATH`.
 Building from source requires Go and Node.js:
 
 ```bash
-git clone https://github.com/asoltes/tfops.git
-cd tfops
+git clone https://github.com/asoltes/tf9.git
+cd tf9
 make install
 tf9 version
 ```
@@ -108,8 +108,8 @@ By default `make install` writes to `~/.local/bin/tf9`. Override it with
 ## Build
 
 ```bash
-git clone https://github.com/asoltes/tfops.git
-cd tfops
+git clone https://github.com/asoltes/tf9.git
+cd tf9
 make build
 ```
 
