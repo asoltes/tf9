@@ -13,6 +13,7 @@ coverage.*
 /frontend/test-results/
 /frontend/e2e/screenshots/
 /internal/web/dist/
+node_modules/
 
 # Local MCP server config (machine-specific)
 .mcp.json
