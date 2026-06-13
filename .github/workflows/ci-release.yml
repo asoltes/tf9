@@ -46,6 +46,9 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: Test Go
         run: go test -race ./...
 
