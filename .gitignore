@@ -1,5 +1,6 @@
 # Go build and test artifacts
 /tf9
+/dist/
 *.test
 *.out
 coverage/

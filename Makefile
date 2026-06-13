@@ -2,7 +2,7 @@ GO ?= /usr/local/go/bin/go
 PREFIX ?= $(HOME)/.local
 BINDIR ?= $(PREFIX)/bin
 
-.PHONY: build build-ui install clean dev demo
+.PHONY: build build-ui install clean dev demo release-snapshot
 
 build-ui:
 	cd frontend && npm install && npm run build
@@ -20,6 +20,9 @@ dev:
 demo: build
 	TF9_CONFIG=./examples/sample-config.yaml ./tf9 serve
 
+release-snapshot: build-ui
+	bash scripts/build-release.sh $${VERSION:-0.0.0-dev}
+
 clean:
 	rm -f tf9
-	rm -rf internal/web/dist frontend/node_modules
+	rm -rf dist internal/web/dist frontend/node_modules

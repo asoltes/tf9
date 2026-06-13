@@ -46,10 +46,61 @@ local web UI share one YAML configuration file and the same binary.
 ### Collapsible sidebar
 ![Sidebar collapsed](docs/screenshots/08-sidebar-collapsed.png)
 
-## Prerequisites
+## Install
 
-- Go 1.24.1 or newer
-- Node.js 18 or newer and npm
+### Linux and macOS with curl
+
+The installer detects your OS and CPU architecture, downloads the latest GitHub
+release, verifies its SHA-256 checksum, and installs `tf9` to
+`~/.local/bin/tf9`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/asoltes/tfops/main/scripts/install.sh | sh
+```
+
+Install to another directory or pin a release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/asoltes/tfops/main/scripts/install.sh |
+  INSTALL_DIR=/usr/local/bin VERSION=v1.2.3 sh
+```
+
+Ensure the installation directory is on your `PATH`, then verify it:
+
+```bash
+tf9 version
+```
+
+### Download a release archive
+
+Download the archive for your platform from
+[GitHub Releases](https://github.com/asoltes/tfops/releases), verify it against
+`checksums.txt`, and extract the binary:
+
+```bash
+tar -xzf tf9_1.2.3_linux_amd64.tar.gz
+install -m 0755 tf9 ~/.local/bin/tf9
+```
+
+Windows releases contain `tf9.exe` in a `.zip` archive. Extract it and move it
+to a directory on your `PATH`.
+
+### Build from source
+
+Building from source requires Go and Node.js:
+
+```bash
+git clone https://github.com/asoltes/tfops.git
+cd tfops
+make install
+tf9 version
+```
+
+By default `make install` writes to `~/.local/bin/tf9`. Override it with
+`make install BINDIR=/path/on/your/PATH`.
+
+## Runtime Prerequisites
+
 - Terraform
 - AWS CLI v2
 - Git
@@ -57,8 +108,8 @@ local web UI share one YAML configuration file and the same binary.
 ## Build
 
 ```bash
-git clone https://github.com/asoltes/tf-companion.git
-cd tf-companion
+git clone https://github.com/asoltes/tfops.git
+cd tfops
 make build
 ```
 
@@ -71,8 +122,7 @@ make install
 tf9 --help
 ```
 
-By default this installs to `~/.local/bin/tf9`. Override the destination with
-`make install BINDIR=/path/on/your/PATH`.
+Source builds require Go 1.24.1 or newer and Node.js 18 or newer with npm.
 
 ## Quick Start
 

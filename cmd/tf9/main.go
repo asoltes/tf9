@@ -125,6 +125,7 @@ func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "tf9 <terraform-command> [target-filter] [flags] [-- terraform-args]",
 		Short:         "Run Terraform across configured repository targets",
+		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.ArbitraryArgs,
@@ -156,7 +157,7 @@ func newRootCmd() *cobra.Command {
 	root.Flags().StringVar(&lockIDs, "lock-ids", "", "Per-target lock ids for force-unlock (e.g. dev:abc,staging:def)")
 	root.Flags().BoolVar(&cost, "cost", false, "Estimate infrastructure cost with Infracost (needs an API key in infracost.yaml or INFRACOST_API_KEY)")
 
-	root.AddCommand(newConfigCmd(), newServeCmd())
+	root.AddCommand(newConfigCmd(), newServeCmd(), newVersionCmd())
 	return root
 }
 
