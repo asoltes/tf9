@@ -226,7 +226,7 @@ export default function Help() {
                 <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">--recursive</span>{'\n'}
                 {'\n'}
                 <span className="ck-com"># with a profile override for all dirs</span>{'\n'}
-                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">-R</span> <span className="ck-flag">--profile</span> ctp-ecp-dev{'\n'}
+                <span className="ck-cmd">tf9 plan</span> <span className="ck-flag">-R</span> <span className="ck-flag">--profile</span> company-dev{'\n'}
                 {'\n'}
                 <span className="ck-com"># --recursive and --repo are mutually exclusive</span>
               </CodeBlock>
@@ -243,11 +243,11 @@ export default function Help() {
                 <span className="ck-com"># config.yaml shape written by the UI</span>{'\n'}
                 <span className="ck-key">profile_mappings</span>:{'\n'}
                 {'  - '}<span className="ck-key">dir</span>: dev{'\n'}
-                {'    '}<span className="ck-key">profile</span>: ctp-ecp-dev{'\n'}
+                {'    '}<span className="ck-key">profile</span>: company-dev{'\n'}
                 {'  - '}<span className="ck-key">dir</span>: qa{'\n'}
-                {'    '}<span className="ck-key">profile</span>: ctp-ecp-qa{'\n'}
+                {'    '}<span className="ck-key">profile</span>: company-qa{'\n'}
                 {'  - '}<span className="ck-key">dir</span>: prod{'\n'}
-                {'    '}<span className="ck-key">profile</span>: ctp-ecp-prod
+                {'    '}<span className="ck-key">profile</span>: company-prod
               </CodeBlock>
             </section>
 

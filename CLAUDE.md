@@ -99,9 +99,9 @@ cd frontend && npx tsc --noEmit   # TypeScript type check
 ./tf9 apply                    # terraform shows its own plan + "Enter a value:" prompt
 ./tf9 apply prod --force       # apply prod targets, pass -auto-approve (skip prompt)
 ./tf9 plan --parallel          # run up to four targets concurrently
-./tf9 plan -r ctp-infra        # run against registered repo
+./tf9 plan -r company-infra        # run against registered repo
 ./tf9 config repo list
-./tf9 config target list --repo ctp-infra
+./tf9 config target list --repo company-infra
 ```
 
 ## Demo

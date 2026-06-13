@@ -50,3 +50,4 @@ Thumbs.db
 .vscode/
 platform-companion.zip
 platform-companion.zip:Zone.Identifier
+.playwright-mcp/

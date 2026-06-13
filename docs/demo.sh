@@ -5,7 +5,7 @@ set -e
 
 TF9="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/tf9"
 CFG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/examples/sample-config.yaml"
-PROFILE="ctp-loadtest-euw2"
+PROFILE="company-loadtest-euw2"
 DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/examples/infrastructure/environments/dev"
 
 type_cmd() {
