@@ -243,6 +243,15 @@ export function parseCounts(lines: string[]): PlanCounts {
   return { add: 0, change: 0, destroy: 0, noChanges: false, failed };
 }
 
+/**
+ * True when a plan changed Terraform outputs. Output-only plans print
+ * "Changes to Outputs:" with no "Plan: N to add..." summary, so parseCounts
+ * reports zero — but reconciling such a run is still meaningful.
+ */
+export function planHasOutputChanges(lines: string[]): boolean {
+  return lines.some(line => /Changes to Outputs:/.test(stripAnsi(line)));
+}
+
 const APPLY_DONE_RE = /Apply complete!|Destroy complete!/;
 const INIT_DONE_RE = /has been successfully initialized|Terraform has been successfully/i;
 

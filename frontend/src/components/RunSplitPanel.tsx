@@ -9,6 +9,7 @@ import { ticketURL } from '../lib/ticketing';
 import {
   parseEnvSections,
   parseCounts,
+  planHasOutputChanges,
   deriveTargetStatuses,
   sectionTerminalStatus,
   isParallelStream,
@@ -885,7 +886,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   function reconcileHeadBtn(srcLines: string[], status: TargetStatus | undefined) {
     if (!(run?.request?.repo || run?.repo)) return null;
     const counts = parseCounts(srcLines);
-    const hasChanges = counts.add + counts.change + counts.destroy > 0;
+    const hasChanges = counts.add + counts.change + counts.destroy > 0 || planHasOutputChanges(srcLines);
     const errored = status === 'fail' || status === 'denied';
     if (!hasChanges && !errored) return null;
     return (
