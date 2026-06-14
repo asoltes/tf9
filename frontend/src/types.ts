@@ -419,6 +419,7 @@ export interface WorkspaceFile {
 }
 
 export type WorkspaceChatMode = 'review' | 'autoApply';
+export type WorkspaceChatModel = 'sonnet' | 'opus' | 'haiku';
 
 export interface WorkspaceChatMessage {
   id: string;
@@ -431,6 +432,7 @@ export interface WorkspaceChatState {
   available: boolean;
   authError?: string;
   mode: WorkspaceChatMode;
+  model: WorkspaceChatModel;
   messages: WorkspaceChatMessage[];
   running: boolean;
   activeTurnId?: string;

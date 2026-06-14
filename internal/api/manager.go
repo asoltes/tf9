@@ -740,7 +740,7 @@ func gitBranch(dir string) string {
 // AppendCLIRun records a completed CLI-initiated run in the shared run history
 // file so it appears in the web UI alongside server-initiated runs.
 // Safe to call when no web server is running — writes directly to disk.
-func AppendCLIRun(req RunRequest, startedAt, finishedAt time.Time, status RunStatus, lines []string, reportPath, branch string) {
+func AppendCLIRun(req RunRequest, startedAt, finishedAt time.Time, status RunStatus, lines []string, reportPath, branch string) string {
 	// Read existing records (best-effort; start fresh if unreadable).
 	var records []runRecord
 	if data, err := os.ReadFile(config.RunsFile()); err == nil {
@@ -754,7 +754,7 @@ func AppendCLIRun(req RunRequest, startedAt, finishedAt time.Time, status RunSta
 	id := fmt.Sprintf("run-cli-%s", startedAt.UTC().Format("20060102-150405"))
 	for _, r := range records {
 		if r.ID == id {
-			return
+			return id
 		}
 	}
 
@@ -781,15 +781,17 @@ func AppendCLIRun(req RunRequest, startedAt, finishedAt time.Time, status RunSta
 	data, err := json.Marshal(records)
 	if err != nil {
 		slog.Error("append cli run: marshal failed", "err", err)
-		return
+		return ""
 	}
 	if err := os.MkdirAll(filepath.Dir(config.RunsFile()), 0o755); err != nil {
 		slog.Error("append cli run: mkdir failed", "dir", filepath.Dir(config.RunsFile()), "err", err)
-		return
+		return ""
 	}
 	if err := os.WriteFile(config.RunsFile(), data, 0o644); err != nil {
 		slog.Error("append cli run: write failed", "file", config.RunsFile(), "err", err)
+		return ""
 	}
+	return id
 }
 
 // Cancel stops a running run.

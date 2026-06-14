@@ -3,11 +3,20 @@ import { expect, test } from '@playwright/test';
 test.beforeEach(async ({ request }) => {
   await request.delete('/api/repos/e2e-repo/workspace/chat/reset');
   await request.put('/api/repos/e2e-repo/workspace/chat/mode', { data: { mode: 'review' } });
+  await request.put('/api/repos/e2e-repo/workspace/chat/model', { data: { model: 'sonnet' } });
 });
 
 test('workspace AI chat streams and can edit the active repository', async ({ page }) => {
   await page.goto('/#workspace/e2e-repo');
   await expect(page.locator('.rw-chat-status')).toHaveText('Claude connected');
+  const model = page.getByLabel('Claude model');
+  await expect(model).toHaveValue('sonnet');
+  await model.selectOption('opus');
+  await expect(model).toHaveValue('opus');
+  await expect.poll(async () => {
+    const state = await (await page.request.get('/api/repos/e2e-repo/workspace/chat')).json();
+    return state.model;
+  }).toBe('opus');
 
   const composer = page.getByRole('textbox', { name: 'Message Claude' });
   await composer.fill('Explain this workspace');

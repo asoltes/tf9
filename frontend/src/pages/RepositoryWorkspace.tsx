@@ -8,7 +8,7 @@ import Shell from '../Shell';
 import { api, ApiError, repoGit, workspaceApi, workspaceChatApi } from '../api';
 import type {
   ActiveBranches, GitChangedFile, GitCommit, Paginated, ReconcileStatus, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
-  WebSettings, WorkspaceChatMode, WorkspaceEntry, WorkspaceFile,
+  WebSettings, WorkspaceChatMode, WorkspaceChatModel, WorkspaceEntry, WorkspaceFile,
 } from '../types';
 import { buildReconcilePrompt } from '../lib/reconcilePrompt';
 import { takePendingReconcileChat } from '../lib/pendingChat';
@@ -437,12 +437,16 @@ type ChatToolActivity = {
 };
 
 function ChatInline({ text }: { text: string }) {
-  return text.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/g).filter(Boolean).map((part, index) => {
+  return text.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*|\[[^\]\n]+\]\((?:#[^)]+|https?:\/\/[^)]+)\))/g).filter(Boolean).map((part, index) => {
     if (part.startsWith('`') && part.endsWith('`')) {
       return <code key={index}>{part.slice(1, -1)}</code>;
     }
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    const link = part.match(/^\[([^\]]+)\]\((#[^)]+|https?:\/\/[^)]+)\)$/);
+    if (link) {
+      return <a key={index} href={link[2]}>{link[1]}</a>;
     }
     return part;
   });
@@ -511,6 +515,7 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
 }) {
   const [messages, setMessages] = useState<WorkspaceChatMessage[]>([]);
   const [mode, setMode] = useState<WorkspaceChatMode>('review');
+  const [model, setModel] = useState<WorkspaceChatModel>('sonnet');
   const [available, setAvailable] = useState(false);
   const [authError, setAuthError] = useState('');
   const [running, setRunning] = useState(false);
@@ -534,6 +539,7 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
     const state = await workspaceChatApi.state(repo);
     setMessages(state.messages ?? []);
     setMode(state.mode);
+    setModel(state.model);
     setAvailable(state.available);
     setAuthError(state.authError ?? '');
     setRunning(state.running);
@@ -628,6 +634,16 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
     }
   }
 
+  async function changeModel(next: WorkspaceChatModel) {
+    try {
+      await workspaceChatApi.setModel(repo, next);
+      setModel(next);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change AI model.');
+    }
+  }
+
   async function resetChat() {
     if (messages.length > 0 && !window.confirm('Start a new AI chat for this repository?')) return;
     try {
@@ -648,6 +664,19 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
           {available ? 'Claude connected' : 'Claude unavailable'}
         </span>
         <span className="rw-spacer" />
+        <label className="rw-chat-model">
+          <span>Model</span>
+          <select
+            value={model}
+            disabled={running}
+            aria-label="Claude model"
+            onChange={event => void changeModel(event.target.value as WorkspaceChatModel)}
+          >
+            <option value="sonnet">Sonnet</option>
+            <option value="opus">Opus</option>
+            <option value="haiku">Haiku</option>
+          </select>
+        </label>
         <label className="rw-chat-mode" title="Review plans changes. Auto apply lets Claude edit workspace files.">
           <span>{mode === 'review' ? 'Review' : 'Auto apply'}</span>
           <input

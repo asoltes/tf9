@@ -22,10 +22,15 @@ import (
 const workspaceChatHistoryLimit = 100
 
 type workspaceChatMode string
+type workspaceChatModel string
 
 const (
 	workspaceChatReview    workspaceChatMode = "review"
 	workspaceChatAutoApply workspaceChatMode = "autoApply"
+
+	workspaceChatSonnet workspaceChatModel = "sonnet"
+	workspaceChatOpus   workspaceChatModel = "opus"
+	workspaceChatHaiku  workspaceChatModel = "haiku"
 )
 
 type workspaceChatMessage struct {
@@ -38,6 +43,7 @@ type workspaceChatMessage struct {
 type workspaceChatRepoState struct {
 	SessionID string                 `json:"sessionId,omitempty"`
 	Mode      workspaceChatMode      `json:"mode"`
+	Model     workspaceChatModel     `json:"model"`
 	Messages  []workspaceChatMessage `json:"messages"`
 }
 
@@ -160,11 +166,16 @@ func (m *workspaceChatManager) saveLocked() error {
 func (m *workspaceChatManager) repoStateLocked(repo string) *workspaceChatRepoState {
 	state := m.store.Repositories[repo]
 	if state == nil {
-		state = &workspaceChatRepoState{Mode: workspaceChatReview, Messages: []workspaceChatMessage{}}
+		state = &workspaceChatRepoState{
+			Mode: workspaceChatReview, Model: workspaceChatSonnet, Messages: []workspaceChatMessage{},
+		}
 		m.store.Repositories[repo] = state
 	}
 	if state.Mode != workspaceChatAutoApply {
 		state.Mode = workspaceChatReview
+	}
+	if state.Model != workspaceChatOpus && state.Model != workspaceChatHaiku {
+		state.Model = workspaceChatSonnet
 	}
 	return state
 }
@@ -227,14 +238,29 @@ func (m *workspaceChatManager) setMode(repo string, mode workspaceChatMode) erro
 	return m.saveLocked()
 }
 
+func (m *workspaceChatManager) setModel(repo string, model workspaceChatModel) error {
+	if model != workspaceChatSonnet && model != workspaceChatOpus && model != workspaceChatHaiku {
+		return fmt.Errorf("model must be sonnet, opus, or haiku")
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.activeByRepo[repo] != "" {
+		return fmt.Errorf("wait for the active response before changing models")
+	}
+	m.repoStateLocked(repo).Model = model
+	return m.saveLocked()
+}
+
 func (m *workspaceChatManager) reset(repo string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.activeByRepo[repo] != "" {
 		return fmt.Errorf("cancel the active response before starting a new chat")
 	}
-	mode := m.repoStateLocked(repo).Mode
-	m.store.Repositories[repo] = &workspaceChatRepoState{Mode: mode, Messages: []workspaceChatMessage{}}
+	current := m.repoStateLocked(repo)
+	m.store.Repositories[repo] = &workspaceChatRepoState{
+		Mode: current.Mode, Model: current.Model, Messages: []workspaceChatMessage{},
+	}
 	return m.saveLocked()
 }
 
@@ -262,7 +288,7 @@ func (m *workspaceChatManager) start(repo, prompt string) (*workspaceChatTurn, e
 	state.Messages = appendHistory(state.Messages, workspaceChatMessage{
 		ID: turnID + "-user", Role: "user", Content: prompt, CreatedAt: time.Now().UTC(),
 	})
-	sessionID, mode := state.SessionID, state.Mode
+	sessionID, mode, model := state.SessionID, state.Mode, state.Model
 	if err := m.saveLocked(); err != nil {
 		delete(m.turns, turnID)
 		delete(m.activeByRepo, repo)
@@ -272,7 +298,7 @@ func (m *workspaceChatManager) start(repo, prompt string) (*workspaceChatTurn, e
 	}
 	claudePath := m.claudePath
 	m.mu.Unlock()
-	go m.runTurn(ctx, turn, root, prompt, sessionID, mode, claudePath)
+	go m.runTurn(ctx, turn, root, prompt, sessionID, mode, model, claudePath)
 	return turn, nil
 }
 
@@ -293,6 +319,7 @@ var workspaceChatAllowedTools = []string{
 	"Bash(go test *)", "Bash(go vet *)", "Bash(go build *)",
 	"Bash(npm test *)", "Bash(npm run test *)", "Bash(npm run build *)", "Bash(npx tsc *)",
 	"Bash(terraform fmt -check *)", "Bash(terraform validate *)",
+	"Bash(tf9 init)", "Bash(tf9 init *)", "Bash(tf9 plan)", "Bash(tf9 plan *)",
 }
 
 var workspaceChatDeniedTools = []string{
@@ -309,6 +336,7 @@ func (m *workspaceChatManager) runTurn(
 	turn *workspaceChatTurn,
 	root, prompt, sessionID string,
 	mode workspaceChatMode,
+	model workspaceChatModel,
 	claudePath string,
 ) {
 	status := "success"
@@ -318,6 +346,7 @@ func (m *workspaceChatManager) runTurn(
 	} else {
 		args := []string{
 			"-p", prompt,
+			"--model", string(model),
 			"--output-format", "stream-json",
 			"--verbose",
 			"--include-partial-messages",
@@ -327,7 +356,7 @@ func (m *workspaceChatManager) runTurn(
 			"--disallowedTools", strings.Join(workspaceChatDeniedTools, ","),
 			"--append-system-prompt",
 			"You are the tf9 workspace assistant. Work only inside the current repository. Never access credentials or paths outside it. Use only approved development commands. Explain blocked actions clearly. " +
-				"For drift reconciliation: search recent local teammate branches first, then fetch and inspect origin branches when useful. Use read-only git commands (git fetch/log/diff/show/for-each-ref) to identify the branch and commit that explain the deployed state. In review mode, propose the plan first; the user approves by switching to autoApply mode before rebase/cherry-pick/merge. Never run `git push` or `terraform apply`/`terraform destroy` — promoting and applying are the user's responsibility.",
+				"For drift reconciliation: search recent local teammate branches first, then fetch and inspect origin branches when useful. Use read-only git commands (git fetch/log/diff/show/for-each-ref) to identify the branch and commit that explain the deployed state. In review mode, propose the plan first; the user approves by switching to autoApply mode before rebase/cherry-pick/merge. After changing files, you may verify with `tf9 init` and `tf9 plan`; report each run ID, link to `#runs`, and summarize the result. Never run `git push` or `terraform apply`/`terraform destroy` — promoting and applying are the user's responsibility.",
 		}
 		if sessionID != "" {
 			args = append(args, "--resume", sessionID)
@@ -507,7 +536,7 @@ func handleRepoWorkspaceChat(w http.ResponseWriter, r *http.Request, name, actio
 		state, activeTurnID, running := manager.state(name)
 		jsonOK(w, map[string]any{
 			"available": available, "authError": authError, "mode": state.Mode,
-			"messages": state.Messages, "running": running, "activeTurnId": activeTurnID,
+			"model": state.Model, "messages": state.Messages, "running": running, "activeTurnId": activeTurnID,
 		})
 	case "message":
 		if r.Method != http.MethodPost {
@@ -555,6 +584,23 @@ func handleRepoWorkspaceChat(w http.ResponseWriter, r *http.Request, name, actio
 			return
 		}
 		jsonOK(w, map[string]workspaceChatMode{"mode": body.Mode})
+	case "model":
+		if r.Method != http.MethodPut {
+			methodNotAllowed(w)
+			return
+		}
+		var body struct {
+			Model workspaceChatModel `json:"model"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			jsonErr(w, "bad_request", "invalid JSON body", http.StatusBadRequest)
+			return
+		}
+		if err := manager.setModel(name, body.Model); err != nil {
+			jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
+			return
+		}
+		jsonOK(w, map[string]workspaceChatModel{"model": body.Model})
 	case "cancel":
 		if r.Method != http.MethodPost {
 			methodNotAllowed(w)

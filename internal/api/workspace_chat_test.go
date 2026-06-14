@@ -56,13 +56,14 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 		t.Fatalf("chat state status = %d body=%s", res.Code, res.Body.String())
 	}
 	var initial struct {
-		Available bool              `json:"available"`
-		Mode      workspaceChatMode `json:"mode"`
+		Available bool               `json:"available"`
+		Mode      workspaceChatMode  `json:"mode"`
+		Model     workspaceChatModel `json:"model"`
 	}
 	if err := json.Unmarshal(res.Body.Bytes(), &initial); err != nil {
 		t.Fatal(err)
 	}
-	if !initial.Available || initial.Mode != workspaceChatReview {
+	if !initial.Available || initial.Mode != workspaceChatReview || initial.Model != workspaceChatSonnet {
 		t.Fatalf("initial chat state = %#v", initial)
 	}
 
@@ -71,6 +72,12 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 	})
 	if res.Code != http.StatusOK {
 		t.Fatalf("mode status = %d body=%s", res.Code, res.Body.String())
+	}
+	res = workspaceRequest(t, handler, http.MethodPut, "/api/repos/infra/workspace/chat/model", map[string]string{
+		"model": string(workspaceChatOpus),
+	})
+	if res.Code != http.StatusOK {
+		t.Fatalf("model status = %d body=%s", res.Code, res.Body.String())
 	}
 
 	turnID := startWorkspaceChatTestTurn(t, handler, "Update the file")
@@ -114,6 +121,7 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 	logText := string(logged)
 	if !strings.Contains(logText, "cwd="+root) ||
 		!strings.Contains(logText, "--permission-mode acceptEdits") ||
+		!strings.Contains(logText, "--model opus") ||
 		!strings.Contains(logText, "--resume 11111111-1111-1111-1111-111111111111") ||
 		!strings.Contains(logText, "Bash(git *)") ||
 		// git is allowed so the AI can reconcile drift, but push is explicitly
@@ -130,6 +138,16 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 	}
 	if !strings.Contains(string(persisted), "11111111-1111-1111-1111-111111111111") {
 		t.Fatalf("session was not persisted: %s", persisted)
+	}
+}
+
+func TestWorkspaceChatRejectsUnsupportedModel(t *testing.T) {
+	handler, _, _ := workspaceChatTestHandler(t, fakeClaudeScript)
+	res := workspaceRequest(t, handler, http.MethodPut, "/api/repos/infra/workspace/chat/model", map[string]string{
+		"model": "unknown",
+	})
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("unsupported model status = %d body=%s", res.Code, res.Body.String())
 	}
 }
 

@@ -277,7 +277,10 @@ func runTerraform(cmd *cobra.Command, args []string) error {
 		ExtraArgs:   tfArgs,
 		Cost:        costEnabled,
 	}
-	api.AppendCLIRun(req, startedAt, finishedAt, status, lb.snapshot(), reportName, "")
+	runID := api.AppendCLIRun(req, startedAt, finishedAt, status, lb.snapshot(), reportName, "")
+	if runID != "" {
+		fmt.Fprintf(os.Stdout, "\nRun ID: %s\nRun History: #runs\n", runID)
+	}
 
 	if showReport && !noReport {
 		openPath := "#reports"

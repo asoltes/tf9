@@ -11,6 +11,13 @@ func TestWorkspaceChatToolPolicy(t *testing.T) {
 	if !slices.Contains(workspaceChatAllowedTools, "Bash(git *)") {
 		t.Fatal("git must be allowed so the AI can reconcile drift")
 	}
+	for _, allowed := range []string{
+		"Bash(tf9 init)", "Bash(tf9 init *)", "Bash(tf9 plan)", "Bash(tf9 plan *)",
+	} {
+		if !slices.Contains(workspaceChatAllowedTools, allowed) {
+			t.Fatalf("%q must be allowed so the AI can verify its changes", allowed)
+		}
+	}
 	for _, denied := range []string{
 		"Bash(git push *)", "Bash(terraform apply *)", "Bash(terraform destroy *)",
 	} {

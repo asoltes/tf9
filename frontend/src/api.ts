@@ -1,6 +1,6 @@
 import type {
   CostScanHistoryItem, CostScanResult, CostSummary, GitCommit, Identity, InfracostSettings,
-  LogLevel, LogsResponse, WorkspaceChatMode, WorkspaceChatState, WorkspaceEntry, WorkspaceFile,
+  LogLevel, LogsResponse, WorkspaceChatMode, WorkspaceChatModel, WorkspaceChatState, WorkspaceEntry, WorkspaceFile,
 } from './types';
 
 export class ApiError extends Error {
@@ -188,6 +188,11 @@ export const workspaceChatApi = {
     api.put<{ mode: WorkspaceChatMode }>(
       `/api/repos/${encodeURIComponent(name)}/workspace/chat/mode`,
       { mode },
+    ),
+  setModel: (name: string, model: WorkspaceChatModel) =>
+    api.put<{ model: WorkspaceChatModel }>(
+      `/api/repos/${encodeURIComponent(name)}/workspace/chat/model`,
+      { model },
     ),
   cancel: (name: string) =>
     api.post<{ status: string }>(

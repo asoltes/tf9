@@ -79,6 +79,11 @@ describe('buildReconcilePrompt', () => {
     expect(prompt).toContain('## Summary');
     expect(prompt).toContain('No changes were made.');
     expect(prompt).toContain('commands, changes, verification');
+    expect(prompt).toContain('`tf9 init`');
+    expect(prompt).toContain('`tf9 plan`');
+    expect(prompt).toContain('run ID');
+    expect(prompt).toContain('[Run History](#runs)');
+    expect(prompt).toContain('concise result summary');
     expect(prompt).toContain('Do not run terraform apply/destroy');
   });
 
