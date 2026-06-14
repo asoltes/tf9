@@ -3,6 +3,7 @@ import {
   deriveTargetStatuses,
   parseEnvSections,
   parseCounts,
+  planHasOutputChanges,
   sectionTerminalStatus,
   isParallelStream,
   stripAnsi,
@@ -95,6 +96,23 @@ describe('parseCounts', () => {
   it('ignores ANSI codes', () => {
     expect(parseCounts(['\x1b[34mPlan: 5 to add, 0 to change, 0 to destroy\x1b[0m']))
       .toMatchObject({ add: 5 });
+  });
+});
+
+describe('planHasOutputChanges', () => {
+  it('detects an output-only plan (no Plan: line)', () => {
+    const lines = [
+      'Changes to Outputs:',
+      '  + environment = "dev"',
+      'You can apply this plan to save these new output values to the Terraform state, without changing any real infrastructure.',
+    ];
+    expect(planHasOutputChanges(lines)).toBe(true);
+  });
+  it('ignores ANSI codes', () => {
+    expect(planHasOutputChanges(['\x1b[1mChanges to Outputs:\x1b[0m'])).toBe(true);
+  });
+  it('false when no output changes', () => {
+    expect(planHasOutputChanges(['Plan: 1 to add, 0 to change, 0 to destroy'])).toBe(false);
   });
 });
 
