@@ -140,7 +140,7 @@ if [ "$1" = "auth" ]; then
   exit 0
 fi
 echo '{"type":"system","subtype":"init","session_id":"22222222-2222-2222-2222-222222222222"}'
-sleep 10
+exec sleep 10
 `)
 	_ = startWorkspaceChatTestTurn(t, handler, "Wait")
 	res := workspaceRequest(t, handler, http.MethodPost, "/api/repos/infra/workspace/chat/message", map[string]string{

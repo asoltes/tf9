@@ -43,6 +43,8 @@ func reconcileTestHandler(t *testing.T) (http.Handler, string) {
 
 	dir := t.TempDir()
 	gitRun(t, dir, "init", "-b", "main")
+	gitRun(t, dir, "config", "user.email", "t@e.com")
+	gitRun(t, dir, "config", "user.name", "Test")
 	gitCommit(t, dir, "base.tf", "base")
 	// feature branches off, then main advances → feature is 1 behind.
 	gitRun(t, dir, "checkout", "-b", "feature")
