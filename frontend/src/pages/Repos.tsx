@@ -13,9 +13,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Shell from '../Shell';
-import { api, awsApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
+import { api, awsApi } from '../api';
 import type { Repo, RepoConfig, RepoTarget, BrowseResult, Paginated } from '../types';
-import { DEFAULT_RECONCILE_PROMPT } from '../lib/reconcilePrompt';
 import {
   IconRepo, IconKey, IconGlobe, IconId, IconArrow, IconPlus, IconEdit,
   IconCheck, IconCheckCircle, IconFolder, IconLock, IconList, IconFlow,
@@ -25,7 +24,6 @@ import {
   stageColor, groupKeyOf, deriveGroups, reorderWithinGroup, leafDir,
 } from '../components/repos/repoModel';
 import EditStageModal from '../components/repos/EditStageModal';
-import './Repos.css';
 
 const OVR_KEY = 'tf9-repo-overrides';
 const GROUP_OVR_KEY = 'tf9-group-overrides';
@@ -629,153 +627,6 @@ function ConfigureSection({
   );
 }
 
-function GlobalSettings({
-  awsProfiles, profileDetails, defaults, reconcilePrompt, saving, promptSaving,
-  onChange, onPromptChange, onSave, onPromptSave,
-}: {
-  awsProfiles: string[];
-  profileDetails: Record<string, AWSProfileDetail>;
-  defaults: RepoDefaults;
-  reconcilePrompt: string;
-  saving: boolean;
-  promptSaving: boolean;
-  onChange: (next: RepoDefaults) => void;
-  onPromptChange: (next: string) => void;
-  onSave: () => void;
-  onPromptSave: () => void;
-}) {
-  const profileOptions = defaults.default_aws_profile && !awsProfiles.includes(defaults.default_aws_profile)
-    ? [defaults.default_aws_profile, ...awsProfiles]
-    : awsProfiles;
-
-  function setDefaultProfile(profile: string) {
-    const detail = profileDetails[profile];
-    onChange({
-      ...defaults,
-      default_aws_profile: profile,
-      default_region: detail?.region || defaults.default_region,
-      default_account_id: detail?.account_id || defaults.default_account_id,
-    });
-  }
-
-  return (
-    <section className="container repos-global-settings" aria-labelledby="repo-global-settings-title">
-      <div className="c-head">
-        <div>
-          <h2 className="c-title" id="repo-global-settings-title">
-            Global settings
-          </h2>
-          <div className="c-desc">Repository defaults plus AI instructions shared across every configured repository.</div>
-        </div>
-        <button className="btn btn-primary btn-sm" disabled={saving} onClick={onSave}>
-          {saving ? 'Saving…' : 'Save settings'}
-        </button>
-      </div>
-      <div className="repos-settings-grid">
-        <div className="repos-settings-group">
-          <div className="repos-settings-group-head">
-            <span className="repos-settings-icon"><IconKey /></span>
-            <div>
-              <strong>AWS defaults</strong>
-              <span>Applied automatically when new pipeline targets are created.</span>
-            </div>
-          </div>
-          <div className="repos-settings-fields aws">
-            <label>
-              <span>Default AWS profile</span>
-              <select className="sel" value={defaults.default_aws_profile || ''} onChange={e => setDefaultProfile(e.target.value)}>
-                <option value="">Select a profile</option>
-                {profileOptions.map(profile => <option key={profile} value={profile}>{profile}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Default region</span>
-              <input className="inp mono" value={defaults.default_region || ''} onChange={e => onChange({ ...defaults, default_region: e.target.value })} placeholder="eu-west-2" />
-            </label>
-            <label>
-              <span>Default account ID</span>
-              <input className="inp mono" value={defaults.default_account_id || ''} onChange={e => onChange({ ...defaults, default_account_id: e.target.value })} placeholder="Optional 12-digit ID" inputMode="numeric" />
-            </label>
-          </div>
-        </div>
-
-        <div className="repos-settings-group">
-          <div className="repos-settings-group-head">
-            <span className="repos-settings-icon ai"><IconFlow /></span>
-            <div>
-              <strong>Branch discovery</strong>
-              <span>Controls deployment checks and which recent teammate branches AI can inspect.</span>
-            </div>
-          </div>
-          <div className="repos-settings-fields branch">
-            <label>
-              <span>Deployment baseline</span>
-              <input className="inp mono" value={defaults.integration_branch || ''} onChange={e => onChange({ ...defaults, integration_branch: e.target.value })} placeholder="main" />
-              <small>Used by the pre-apply deployment guard, not as the AI reconciliation source.</small>
-            </label>
-            <label>
-              <span>Recent branch window</span>
-              <div className="repos-input-suffix">
-                <input className="inp mono" type="number" min={1} value={defaults.active_branch_window_days ?? ''} onChange={e => onChange({ ...defaults, active_branch_window_days: e.target.value ? Number(e.target.value) : undefined })} placeholder="30" />
-                <b>days</b>
-              </div>
-              <small>Only branches updated within this period are considered.</small>
-            </label>
-            <label>
-              <span>Maximum AI branches</span>
-              <input className="inp mono" type="number" min={1} value={defaults.active_branch_limit ?? ''} onChange={e => onChange({ ...defaults, active_branch_limit: e.target.value ? Number(e.target.value) : undefined })} placeholder="20" />
-              <small>Caps the local and optional origin branch candidates sent to AI.</small>
-            </label>
-          </div>
-        </div>
-
-        <div className="repos-settings-group repos-prompt-group">
-          <div className="repos-settings-group-head">
-            <span className="repos-settings-icon ai"><IconFlow /></span>
-            <div>
-              <strong>Reconcile with AI prompt</strong>
-              <span>Global instructions appended after tf9 adds repository, branch, commit, and Terraform plan context.</span>
-            </div>
-            <span className="repos-prompt-state">
-              {reconcilePrompt === DEFAULT_RECONCILE_PROMPT ? 'Built-in default' : 'Custom override'}
-            </span>
-          </div>
-          <div className="repos-prompt-editor">
-            <div className="repos-prompt-toolbar">
-              <span>web.reconcile_prompt</span>
-              <button
-                type="button"
-                className="btn btn-normal btn-sm"
-                disabled={reconcilePrompt === DEFAULT_RECONCILE_PROMPT}
-                onClick={() => onPromptChange(DEFAULT_RECONCILE_PROMPT)}
-              >
-                Reset to default
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                disabled={promptSaving}
-                onClick={onPromptSave}
-              >
-                {promptSaving ? 'Saving…' : 'Save prompt'}
-              </button>
-            </div>
-            <textarea
-              value={reconcilePrompt}
-              onChange={event => onPromptChange(event.target.value)}
-              aria-label="Global reconcile with AI prompt"
-              spellCheck={false}
-            />
-          </div>
-          <small className="repos-prompt-help">
-            Saving the built-in text clears the YAML override. Custom text applies to Reconcile with AI for all repositories.
-          </small>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ── Browse section ──────────────────────────────────────────────────────────
 
 function BrowseSection({
@@ -958,15 +809,12 @@ export default function Repos() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [repoTargets, setRepoTargets] = useState<Record<string, RepoTarget[]>>({});
   const [awsProfiles, setAwsProfiles] = useState<string[]>([]);
-  const [profileDetails, setProfileDetails] = useState<Record<string, AWSProfileDetail>>({});
 
   const [cfgRepo, setCfgRepo] = useState<Repo | null>(null);
   const [cfgTargets, setCfgTargets] = useState<RepoTarget[]>([]);
   const [cfgDefaults, setCfgDefaults] = useState<RepoDefaults>(EMPTY_REPO_DEFAULTS);
-  const [reconcilePrompt, setReconcilePrompt] = useState(DEFAULT_RECONCILE_PROMPT);
   const [cfgError, setCfgError] = useState('');
   const [cfgSaving, setCfgSaving] = useState(false);
-  const [promptSaving, setPromptSaving] = useState(false);
   const [view, setView] = useState<'pipeline' | 'table'>('pipeline');
 
   const [browsePath, setBrowsePath] = useState('');
@@ -984,10 +832,6 @@ export default function Repos() {
 
   useEffect(() => {
     awsApi.profiles().then(setAwsProfiles).catch(() => setAwsProfiles([]));
-    awsApi.profileDetails().then(details => setProfileDetails(details ?? {})).catch(() => setProfileDetails({}));
-    reconcilePromptApi.get()
-      .then(result => setReconcilePrompt(result.prompt || DEFAULT_RECONCILE_PROMPT))
-      .catch(() => setReconcilePrompt(DEFAULT_RECONCILE_PROMPT));
   }, []);
 
   const loadRepos = useCallback(() => {
@@ -1188,30 +1032,6 @@ export default function Repos() {
     }
   }
 
-  async function saveTargets() {
-    const repoSaved = await persistTargets(cfgTargets, '', false, false);
-    if (!repoSaved) return;
-    const promptSaved = await saveReconcilePrompt(false);
-    if (promptSaved) toast('Global settings saved to config.yaml');
-  }
-
-  async function saveReconcilePrompt(showToast = true): Promise<boolean> {
-    const prompt = reconcilePrompt.trim() === DEFAULT_RECONCILE_PROMPT.trim() ? '' : reconcilePrompt;
-    setPromptSaving(true);
-    try {
-      const saved = await reconcilePromptApi.save(prompt);
-      setReconcilePrompt(saved.prompt || DEFAULT_RECONCILE_PROMPT);
-      setCfgError('');
-      if (showToast) toast('Reconcile with AI prompt saved');
-      return true;
-    } catch (e) {
-      setCfgError(e instanceof Error ? e.message : 'Failed to save the global reconcile prompt.');
-      return false;
-    } finally {
-      setPromptSaving(false);
-    }
-  }
-
   function handleEditSave(updated: RepoTarget) {
     const next = cfgTargets.map((t, i) => i === editIdx ? updated : t);
     // group/disabled overrides persist to localStorage; config fields persist to config.yaml.
@@ -1277,18 +1097,6 @@ export default function Repos() {
               <div><div className="a-title">Targets not saved</div>{cfgError}</div>
             </div>
           )}
-          <GlobalSettings
-            awsProfiles={awsProfiles}
-            profileDetails={profileDetails}
-            defaults={cfgDefaults}
-            reconcilePrompt={reconcilePrompt}
-            saving={cfgSaving}
-            promptSaving={promptSaving}
-            onChange={setCfgDefaults}
-            onPromptChange={setReconcilePrompt}
-            onSave={saveTargets}
-            onPromptSave={() => void saveReconcilePrompt()}
-          />
           <ConfigureSection
             repo={cfgRepo}
             targets={cfgTargets}

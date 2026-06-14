@@ -122,3 +122,28 @@
 /* unsaved banner already uses .alert.warning */
 .config-page .alert.warning{background:var(--amber-bg);border-color:#ecd9a3;color:#5c4a05}
 .config-page .alert.warning svg{color:currentColor}
+
+.config-global-settings{margin-bottom:20px;overflow:hidden}
+.config-settings-grid{display:grid;gap:16px;padding:18px 20px 20px}
+.config-settings-group{min-width:0;padding:17px;border:1px solid var(--divider);border-radius:12px;background:var(--surface-2)}
+.config-settings-group-head{display:flex;align-items:center;gap:11px;margin-bottom:17px}
+.config-settings-group-head>div{min-width:0;display:flex;flex-direction:column;gap:3px}
+.config-settings-group-head strong{font-size:14px}.config-settings-group-head span{color:var(--text-2);font-size:12px;line-height:1.4}
+.config-settings-group-head .btn,.config-prompt-state{margin-left:auto}
+.config-settings-icon{width:34px;height:34px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;background:var(--blue-bg);color:var(--blue)}
+.config-settings-icon.ai{background:color-mix(in srgb,var(--purple) 12%,var(--container));color:var(--purple)}
+.config-settings-icon svg{width:18px;height:18px}
+.config-settings-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.config-settings-fields label{min-width:0;display:flex;flex-direction:column;gap:6px}
+.config-settings-fields label>span{font-size:12px;font-weight:700}
+.config-settings-repo{grid-column:1/-1}
+.config-prompt-state{padding:3px 8px;border:1px solid var(--border);border-radius:999px;font:10px var(--mono);white-space:nowrap}
+.config-prompt-editor{overflow:hidden;border:1px solid var(--border);border-radius:9px;background:var(--surface-1)}
+.config-prompt-toolbar{height:36px;display:flex;align-items:center;gap:10px;padding:0 9px 0 12px;border-bottom:1px solid var(--divider);background:var(--surface-3)}
+.config-prompt-toolbar>span{color:var(--text-2);font:11px var(--mono)}
+.config-prompt-toolbar .btn:first-of-type{margin-left:auto}
+.config-prompt-editor textarea{display:block;width:100%;min-height:280px;padding:14px 15px;resize:vertical;border:0;outline:0;background:transparent;color:var(--text);font:12px/1.6 var(--mono)}
+.config-prompt-editor:focus-within{border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 18%,transparent)}
+.config-prompt-group>small{display:block;margin-top:8px;color:var(--text-3);font-size:10.5px}
+.config-global-error{margin:14px 20px 0;padding:9px 11px;border:1px solid var(--red);border-radius:8px;background:var(--red-bg);color:var(--red);font-size:12px}
+@media(max-width:900px){.config-settings-fields{grid-template-columns:1fr}.config-settings-group-head{align-items:flex-start;flex-wrap:wrap}.config-settings-group-head .btn,.config-prompt-state{margin-left:0}}

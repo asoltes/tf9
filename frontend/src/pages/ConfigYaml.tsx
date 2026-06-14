@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Shell from '../Shell';
 import { configApi } from '../api';
 import { useNav } from '../nav';
+import GlobalSettingsEditor from '../components/GlobalSettingsEditor';
 import './ConfigYaml.css';
 
 /* =========================================================================
@@ -250,6 +251,14 @@ export default function ConfigYaml() {
     }
   }, [content, problems, revision, toast]);
 
+  const refreshSource = useCallback(async () => {
+    const res = await configApi.get();
+    if (res.path) setPath(res.path);
+    setContent(res.content);
+    setSaved(res.content);
+    setRevision(res.revision);
+  }, []);
+
   const format = useCallback(async () => {
     setFormatting(true);
     try {
@@ -334,6 +343,8 @@ export default function ConfigYaml() {
             <div>You have unsaved changes. The schema is validated before saving.</div>
           </div>
         )}
+
+        <GlobalSettingsEditor disabled={dirty} notify={toast} onSaved={refreshSource} />
 
         <div className="container flush">
           <div className="c-head">
