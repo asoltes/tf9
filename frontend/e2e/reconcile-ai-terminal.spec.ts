@@ -37,8 +37,11 @@ test('reconcile-with-ai button seeds the workspace chat from a finished run', as
   await expect(textarea).toBeVisible();
   await expect(textarea).toHaveValue(/reconciling Terraform drift on the repo "e2e-repo"/);
   await expect(textarea).toHaveValue(/Current working branch:/);
+  await expect(textarea).toHaveValue(/Integration branch:/);
   await expect(textarea).toHaveValue(/Recent teammate branches/);
-  await expect(textarea).not.toHaveValue(/Integration branch:/);
+  await expect(textarea).toHaveValue(/Option A: Fix manually/);
+  await expect(textarea).toHaveValue(/Option B: Fix with AI/);
+  await expect(textarea).toHaveValue(/## Summary/);
   // The run's terraform output is embedded so Claude can see what drifted.
   await expect(textarea).toHaveValue(/terraform run produced this output/);
   await expect(textarea).toHaveValue(/terraform_data|Plan:|No changes/);

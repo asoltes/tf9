@@ -94,6 +94,34 @@ func TestConfigAPIRejectsRevisionConflict(t *testing.T) {
 	}
 }
 
+func TestWebSettingsExposeGlobalReconcilePrompt(t *testing.T) {
+	handler := testHandler(t)
+	if err := config.Save(config.Config{
+		Version: 1,
+		Web: config.WebConfig{
+			ReconcilePrompt: "Follow the global reconciliation runbook.",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/web/settings", nil)
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("GET /api/web/settings status = %d body=%s", res.Code, res.Body.String())
+	}
+	var got struct {
+		ReconcilePrompt string `json:"reconcilePrompt"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.ReconcilePrompt != "Follow the global reconciliation runbook." {
+		t.Fatalf("reconcilePrompt = %q", got.ReconcilePrompt)
+	}
+}
+
 func TestConfigAPIFormatsYAMLWithoutSaving(t *testing.T) {
 	handler := testHandler(t)
 	body, _ := json.Marshal(map[string]string{

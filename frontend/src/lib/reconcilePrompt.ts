@@ -1,6 +1,27 @@
 import type { ActiveBranches, ReconcileStatus } from '../types';
 import { stripAnsi } from './runStatus';
 
+export const DEFAULT_RECONCILE_PROMPT = [
+  'For each drifted or missing resource, search the recent branches for the matching Terraform change.',
+  'Inspect local branch refs first with read-only git commands (git log, git diff, git show <branch>:<file>).',
+  'When a branch is marked origin-only or its remote ref is newer, you may run git fetch and inspect',
+  'origin/<branch> without checking it out. Identify the branch and commit that explain the deployed state,',
+  'then propose the minimal cherry-pick or rebase onto the current working branch. Switch me to autoApply',
+  'mode and I will approve before you modify git history. Do not push or run terraform apply.',
+  '',
+  'Respond with:',
+  '## Drift diagnosis',
+  'State the affected resources, cause, evidence, and smallest safe fix.',
+  '## Option A: Fix manually',
+  'Give numbered commands with expected results, conflict handling, verification with terraform plan, and abort/rollback steps.',
+  '## Option B: Fix with AI',
+  'Describe exactly what you would change and verify, then wait for autoApply approval.',
+  '## Summary',
+  'List investigation, commands, changes, verification, and remaining actions. In review mode say "No changes were made."',
+  '',
+  'Do not run terraform apply/destroy, push, mutate state, force-unlock, untaint, or discard local work.',
+].join('\n');
+
 // buildReconcilePrompt assembles the structured drift prompt handed to the AI
 // chat. It is shared by the Reconcile panel (RepositoryWorkspace) and the live
 // terminal (RunSplitPanel). The terminal path additionally passes planOutput —
@@ -14,7 +35,9 @@ export function buildReconcilePrompt(
   status: ReconcileStatus,
   activeBranches: ActiveBranches | null,
   planOutput?: string,
+  configuredPrompt?: string,
 ): string {
+  const integrationRef = status.integrationRef || status.integrationBranch;
   const activeList = activeBranches
     ? (activeBranches.branches
         .filter(b => b.name !== status.currentBranch)
@@ -24,10 +47,21 @@ export function buildReconcilePrompt(
         })
         .join('\n') || '(no other active branches in the configured window)')
     : '(could not list active branches)';
+  const missingCommits = formatCommits(status.behindCommits);
+  const branchCommits = formatCommits(status.aheadCommits);
 
   const parts = [
     `I need help reconciling Terraform drift on the repo "${repo}" before applying.`,
     `Current working branch: ${status.currentBranch}.`,
+    `Integration branch: ${integrationRef}.`,
+    `Branch relationship: ${status.behind ?? 0} behind, ${status.ahead ?? 0} ahead${status.diverged ? ' (diverged)' : ''}.`,
+    `Server recommendation: ${status.recommend}.`,
+    '',
+    `Commits on ${integrationRef} that are missing from ${status.currentBranch}:`,
+    missingCommits,
+    '',
+    `Commits on ${status.currentBranch} that are not on ${integrationRef}:`,
+    branchCommits,
     '',
     'Recent teammate branches that may contain the Terraform change responsible for the deployed state:',
     activeList,
@@ -43,17 +77,17 @@ export function buildReconcilePrompt(
     );
   }
 
-  parts.push(
-    '',
-    'For each drifted or missing resource, search the recent branches for the matching Terraform change.',
-    'Inspect local branch refs first with read-only git commands (git log, git diff, git show <branch>:<file>).',
-    'When a branch is marked origin-only or its remote ref is newer, you may run git fetch and inspect',
-    'origin/<branch> without checking it out. Identify the branch and commit that explain the deployed state,',
-    'then propose the minimal cherry-pick or rebase onto the current working branch. Switch me to autoApply',
-    'mode and I will approve before you modify git history. Do not push or run terraform apply.',
-  );
+  parts.push('', configuredPrompt?.trim() || DEFAULT_RECONCILE_PROMPT);
 
   return parts.join('\n');
+}
+
+function formatCommits(commits: ReconcileStatus['behindCommits']): string {
+  if (!commits?.length) return '(none)';
+  return commits
+    .slice(0, 20)
+    .map(commit => `- ${commit.Hash.slice(0, 12)} ${commit.Subject} (${commit.Author}, ${commit.Date})`)
+    .join('\n');
 }
 
 // truncatePlan keeps the tail of long terraform output (the plan summary and

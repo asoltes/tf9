@@ -8,7 +8,7 @@ import Shell from '../Shell';
 import { api, ApiError, repoGit, workspaceApi, workspaceChatApi } from '../api';
 import type {
   ActiveBranches, GitChangedFile, GitCommit, Paginated, ReconcileStatus, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
-  WorkspaceChatMode, WorkspaceEntry, WorkspaceFile,
+  WebSettings, WorkspaceChatMode, WorkspaceEntry, WorkspaceFile,
 } from '../types';
 import { buildReconcilePrompt } from '../lib/reconcilePrompt';
 import { takePendingReconcileChat } from '../lib/pendingChat';
@@ -456,6 +456,14 @@ function ChatProse({ text }: { text: string }) {
         if (!line.trim()) return <span className="rw-chat-space" key={index} />;
         const heading = line.match(/^(#{1,3})\s+(.+)$/);
         if (heading) return <strong className="rw-chat-heading" key={index}><ChatInline text={heading[2]} /></strong>;
+        const numbered = line.match(/^\s*(\d+)[.)]\s+(.+)$/);
+        if (numbered) {
+          return (
+            <span className="rw-chat-list-item ordered" key={index}>
+              <b>{numbered[1]}.</b><ChatInline text={numbered[2]} />
+            </span>
+          );
+        }
         const bullet = line.match(/^\s*[-*]\s+(.+)$/);
         if (bullet) return <span className="rw-chat-list-item" key={index}><ChatInline text={bullet[1]} /></span>;
         return <span className="rw-chat-line" key={index}><ChatInline text={line} /></span>;
@@ -1284,11 +1292,12 @@ function WorkspaceEntryModal({
 }
 
 function Workbench({
-  name, active, fullScreen, onToggleFullScreen, onDirtyChange,
+  name, active, fullScreen, reconcilePrompt, onToggleFullScreen, onDirtyChange,
 }: {
   name: string;
   active: boolean;
   fullScreen: boolean;
+  reconcilePrompt: string;
   onToggleFullScreen: () => void;
   onDirtyChange: (name: string, dirty: boolean) => void;
 }) {
@@ -1354,7 +1363,7 @@ function Workbench({
       repoGit.activeBranches(name).catch(() => null),
     ]).then(([status, activeBranches]) => {
       if (!cancelled) {
-        setChatSeed(buildReconcilePrompt(name, status, activeBranches, context.planOutput));
+        setChatSeed(buildReconcilePrompt(name, status, activeBranches, context.planOutput, reconcilePrompt));
       }
     }).catch(err => {
       if (!cancelled) {
@@ -1364,7 +1373,7 @@ function Workbench({
       if (!cancelled) setChatSeedLoading(false);
     });
     return () => { cancelled = true; };
-  }, [name]);
+  }, [name, reconcilePrompt]);
 
   function openTerminal(directory = '') {
     const session = { id: nextTerminalId.current, directory };
@@ -1705,7 +1714,7 @@ function Workbench({
     setReconcileOpen(false);
     setRightPanelTab('chat');
     setDiffVisible(true);
-    setChatSeed(buildReconcilePrompt(name, status, active));
+    setChatSeed(buildReconcilePrompt(name, status, active, undefined, reconcilePrompt));
   }
 
   const changeByPath = useMemo(
@@ -2121,12 +2130,17 @@ export default function RepositoryWorkspace({ name }: { name?: string }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [fullScreen, setFullScreen] = useState(false);
+  const [reconcilePrompt, setReconcilePrompt] = useState('');
   const initialized = useRef(false);
 
   useEffect(() => {
-    loadRepositories()
-      .then(result => {
+    Promise.all([
+      loadRepositories(),
+      api.get<WebSettings>('/api/web/settings').catch(() => null),
+    ])
+      .then(([result, settings]) => {
         setRepos(result.filter(repo => !repo.disabled));
+        setReconcilePrompt(settings?.reconcilePrompt ?? '');
         setError('');
       })
       .catch(err => setError(err instanceof Error ? err.message : 'Could not load repositories.'))
@@ -2269,6 +2283,7 @@ export default function RepositoryWorkspace({ name }: { name?: string }) {
                 name={repository}
                 active={tabsState.activeRepository === repository}
                 fullScreen={fullScreen && tabsState.activeRepository === repository}
+                reconcilePrompt={reconcilePrompt}
                 onToggleFullScreen={() => setFullScreen(value => !value)}
                 onDirtyChange={reportDirty}
               />

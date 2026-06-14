@@ -62,6 +62,7 @@ func TestSaveAndLoad(t *testing.T) {
 			ApprovalTimeoutSeconds:     45,
 			ReviewedPlanTimeoutSeconds: 900,
 			TicketingURL:               &ticketingURL,
+			ReconcilePrompt:            "Use the team reconciliation runbook.",
 		},
 		Repositories: []Repository{{
 			Name:              "infra",
@@ -97,6 +98,9 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 	if got.Web.TicketingURL == nil || *got.Web.TicketingURL != ticketingURL {
 		t.Fatalf("web ticketing URL did not round-trip: %#v", got.Web)
+	}
+	if got.Web.ReconcilePrompt != "Use the team reconciliation runbook." {
+		t.Fatalf("web reconcile prompt did not round-trip: %#v", got.Web)
 	}
 	info, err := os.Stat(path)
 	if err != nil {

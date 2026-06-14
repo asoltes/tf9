@@ -5,6 +5,10 @@ web:
   reviewed_plan_timeout_seconds: 3600
   # Use {ticket} where the ticket number belongs, or omit it to append /<ticket>.
   ticketing_url: null
+  # Optional global instructions used by Reconcile with AI for every repository.
+  # Repository, branch, commit, and Terraform output context is added by tf9.
+  # reconcile_prompt: |
+  #   Follow our team drift-reconciliation runbook and include the ticket number.
 repositories:
   - name: infrastructure
     path: /home/andres/tf-companion/examples/infrastructure

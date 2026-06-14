@@ -110,6 +110,7 @@ export interface WebSettings {
   approvalTimeoutSeconds: number;
   reviewedPlanTimeoutSeconds: number;
   ticketingUrl: string | null;
+  reconcilePrompt: string;
 }
 
 export type GitProvider = 'github' | 'gitlab' | 'git';

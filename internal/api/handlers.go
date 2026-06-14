@@ -61,6 +61,7 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			"approvalTimeoutSeconds":     int(cfg.Web.ApprovalTimeout() / time.Second),
 			"reviewedPlanTimeoutSeconds": int(cfg.Web.ReviewedPlanTimeout() / time.Second),
 			"ticketingUrl":               cfg.Web.TicketingURL,
+			"reconcilePrompt":            cfg.Web.ReconcilePrompt,
 		})
 	})
 	mux.HandleFunc("/api/runs", func(w http.ResponseWriter, r *http.Request) {

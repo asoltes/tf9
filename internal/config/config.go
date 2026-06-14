@@ -88,6 +88,7 @@ type WebConfig struct {
 	ApprovalTimeoutSeconds     int     `yaml:"approval_timeout_seconds,omitempty" json:"approval_timeout_seconds,omitempty"`
 	ReviewedPlanTimeoutSeconds int     `yaml:"reviewed_plan_timeout_seconds,omitempty" json:"reviewed_plan_timeout_seconds,omitempty"`
 	TicketingURL               *string `yaml:"ticketing_url" json:"ticketing_url"`
+	ReconcilePrompt            string  `yaml:"reconcile_prompt,omitempty" json:"reconcile_prompt,omitempty"`
 }
 
 func (w WebConfig) ApprovalTimeout() time.Duration {
@@ -542,6 +543,7 @@ func validate(cfg *Config) error {
 			cfg.Web.TicketingURL = &ticketingURL
 		}
 	}
+	cfg.Web.ReconcilePrompt = strings.TrimSpace(cfg.Web.ReconcilePrompt)
 	repoNames := map[string]bool{}
 	for ri := range cfg.Repositories {
 		repo := &cfg.Repositories[ri]
