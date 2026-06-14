@@ -13,8 +13,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Shell from '../Shell';
-import { api, awsApi, type AWSProfileDetail } from '../api';
+import { api, awsApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
 import type { Repo, RepoConfig, RepoTarget, BrowseResult, Paginated } from '../types';
+import { DEFAULT_RECONCILE_PROMPT } from '../lib/reconcilePrompt';
 import {
   IconRepo, IconKey, IconGlobe, IconId, IconArrow, IconPlus, IconEdit,
   IconCheck, IconCheckCircle, IconFolder, IconLock, IconList, IconFlow,
@@ -629,15 +630,19 @@ function ConfigureSection({
 }
 
 function GlobalSettings({
-  repo, awsProfiles, profileDetails, defaults, saving, onChange, onSave,
+  awsProfiles, profileDetails, defaults, reconcilePrompt, saving, promptSaving,
+  onChange, onPromptChange, onSave, onPromptSave,
 }: {
-  repo: Repo;
   awsProfiles: string[];
   profileDetails: Record<string, AWSProfileDetail>;
   defaults: RepoDefaults;
+  reconcilePrompt: string;
   saving: boolean;
+  promptSaving: boolean;
   onChange: (next: RepoDefaults) => void;
+  onPromptChange: (next: string) => void;
   onSave: () => void;
+  onPromptSave: () => void;
 }) {
   const profileOptions = defaults.default_aws_profile && !awsProfiles.includes(defaults.default_aws_profile)
     ? [defaults.default_aws_profile, ...awsProfiles]
@@ -659,9 +664,8 @@ function GlobalSettings({
         <div>
           <h2 className="c-title" id="repo-global-settings-title">
             Global settings
-            <span className="repos-settings-repo">{repo.name}</span>
           </h2>
-          <div className="c-desc">Defaults and branch discovery rules shared by this repository's Terraform targets.</div>
+          <div className="c-desc">Repository defaults plus AI instructions shared across every configured repository.</div>
         </div>
         <button className="btn btn-primary btn-sm" disabled={saving} onClick={onSave}>
           {saving ? 'Saving…' : 'Save settings'}
@@ -723,6 +727,49 @@ function GlobalSettings({
               <small>Caps the local and optional origin branch candidates sent to AI.</small>
             </label>
           </div>
+        </div>
+
+        <div className="repos-settings-group repos-prompt-group">
+          <div className="repos-settings-group-head">
+            <span className="repos-settings-icon ai"><IconFlow /></span>
+            <div>
+              <strong>Reconcile with AI prompt</strong>
+              <span>Global instructions appended after tf9 adds repository, branch, commit, and Terraform plan context.</span>
+            </div>
+            <span className="repos-prompt-state">
+              {reconcilePrompt === DEFAULT_RECONCILE_PROMPT ? 'Built-in default' : 'Custom override'}
+            </span>
+          </div>
+          <div className="repos-prompt-editor">
+            <div className="repos-prompt-toolbar">
+              <span>web.reconcile_prompt</span>
+              <button
+                type="button"
+                className="btn btn-normal btn-sm"
+                disabled={reconcilePrompt === DEFAULT_RECONCILE_PROMPT}
+                onClick={() => onPromptChange(DEFAULT_RECONCILE_PROMPT)}
+              >
+                Reset to default
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={promptSaving}
+                onClick={onPromptSave}
+              >
+                {promptSaving ? 'Saving…' : 'Save prompt'}
+              </button>
+            </div>
+            <textarea
+              value={reconcilePrompt}
+              onChange={event => onPromptChange(event.target.value)}
+              aria-label="Global reconcile with AI prompt"
+              spellCheck={false}
+            />
+          </div>
+          <small className="repos-prompt-help">
+            Saving the built-in text clears the YAML override. Custom text applies to Reconcile with AI for all repositories.
+          </small>
         </div>
       </div>
     </section>
@@ -916,8 +963,10 @@ export default function Repos() {
   const [cfgRepo, setCfgRepo] = useState<Repo | null>(null);
   const [cfgTargets, setCfgTargets] = useState<RepoTarget[]>([]);
   const [cfgDefaults, setCfgDefaults] = useState<RepoDefaults>(EMPTY_REPO_DEFAULTS);
+  const [reconcilePrompt, setReconcilePrompt] = useState(DEFAULT_RECONCILE_PROMPT);
   const [cfgError, setCfgError] = useState('');
   const [cfgSaving, setCfgSaving] = useState(false);
+  const [promptSaving, setPromptSaving] = useState(false);
   const [view, setView] = useState<'pipeline' | 'table'>('pipeline');
 
   const [browsePath, setBrowsePath] = useState('');
@@ -936,6 +985,9 @@ export default function Repos() {
   useEffect(() => {
     awsApi.profiles().then(setAwsProfiles).catch(() => setAwsProfiles([]));
     awsApi.profileDetails().then(details => setProfileDetails(details ?? {})).catch(() => setProfileDetails({}));
+    reconcilePromptApi.get()
+      .then(result => setReconcilePrompt(result.prompt || DEFAULT_RECONCILE_PROMPT))
+      .catch(() => setReconcilePrompt(DEFAULT_RECONCILE_PROMPT));
   }, []);
 
   const loadRepos = useCallback(() => {
@@ -1060,18 +1112,18 @@ export default function Repos() {
    * reject the write, so the change is left pending in state and the explicit
    * "Save targets" button commits it once the profile is set.
    */
-  async function persistTargets(next: RepoTarget[], successMsg: string, persistOverrides = false) {
+  async function persistTargets(next: RepoTarget[], successMsg: string, persistOverrides = false, showToast = true): Promise<boolean> {
     changeTargets(next, persistOverrides);
-    if (!cfgRepo) return;
+    if (!cfgRepo) return false;
     const invalid = next.find(t => !t.name.trim() || !t.directory.trim() || !t.aws_profile.trim());
     if (invalid) {
       setCfgError(`Target "${invalid.name || invalid.directory || '(unnamed)'}" needs an AWS profile before it can be saved to config.yaml.`);
-      return;
+      return false;
     }
     const defaultAccountID = (cfgDefaults.default_account_id || '').trim();
     if (defaultAccountID && !/^\d{12}$/.test(defaultAccountID)) {
       setCfgError('Default account ID must be exactly 12 digits.');
-      return;
+      return false;
     }
     setCfgError('');
     setCfgSaving(true);
@@ -1089,9 +1141,11 @@ export default function Repos() {
       });
       setCfgTargets(saved);
       setRepoTargets(prev => ({ ...prev, [cfgRepo.name]: saved }));
-      toast(successMsg);
+      if (showToast) toast(successMsg);
+      return true;
     } catch (e) {
       setCfgError(e instanceof Error ? e.message : 'Failed to save targets.');
+      return false;
     } finally {
       setCfgSaving(false);
     }
@@ -1134,8 +1188,28 @@ export default function Repos() {
     }
   }
 
-  function saveTargets() {
-    return persistTargets(cfgTargets, `Configuration for ${cfgRepo?.name} saved to config.yaml`);
+  async function saveTargets() {
+    const repoSaved = await persistTargets(cfgTargets, '', false, false);
+    if (!repoSaved) return;
+    const promptSaved = await saveReconcilePrompt(false);
+    if (promptSaved) toast('Global settings saved to config.yaml');
+  }
+
+  async function saveReconcilePrompt(showToast = true): Promise<boolean> {
+    const prompt = reconcilePrompt.trim() === DEFAULT_RECONCILE_PROMPT.trim() ? '' : reconcilePrompt;
+    setPromptSaving(true);
+    try {
+      const saved = await reconcilePromptApi.save(prompt);
+      setReconcilePrompt(saved.prompt || DEFAULT_RECONCILE_PROMPT);
+      setCfgError('');
+      if (showToast) toast('Reconcile with AI prompt saved');
+      return true;
+    } catch (e) {
+      setCfgError(e instanceof Error ? e.message : 'Failed to save the global reconcile prompt.');
+      return false;
+    } finally {
+      setPromptSaving(false);
+    }
   }
 
   function handleEditSave(updated: RepoTarget) {
@@ -1204,13 +1278,16 @@ export default function Repos() {
             </div>
           )}
           <GlobalSettings
-            repo={cfgRepo}
             awsProfiles={awsProfiles}
             profileDetails={profileDetails}
             defaults={cfgDefaults}
+            reconcilePrompt={reconcilePrompt}
             saving={cfgSaving}
+            promptSaving={promptSaving}
             onChange={setCfgDefaults}
+            onPromptChange={setReconcilePrompt}
             onSave={saveTargets}
+            onPromptSave={() => void saveReconcilePrompt()}
           />
           <ConfigureSection
             repo={cfgRepo}

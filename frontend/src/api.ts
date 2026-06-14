@@ -47,6 +47,11 @@ export const configApi = {
     api.post<{ content: string }>('/api/config/format', { content }),
 };
 
+export const reconcilePromptApi = {
+  get: () => api.get<{ prompt: string }>('/api/web/reconcile-prompt'),
+  save: (prompt: string) => api.put<{ prompt: string }>('/api/web/reconcile-prompt', { prompt }),
+};
+
 // ── Profile mappings ──────────────────────────────────────────────
 
 export type ProfileMapping = { dir: string; profile: string };

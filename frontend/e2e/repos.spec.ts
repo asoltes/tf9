@@ -71,6 +71,8 @@ test('deletes a stage from the pipeline after confirmation', async ({ page }) =>
 test('repository defaults populate newly added targets', async ({ page }) => {
   const configResponse = await page.request.get('/api/repos/e2e-repo/config');
   const originalConfig = await configResponse.json();
+  const promptResponse = await page.request.get('/api/web/reconcile-prompt');
+  const originalPrompt = await promptResponse.json();
 
   try {
     await page.request.put('/api/repos/e2e-repo/config', {
@@ -98,8 +100,18 @@ test('repository defaults populate newly added targets', async ({ page }) => {
     await row.getByRole('button', { name: 'Configure' }).click();
 
     await expect(page.getByRole('heading', { name: /Global settings/ })).toBeVisible();
+    await expect(page.locator('.repos-settings-repo')).toHaveCount(0);
     await expect(page.getByText('AWS defaults', { exact: true })).toBeVisible();
     await expect(page.getByText('Branch discovery', { exact: true })).toBeVisible();
+    const promptEditor = page.getByLabel('Global reconcile with AI prompt');
+    await expect(promptEditor).toBeVisible();
+    await expect(promptEditor).toHaveValue(/For each drifted or missing resource/);
+    await promptEditor.fill('Follow the E2E reconciliation runbook.');
+    await page.getByRole('button', { name: 'Save prompt' }).click();
+    await expect(page.locator('.toast.show')).toContainText('prompt saved');
+    const promptOnlyResponse = await page.request.get('/api/web/reconcile-prompt');
+    const promptOnly = await promptOnlyResponse.json();
+    expect(promptOnly.prompt).toBe('Follow the E2E reconciliation runbook.');
     await page.getByLabel('Default AWS profile').selectOption('e2e-profile');
     await expect(page.getByLabel('Default region')).toHaveValue('us-west-2');
     await expect(page.getByLabel('Default account ID')).toHaveValue('123456789012');
@@ -136,5 +148,6 @@ test('repository defaults populate newly added targets', async ({ page }) => {
     })]);
   } finally {
     await page.request.put('/api/repos/e2e-repo/config', { data: originalConfig });
+    await page.request.put('/api/web/reconcile-prompt', { data: originalPrompt });
   }
 });

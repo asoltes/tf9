@@ -64,6 +64,40 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			"reconcilePrompt":            cfg.Web.ReconcilePrompt,
 		})
 	})
+	mux.HandleFunc("/api/web/reconcile-prompt", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]string{"prompt": cfg.Web.ReconcilePrompt})
+		case http.MethodPut:
+			var body struct {
+				Prompt string `json:"prompt"`
+			}
+			if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&body); err != nil {
+				jsonErr(w, "bad_request", "invalid prompt payload", http.StatusBadRequest)
+				return
+			}
+			if err := config.Update(func(cfg *config.Config) error {
+				cfg.Web.ReconcilePrompt = body.Prompt
+				return nil
+			}); err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]string{"prompt": cfg.Web.ReconcilePrompt})
+		default:
+			methodNotAllowed(w)
+		}
+	})
 	mux.HandleFunc("/api/runs", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:

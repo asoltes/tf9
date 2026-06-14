@@ -122,6 +122,34 @@ func TestWebSettingsExposeGlobalReconcilePrompt(t *testing.T) {
 	}
 }
 
+func TestReconcilePromptAPIUpdatesGlobalConfig(t *testing.T) {
+	handler := testHandler(t)
+
+	body, _ := json.Marshal(map[string]string{"prompt": "  Follow the team runbook.  "})
+	req := httptest.NewRequest(http.MethodPut, "/api/web/reconcile-prompt", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("PUT /api/web/reconcile-prompt status = %d body=%s", res.Code, res.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/web/reconcile-prompt", nil)
+	res = httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("GET /api/web/reconcile-prompt status = %d body=%s", res.Code, res.Body.String())
+	}
+	var got struct {
+		Prompt string `json:"prompt"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Prompt != "Follow the team runbook." {
+		t.Fatalf("prompt = %q", got.Prompt)
+	}
+}
+
 func TestConfigAPIFormatsYAMLWithoutSaving(t *testing.T) {
 	handler := testHandler(t)
 	body, _ := json.Marshal(map[string]string{
