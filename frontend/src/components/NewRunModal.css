@@ -197,6 +197,11 @@
 .run-overlay .adv-toggle svg{width:15px;height:15px;transition:transform .2s}
 .run-overlay .adv-toggle.open svg{transform:rotate(90deg)}
 .run-overlay .adv-body{margin-top:14px}
+.run-overlay .adv-desc{font-size:11.5px;color:var(--text-2);margin-bottom:12px}
+.run-overlay .aa-control.disabled{cursor:default;border-style:dashed}
+.run-overlay .aa-control.disabled .switch{opacity:.45}
+.run-overlay .aa-control.disabled .aa-t{color:var(--text-2)}
+.run-overlay .aa-control .aa-d a{color:var(--link);font-weight:600}
 
 /* ── summary rail ───────────────────────────────────────────────────────── */
 .run-overlay .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:1px 8px;border-radius:4px;background:var(--grey-badge);color:var(--text);white-space:nowrap}
@@ -241,9 +246,18 @@
 .run-overlay .sum-warn.reconcile-guard .reconcile-guard-btn{margin-left:auto;font-size:11px;padding:3px 10px}
 
 /* confirm state in footer */
-.run-overlay .confirm-bar{display:flex;align-items:center;gap:12px;width:100%;justify-content:space-between}
-.run-overlay .confirm-bar .ct{font-size:13px;font-weight:600;color:var(--text)}
-.run-overlay .confirm-bar .ct.red{color:var(--red)}
+.run-overlay .confirm-bar{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:10px 13px;border-radius:10px;
+  border:1px solid color-mix(in srgb,var(--command-color) 30%,var(--divider));
+  background:color-mix(in srgb,var(--command-color) 8%,var(--container));
+}
+.run-overlay .confirm-bar .cf-icon{display:grid;place-items:center;flex-shrink:0;width:20px;height:20px;color:var(--command-color)}
+.run-overlay .confirm-bar .cf-icon svg{width:20px;height:20px}
+.run-overlay .confirm-bar .cf-text{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.run-overlay .confirm-bar .cf-title{font-size:13px;font-weight:700;color:var(--text)}
+.run-overlay .confirm-bar .cf-detail{font-size:11.5px;color:var(--text-2)}
+.run-overlay .confirm-bar .right{flex-shrink:0}
 
 .run-overlay .btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
 .run-overlay .btn-danger:hover{background:#a40e0e;border-color:#a40e0e}

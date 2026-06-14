@@ -595,7 +595,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   // ── run submission (real backend) ─────────────────────────────────────────
   function onRun() {
     if (checked.length === 0 || resourceAddressMissing) return;
-    if (isDestroy || isAuto || mode === 'parallel' || (isApply && checked.some(t => t.prod))) {
+    if (isDestroy || (isAuto && autoApprove) || mode === 'parallel' || isApply) {
       setConfirm(true);
     } else {
       doRun();
@@ -663,6 +663,25 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
 
   const commandInfo = RUN_COMMAND_INFO[cmd];
   const ticketHref = ticketURL(ticketingUrl, ticket);
+
+  // Confirm-bar copy, keyed by command. Tint/icon follow the command color.
+  const tgtLabel = `${n} target${n === 1 ? '' : 's'}`;
+  let cfTitle: string;
+  let cfDetail: string;
+  if (isDestroy) {
+    cfTitle = `Destroy ${tgtLabel}?`;
+    cfDetail = 'Permanently tears down resources — cannot be undone.';
+  } else if (isAuto) {
+    cfTitle = `Run pipeline on ${tgtLabel}?`;
+    cfDetail = 'init → plan → apply runs unattended with auto-approve — no approval prompt.';
+  } else if (mode === 'parallel') {
+    cfTitle = `Run ${tgtLabel} in parallel?`;
+    cfDetail = "Up to 4 run at once; a failure won't stop targets already running.";
+  } else {
+    cfTitle = prodSel ? `Apply to ${tgtLabel}, including production?` : `Apply to ${tgtLabel}?`;
+    cfDetail = prodSel ? 'Production infrastructure will change.' : 'Selected infrastructure will change.';
+  }
+  const cfDanger = isDestroy || isAuto || (isApply && prodSel);
 
   return (
     <div className="run-overlay" onClick={e => { if (e.target === e.currentTarget) onDismiss(); }}>
@@ -1003,16 +1022,17 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
               </div>
               {advOpen && (
                 <div className="adv-body">
+                  <div className="adv-desc">Optional overrides — most runs don't need these.</div>
                   <div className="field-row">
                     <div>
                       <label className="field-label">Profile override</label>
                       <input className="inp" placeholder="leave blank for per-target mapping" value={profile} onChange={e => setProfile(e.target.value)} />
-                      <div className="field-hint">Overrides each target's AWS profile.</div>
+                      <div className="field-hint">Overrides the AWS profile for every selected target, ignoring per-target mappings.</div>
                     </div>
                     <div>
                       <label className="field-label">Extra arguments</label>
                       <input className="inp mono" placeholder="-target=aws_s3_bucket.foo" value={extra} onChange={e => setExtra(e.target.value)} />
-                      <div className="field-hint">Passed through to Terraform.</div>
+                      <div className="field-hint">Appended verbatim to the terraform command. Example: -refresh=false</div>
                     </div>
                   </div>
                   {costEligible && (
@@ -1022,8 +1042,15 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                         <span><span className="aa-t">Estimate cost</span><span className="aa-d">Run Infracost after the plan to show the monthly cost impact.</span></span>
                       </div>
                     ) : (
-                      <div className="field-hint">
-                        Cost estimation is off. Add an Infracost token on the Cost page to enable it.
+                      <div className="aa-control disabled">
+                        <span className="switch" />
+                        <span>
+                          <span className="aa-t">Estimate cost</span>
+                          <span className="aa-d">
+                            Requires an Infracost token.{' '}
+                            <a href="#cost" onClick={e => { e.preventDefault(); onDismiss(); navigate({ id: 'cost' }); }}>Configure on Cost page</a>
+                          </span>
+                        </span>
                       </div>
                     )
                   )}
@@ -1107,16 +1134,12 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
 
         <div className="rm-foot">
           {confirm ? (
-            <div className="confirm-bar">
-              <span className={`ct${isDestroy ? ' red' : ''}`}>
-                {isDestroy
-                  ? `Destroy ${n} target${n === 1 ? '' : 's'}? This cannot be undone.`
-                  : isAuto
-                    ? `Run init → plan → apply across ${n} target${n === 1 ? '' : 's'}?`
-                    : mode === 'parallel'
-                      ? `Run ${n} target${n === 1 ? '' : 's'} with up to 4 concurrent workers?`
-                      : `Apply to ${n} target${n === 1 ? '' : 's'}, including production?`}
-              </span>
+            <div className={`confirm-bar command-style ${commandStyleClass(cmd)}`}>
+              <span className="cf-icon">{cfDanger ? I.warn : I.info}</span>
+              <div className="cf-text">
+                <span className="cf-title">{cfTitle}</span>
+                <span className="cf-detail">{cfDetail}</span>
+              </div>
               <div className="right">
                 <button className="btn btn-normal" onClick={() => setConfirm(false)}>Back</button>
                 <button
