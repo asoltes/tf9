@@ -1147,7 +1147,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                   disabled={submitting}
                   onClick={doRun}
                 >
-                  {isDestroy ? 'Confirm' : isAuto ? 'Run pipeline' : 'Confirm run'}
+                  Confirm
                 </button>
               </div>
             </div>
