@@ -59,7 +59,26 @@ test('command selection switches run mode and submit label', async ({ page }) =>
   await expect(modal.locator('.destroy-warn')).toBeVisible();
   await expect(modal).toHaveClass(/\bis-destroy\b/);
   await expect(modal.locator('.command-description.danger')).toContainText('Permanently removes');
-  await expect(modal.getByRole('button', { name: /^Run destroy$/ })).toHaveClass(/\bbtn-danger\b/);
+  await expect(modal.getByRole('button', { name: /^Run destroy$/ })).toHaveClass(/\bcommand-destroy\b/);
+});
+
+test('resource targeting and taint address controls are command-aware', async ({ page }) => {
+  const modal = await openNewRunModal(page);
+
+  await pickCommand(page, 'plan');
+  await modal.getByLabel('Resource target 1').fill('module.network');
+  await modal.getByRole('button', { name: 'Add another target' }).click();
+  await modal.getByRole('textbox', { name: 'Resource target 2' }).fill('aws_instance.web');
+  await expect(modal.locator('.cli-box')).toContainText('--target module.network');
+  await expect(modal.locator('.cli-box')).toContainText('--target aws_instance.web');
+
+  await modal.locator('.command-select').selectOption('taint');
+  await expect(modal.getByLabel('Resource address')).toHaveValue('module.network');
+  await modal.getByLabel('Resource address').fill('');
+  await expect(modal.getByRole('button', { name: /^Run taint$/ })).toBeDisabled();
+  await modal.getByLabel('Resource address').fill('aws_instance.web');
+  await expect(modal.getByRole('button', { name: /^Run taint$/ })).toBeEnabled();
+  await expect(modal.locator('.cli-box')).toContainText('aws_instance.web');
 });
 
 test('modal closes via the close button', async ({ page }) => {

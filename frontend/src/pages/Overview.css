@@ -16,6 +16,7 @@
 .dash-tile-l{font-size:12.5px;font-weight:600;color:var(--text-2)}
 .dash-tile.st-running{border-top-color:var(--blue)}
 .dash-tile.st-success{border-top-color:var(--green)}
+.dash-tile.st-partial_success{border-top-color:var(--amber)}
 .dash-tile.st-failed{border-top-color:var(--red)}
 .dash-tile.st-denied{border-top-color:var(--amber)}
 .dash-tile.st-cancelled{border-top-color:var(--border-strong)}
@@ -36,6 +37,7 @@
 .dash-repo{display:inline-block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 .dash-status{font-weight:600;font-size:12.5px;text-transform:capitalize}
 .dash-status.success{color:var(--green)}
+.dash-status.partial_success{color:var(--amber)}
 .dash-status.failed{color:var(--red)}
 .dash-status.denied{color:var(--amber)}
 .dash-status.running{color:var(--blue)}

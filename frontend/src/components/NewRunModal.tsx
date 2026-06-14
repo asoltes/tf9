@@ -13,6 +13,7 @@ import {
   type RawTarget,
 } from '../lib/runPreview';
 import { commandStyleClass } from '../lib/commandStyle';
+import { ticketURL } from '../lib/ticketing';
 import './NewRunModal.css';
 
 // ── Inline icons (stroke=currentColor), ported verbatim from run.js `I` map ──
@@ -167,6 +168,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const [autoApprove, setAutoApprove] = useState(false);
   const [profile, setProfile] = useState('');
   const [extra, setExtra] = useState('');
+  const [resourceAddresses, setResourceAddresses] = useState<string[]>(['']);
   const [advOpen, setAdvOpen] = useState(false);
   const [estimateCost, setEstimateCost] = useState(false);
   const [costTokenSet, setCostTokenSet] = useState(false);
@@ -175,6 +177,8 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [savedPlanApply, setSavedPlanApply] = useState(false);
+  const [ticket, setTicket] = useState('');
+  const [ticketingUrl, setTicketingUrl] = useState<string | null>(null);
 
   const [branches, setBranches] = useState<string[]>([]);
   const [repoStatus, setRepoStatus] = useState<RepoStatus | null>(null);
@@ -197,6 +201,8 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const isDestroy = cmd === 'destroy';
   const isForceUnlock = cmd === 'force-unlock';
   const isImport = cmd === 'import';
+  const isTaintCommand = cmd === 'taint' || cmd === 'untaint';
+  const supportsResourceTargets = cmd === 'plan' || cmd === 'apply';
   const isAuto = cmd === 'auto';
   const costEligible = cmd === 'plan' || isApply || isAuto;
   const lockSequential = isApply || isDestroy || isAuto;
@@ -223,6 +229,8 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     let cancelled = false;
     setConfirm(false);
     setError('');
+    setTicket('');
+    setResourceAddresses(['']);
     api.get<Paginated<Repo>>('/api/repos')
       .then(res => res?.items ?? [])
       .catch(() => [] as Repo[])
@@ -257,9 +265,13 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
       .then(s => {
         const enabled = !!s.savedPlanApply;
         setSavedPlanApply(enabled);
+        setTicketingUrl(s.ticketingUrl);
         if (enabled) setCmd(current => current === 'apply' || current === 'auto' ? 'plan' : current);
       })
-      .catch(() => setSavedPlanApply(false));
+      .catch(() => {
+        setSavedPlanApply(false);
+        setTicketingUrl(null);
+      });
   }, [visible]);
 
   if (!visible) return null;
@@ -267,6 +279,8 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   // ── derived ───────────────────────────────────────────────────────────────
   const totalTargets = groups.reduce((n, g) => n + g.targets.length, 0);
   const checked: Target[] = groups.flatMap(g => g.disabled ? [] : g.targets.filter(t => t.checked));
+  const normalizedResourceAddresses = resourceAddresses.map(address => address.trim()).filter(Boolean);
+  const resourceAddressMissing = isTaintCommand && normalizedResourceAddresses.length !== 1;
   const seq = mode === 'promotion';
   const branch = repoStatus?.branch ?? '';
 
@@ -278,6 +292,9 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     }
     setError('');
     setCmd(id);
+    if (id === 'taint' || id === 'untaint') {
+      setResourceAddresses(prev => [prev[0] ?? '']);
+    }
     if (id === 'apply' || id === 'destroy' || id === 'auto') setMode('promotion');
     if (id === 'init' || id === 'plan') setMode('parallel');
     if (id !== 'apply' && id !== 'auto') setAutoApprove(false);
@@ -331,6 +348,21 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     setGroups(prev => prev.map((g, j) => j === gi
       ? { ...g, targets: g.targets.map((t, k) => k === ti ? { ...t, [field]: v } : t) }
       : g));
+  }
+  function setResourceAddress(index: number, value: string) {
+    setResourceAddresses(prev => prev.map((address, i) => i === index ? value : address));
+    setConfirm(false);
+  }
+  function addResourceAddress() {
+    setResourceAddresses(prev => [...prev, '']);
+    setConfirm(false);
+  }
+  function removeResourceAddress(index: number) {
+    setResourceAddresses(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [''];
+    });
+    setConfirm(false);
   }
   function setAll(val: boolean) {
     setGroups(prev => prev.map(g => ({ ...g, targets: g.targets.map(t => ({ ...t, checked: val })) })));
@@ -507,6 +539,14 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     if (isApply && autoApprove) push('tok-flag', '--auto-approve');
     if (profile.trim()) { push('tok-flag', '--profile'); push('tok-val', profile.trim()); }
     if (extra.trim()) push('tok-val', extra.trim());
+    if (supportsResourceTargets) {
+      for (const address of normalizedResourceAddresses) {
+        push('tok-flag', '--target');
+        push('tok-val', address);
+      }
+    } else if (isTaintCommand && normalizedResourceAddresses[0]) {
+      push('tok-val', normalizedResourceAddresses[0]);
+    }
     if (isForceUnlock) {
       const lids = checked.filter(t => t.lockId && t.lockId.trim()).map(t => `${t.name}:${t.lockId.trim()}`);
       if (lids.length) { push('tok-flag', '--lock-ids'); push('tok-val', lids.join(',')); }
@@ -534,6 +574,11 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     if (isApply && autoApprove) parts.push('--auto-approve');
     if (profile.trim()) parts.push(`--profile ${profile.trim()}`);
     if (extra.trim()) parts.push(extra.trim());
+    if (supportsResourceTargets) {
+      for (const address of normalizedResourceAddresses) parts.push(`--target ${address}`);
+    } else if (isTaintCommand && normalizedResourceAddresses[0]) {
+      parts.push(normalizedResourceAddresses[0]);
+    }
     if (isForceUnlock) {
       const lids = checked.filter(t => t.lockId && t.lockId.trim()).map(t => `${t.name}:${t.lockId.trim()}`);
       if (lids.length) parts.push(`--lock-ids ${lids.join(',')}`);
@@ -549,7 +594,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
 
   // ── run submission (real backend) ─────────────────────────────────────────
   function onRun() {
-    if (checked.length === 0) return;
+    if (checked.length === 0 || resourceAddressMissing) return;
     if (isDestroy || isAuto || mode === 'parallel' || (isApply && checked.some(t => t.prod))) {
       setConfirm(true);
     } else {
@@ -582,10 +627,14 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
         envFilter,
         profile: profile.trim(),
         extraArgs: [...leadingArgs, ...extraArr],
+        ...((supportsResourceTargets || isTaintCommand) && normalizedResourceAddresses.length > 0
+          ? { resourceAddresses: normalizedResourceAddresses }
+          : {}),
         nonprodOnly: false,
         autoApprove: (isApply || isAuto) && autoApprove,
         parallel: mode === 'parallel',
         promotionOrder: mode === 'promotion' ? checked.map(t => t.name) : [],
+        ...(ticket.trim() ? { ticket: ticket.trim() } : {}),
         ...(costEligible && estimateCost ? { cost: true } : {}),
         ...(isForceUnlock && lockIds ? { lockIds } : {}),
         ...(isImport && importAddrs && Object.keys(importAddrs).length > 0 ? { importAddrs } : {}),
@@ -612,14 +661,8 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   else if (prodSel && isApply) sumWarn = <div className="sum-warn amber">{I.warn}Production target selected — changes apply to prod.</div>;
   else if (mode === 'parallel') sumWarn = <div className="sum-warn amber">{I.warn}Failures won't stop targets already running.</div>;
 
-  const pillStyle: React.CSSProperties | undefined = isApply
-    ? { background: '#d4f7d9', color: '#04611b', borderColor: '#a7e3b4' }
-    : isDestroy
-      ? { background: '#ffd9d9', color: '#8b1414', borderColor: '#f3b7b2' }
-      : isAuto
-        ? { background: '#ede9fe', color: '#5b21b6', borderColor: '#c4b5fd' }
-        : undefined;
   const commandInfo = RUN_COMMAND_INFO[cmd];
+  const ticketHref = ticketURL(ticketingUrl, ticket);
 
   return (
     <div className="run-overlay" onClick={e => { if (e.target === e.currentTarget) onDismiss(); }}>
@@ -673,6 +716,50 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                 </div>
               </div>
             </div>
+
+            {(supportsResourceTargets || isTaintCommand) && (
+              <div className="rm-section resource-address-section">
+                <div className="rm-label">
+                  {isTaintCommand ? 'Resource address' : 'Resource/module targets'}
+                  <span className="rm-sublabel">
+                    {isTaintCommand ? ' — required, shared across selected environments' : ' — optional, shared across selected environments'}
+                  </span>
+                </div>
+                <div className="resource-address-list">
+                  {(isTaintCommand ? resourceAddresses.slice(0, 1) : resourceAddresses).map((address, index) => (
+                    <div className="resource-address-row" key={index}>
+                      <input
+                        className="inp mono"
+                        aria-label={isTaintCommand ? 'Resource address' : `Resource target ${index + 1}`}
+                        placeholder={isTaintCommand ? 'aws_instance.web' : 'module.network or aws_instance.web["blue"]'}
+                        value={address}
+                        onChange={e => setResourceAddress(index, e.target.value)}
+                      />
+                      {supportsResourceTargets && resourceAddresses.length > 1 && (
+                        <button
+                          type="button"
+                          className="btn btn-normal resource-address-remove"
+                          aria-label={`Remove resource target ${index + 1}`}
+                          onClick={() => removeResourceAddress(index)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {supportsResourceTargets && (
+                  <button type="button" className="btn btn-link resource-address-add" onClick={addResourceAddress}>
+                    Add another target
+                  </button>
+                )}
+                <div className="field-hint">
+                  {isTaintCommand
+                    ? `Runs terraform ${cmd} with this address in every selected environment.`
+                    : 'Each address is passed to Terraform as a repeatable -target flag.'}
+                </div>
+              </div>
+            )}
 
             {/* repo + branch */}
             <div className="rm-section">
@@ -740,6 +827,23 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* tracking */}
+            <div className="rm-section">
+              <label className="field-label" htmlFor="run-ticket">Ticket number <span className="rm-sublabel">— optional</span></label>
+              <input
+                id="run-ticket"
+                className="inp mono"
+                maxLength={128}
+                placeholder="e.g. OPS-1234"
+                value={ticket}
+                onChange={e => setTicket(e.target.value)}
+              />
+              <div className="field-hint">
+                Stored with the run for history search and tracking.
+                {ticketHref && <> <a href={ticketHref} target="_blank" rel="noreferrer">Open ticket</a></>}
               </div>
             </div>
 
@@ -932,11 +1036,21 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
           <aside className="rm-side">
             <div className="sum-title">Run summary</div>
             <div className="sum-cmd">
-              <span className="pill" style={pillStyle}>{cmd}</span>
+              <span className={`pill command-style ${commandStyleClass(cmd)}`}>{cmd}</span>
               <span style={{ fontSize: '12.5px', color: 'var(--text-2)' }}>{seq ? 'Promotion' : 'Parallel'}</span>
             </div>
             <div className="sum-row"><span className="k">Repo</span><span className="v mono">{repoName || '—'}</span></div>
             <div className="sum-row"><span className="k">Branch</span><span className="v mono">{pendingBranch || branch || '—'}</span></div>
+            <div className="sum-row">
+              <span className="k">Ticket</span>
+              <span className="v mono">
+                {ticket.trim()
+                  ? ticketHref
+                    ? <a href={ticketHref} target="_blank" rel="noreferrer">{ticket.trim()}</a>
+                    : ticket.trim()
+                  : '—'}
+              </span>
+            </div>
             <div className="sum-row"><span className="k">Targets</span><span className="v">{checked.length} of {totalTargets}</span></div>
             {isAuto && (
               <div className="auto-steps">
@@ -1006,26 +1120,28 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
               <div className="right">
                 <button className="btn btn-normal" onClick={() => setConfirm(false)}>Back</button>
                 <button
-                  className={`btn ${isDestroy ? 'btn-danger' : 'btn-primary'}`}
+                  className={`btn command-action command-style ${commandStyleClass(cmd)}`}
                   disabled={submitting}
                   onClick={doRun}
                 >
-                  {isDestroy ? 'Yes, destroy' : isAuto ? 'Run pipeline' : 'Confirm run'}
+                  {isDestroy ? 'Confirm' : isAuto ? 'Run pipeline' : 'Confirm run'}
                 </button>
               </div>
             </div>
           ) : (
             <>
               <div className="left">
-                {n
+                {resourceAddressMissing
+                  ? <span style={{ color: 'var(--red)' }}>Enter one resource address</span>
+                  : n
                   ? <>{I.info}{n} target{n === 1 ? '' : 's'} selected</>
                   : <span style={{ color: 'var(--red)' }}>Select at least one target</span>}
               </div>
               <div className="right">
                 <button className="btn btn-normal" onClick={onDismiss}>Cancel</button>
                 <button
-                  className={`btn ${isDestroy ? 'btn-danger' : 'btn-primary'}`}
-                  disabled={n === 0 || submitting}
+                  className={`btn command-action command-style ${commandStyleClass(cmd)}`}
+                  disabled={n === 0 || resourceAddressMissing || submitting}
                   onClick={onRun}
                 >
                   {submitting ? 'Starting…' : isAuto ? 'Run pipeline' : `Run ${cmd}`}

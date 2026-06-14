@@ -85,6 +85,25 @@ describe('GraphView', () => {
     expect(container.querySelector('.gv-legend')).toBeNull();
     expect(container.querySelector('.gv-seg button.on')?.textContent).toBe('Action');
 
+    const groupMode = Array.from(container.querySelectorAll<HTMLButtonElement>('.gv-seg button'))
+      .find(button => button.textContent === 'Group')!;
+    await act(async () => groupMode.click());
+    const hierarchyKey = container.querySelector('[aria-label="Hierarchy filters"]')!;
+    expect(hierarchyKey.textContent).toContain('Group');
+    expect(hierarchyKey.textContent).toContain('Target');
+    expect(hierarchyKey.textContent).toContain('Module');
+    expect(hierarchyKey.textContent).toContain('Resource');
+    expect(new Set(Array.from(hierarchyKey.querySelectorAll<HTMLElement>('i')).map(item => item.style.background))).toHaveLength(5);
+    expect(container.querySelector('.gv-group-swatch')).not.toBeNull();
+    expect(localStorage.getItem('tf9-graph-color-mode')).toBe('group');
+    const moduleFilter = Array.from(hierarchyKey.querySelectorAll<HTMLButtonElement>('button'))
+      .find(button => button.textContent?.includes('Module'))!;
+    expect(moduleFilter.getAttribute('aria-pressed')).toBe('true');
+    await act(async () => moduleFilter.click());
+    expect(moduleFilter.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('.gv-count')?.textContent).toContain('5 nodes');
+    await act(async () => moduleFilter.click());
+
     const resource = Array.from(container.querySelectorAll<HTMLElement>('.gv-node-item.kind-managed'))
       .find(node => node.textContent?.includes('aws_vpc.main'))!;
     await act(async () => resource.click());

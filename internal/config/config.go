@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -83,9 +84,10 @@ type Config struct {
 }
 
 type WebConfig struct {
-	SavedPlanApply             bool `yaml:"saved_plan_apply,omitempty" json:"saved_plan_apply,omitempty"`
-	ApprovalTimeoutSeconds     int  `yaml:"approval_timeout_seconds,omitempty" json:"approval_timeout_seconds,omitempty"`
-	ReviewedPlanTimeoutSeconds int  `yaml:"reviewed_plan_timeout_seconds,omitempty" json:"reviewed_plan_timeout_seconds,omitempty"`
+	SavedPlanApply             bool    `yaml:"saved_plan_apply,omitempty" json:"saved_plan_apply,omitempty"`
+	ApprovalTimeoutSeconds     int     `yaml:"approval_timeout_seconds,omitempty" json:"approval_timeout_seconds,omitempty"`
+	ReviewedPlanTimeoutSeconds int     `yaml:"reviewed_plan_timeout_seconds,omitempty" json:"reviewed_plan_timeout_seconds,omitempty"`
+	TicketingURL               *string `yaml:"ticketing_url" json:"ticketing_url"`
 }
 
 func (w WebConfig) ApprovalTimeout() time.Duration {
@@ -102,6 +104,21 @@ func (w WebConfig) ReviewedPlanTimeout() time.Duration {
 		seconds = DefaultReviewedPlanTimeoutSeconds
 	}
 	return time.Duration(seconds) * time.Second
+}
+
+// TicketURLFor resolves the optional ticketing endpoint for a ticket number.
+// A {ticket} placeholder is replaced; otherwise the encoded ticket is appended.
+func (w WebConfig) TicketURLFor(ticket string) string {
+	ticket = strings.TrimSpace(ticket)
+	if w.TicketingURL == nil || ticket == "" {
+		return ""
+	}
+	base := strings.TrimSpace(*w.TicketingURL)
+	encoded := url.PathEscape(ticket)
+	if strings.Contains(base, "{ticket}") {
+		return strings.ReplaceAll(base, "{ticket}", encoded)
+	}
+	return strings.TrimRight(base, "/") + "/" + encoded
 }
 
 type Repository struct {
@@ -512,6 +529,18 @@ func validate(cfg *Config) error {
 	}
 	if cfg.Web.ReviewedPlanTimeoutSeconds < 0 {
 		return fmt.Errorf("web.reviewed_plan_timeout_seconds must be zero or greater")
+	}
+	if cfg.Web.TicketingURL != nil {
+		ticketingURL := strings.TrimSpace(*cfg.Web.TicketingURL)
+		if ticketingURL == "" {
+			cfg.Web.TicketingURL = nil
+		} else {
+			parsed, err := url.Parse(ticketingURL)
+			if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+				return fmt.Errorf("web.ticketing_url must be an absolute http or https URL")
+			}
+			cfg.Web.TicketingURL = &ticketingURL
+		}
 	}
 	repoNames := map[string]bool{}
 	for ri := range cfg.Repositories {

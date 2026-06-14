@@ -259,6 +259,8 @@ type Summary struct {
 	Command   string      `json:"command"`
 	RunAt     time.Time   `json:"runAt,omitempty"`
 	RepoLabel string      `json:"repoLabel,omitempty"`
+	Ticket    string      `json:"ticket,omitempty"`
+	TicketURL string      `json:"ticketUrl,omitempty"`
 	Applied   bool        `json:"applied"`
 	Add       int         `json:"add"`
 	Change    int         `json:"change"`
@@ -309,6 +311,8 @@ type EnvResult struct {
 type Options struct {
 	Command   string
 	RepoLabel string
+	Ticket    string
+	TicketURL string
 	RunAt     time.Time
 	OutputDir string
 	// Filename overrides the default timestamped name (e.g. "tf9-plan-live.html").
@@ -412,6 +416,8 @@ func Generate(results []EnvResult, opts Options) (string, error) {
 			Command:   opts.Command,
 			RunAt:     opts.RunAt,
 			RepoLabel: opts.RepoLabel,
+			Ticket:    opts.Ticket,
+			TicketURL: opts.TicketURL,
 			Applied:   opts.Command == "apply" && len(results) > 0,
 			Envs:      len(results),
 			Results:   results,
@@ -711,7 +717,12 @@ tr:hover td{background:var(--hover)}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
           Terraform {{ucfirst .Opts.Command}} Report
         </div>
-        <div class="hdr-meta">{{fmtTime .Opts.RunAt}}{{if .Opts.RepoLabel}} &nbsp;·&nbsp; {{.Opts.RepoLabel}}{{end}}</div>
+        <div class="hdr-meta">
+          {{fmtTime .Opts.RunAt}}{{if .Opts.RepoLabel}} &nbsp;·&nbsp; {{.Opts.RepoLabel}}{{end}}
+          {{if .Opts.Ticket}} &nbsp;·&nbsp; Ticket:
+            {{if .Opts.TicketURL}}<a href="{{.Opts.TicketURL}}" target="_blank" rel="noreferrer">{{.Opts.Ticket}}</a>{{else}}{{.Opts.Ticket}}{{end}}
+          {{end}}
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="pill pill-plan">{{.Opts.Command}}</span>

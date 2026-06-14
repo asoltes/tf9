@@ -227,6 +227,29 @@ func TestRunRequestDecodesLockIDs(t *testing.T) {
 	}
 }
 
+func TestValidateResourceAddresses(t *testing.T) {
+	got, err := validateResourceAddresses("plan", []string{" module.network ", "", `aws_instance.web["blue"]`})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"module.network", `aws_instance.web["blue"]`}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("addresses = %#v, want %#v", got, want)
+	}
+
+	for _, command := range []string{"taint", "untaint"} {
+		if _, err := validateResourceAddresses(command, nil); err == nil {
+			t.Fatalf("%s without address should fail", command)
+		}
+		if _, err := validateResourceAddresses(command, []string{"one", "two"}); err == nil {
+			t.Fatalf("%s with multiple addresses should fail", command)
+		}
+	}
+	if _, err := validateResourceAddresses("destroy", []string{"module.network"}); err == nil {
+		t.Fatal("destroy with resource addresses should fail")
+	}
+}
+
 func TestDriftAPIIsRemoved(t *testing.T) {
 	handler := testHandler(t)
 	req := httptest.NewRequest(http.MethodGet, "/api/drift", nil)
@@ -352,19 +375,19 @@ func TestAWSIdentityMethodNotAllowed(t *testing.T) {
 //	run-4 destroy 2026-06-04T12:00Z
 func seedRunManager() *RunManager {
 	t0 := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-	mk := func(id, cmd string, status RunStatus, day int) *Run {
+	mk := func(id, cmd, ticket string, status RunStatus, day int) *Run {
 		return &Run{
 			ID:        id,
 			Status:    status,
 			StartedAt: t0.AddDate(0, 0, day),
-			Request:   RunRequest{Command: cmd},
+			Request:   RunRequest{Command: cmd, Ticket: ticket},
 		}
 	}
 	return &RunManager{runs: []*Run{
-		mk("run-1", "plan", StatusSuccess, 0),
-		mk("run-2", "apply", StatusFailed, 1),
-		mk("run-3", "plan", StatusSuccess, 2),
-		mk("run-4", "destroy", StatusCancelled, 3),
+		mk("run-1", "plan", "OPS-100", StatusSuccess, 0),
+		mk("run-2", "apply", "PLAT-42", StatusFailed, 1),
+		mk("run-3", "plan", "ops-101", StatusSuccess, 2),
+		mk("run-4", "destroy", "", StatusCancelled, 3),
 	}}
 }
 
@@ -439,6 +462,31 @@ func TestListRunsFiltersByMultipleCommands(t *testing.T) {
 
 func TestListRunsFiltersByStatus(t *testing.T) {
 	code, body := getRunsList(t, seedRunManager(), "?status=success")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	want := []string{"run-3", "run-1"}
+	if got := runIDs(body); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v", got, want)
+	}
+}
+
+func TestListRunsAcceptsPartialSuccessStatus(t *testing.T) {
+	mgr := seedRunManager()
+	mgr.runs = append(mgr.runs, &Run{
+		ID:        "run-5",
+		Status:    StatusPartialSuccess,
+		StartedAt: time.Date(2026, 6, 5, 12, 0, 0, 0, time.UTC),
+		Request:   RunRequest{Command: "plan"},
+	})
+	code, body := getRunsList(t, mgr, "?status=partial_success")
+	if code != http.StatusOK || body.Total != 1 || !reflect.DeepEqual(runIDs(body), []string{"run-5"}) {
+		t.Fatalf("partial success filter: code=%d total=%d ids=%v", code, body.Total, runIDs(body))
+	}
+}
+
+func TestListRunsFiltersByTicketSubstringCaseInsensitive(t *testing.T) {
+	code, body := getRunsList(t, seedRunManager(), "?ticket=OpS")
 	if code != http.StatusOK {
 		t.Fatalf("status = %d", code)
 	}

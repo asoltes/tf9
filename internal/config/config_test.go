@@ -54,12 +54,14 @@ func TestTF9ConfigEnvironmentOverride(t *testing.T) {
 
 func TestSaveAndLoad(t *testing.T) {
 	path := useTestConfig(t)
+	ticketingURL := "https://tickets.example/browse/{ticket}"
 	want := Config{
 		Version: 1,
 		Web: WebConfig{
 			SavedPlanApply:             true,
 			ApprovalTimeoutSeconds:     45,
 			ReviewedPlanTimeoutSeconds: 900,
+			TicketingURL:               &ticketingURL,
 		},
 		Repositories: []Repository{{
 			Name:              "infra",
@@ -93,12 +95,43 @@ func TestSaveAndLoad(t *testing.T) {
 	if got.Web.ApprovalTimeoutSeconds != 45 || got.Web.ReviewedPlanTimeoutSeconds != 900 {
 		t.Fatalf("web timeouts did not round-trip: %#v", got.Web)
 	}
+	if got.Web.TicketingURL == nil || *got.Web.TicketingURL != ticketingURL {
+		t.Fatalf("web ticketing URL did not round-trip: %#v", got.Web)
+	}
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if info.Mode().Perm() != 0o600 {
 		t.Fatalf("config mode = %o, want 600", info.Mode().Perm())
+	}
+}
+
+func TestTicketingURLAllowsNullAndRejectsInvalidURL(t *testing.T) {
+	useTestConfig(t)
+	if err := Save(Config{Version: 1, Web: WebConfig{TicketingURL: nil}}); err != nil {
+		t.Fatalf("null ticketing URL rejected: %v", err)
+	}
+	invalid := "tickets.example/browse/{ticket}"
+	err := Save(Config{Version: 1, Web: WebConfig{TicketingURL: &invalid}})
+	if err == nil || !strings.Contains(err.Error(), "ticketing_url") {
+		t.Fatalf("expected ticketing URL validation error, got %v", err)
+	}
+}
+
+func TestTicketURLFor(t *testing.T) {
+	withPlaceholder := "https://tickets.example/browse/{ticket}"
+	cfg := WebConfig{TicketingURL: &withPlaceholder}
+	if got := cfg.TicketURLFor("OPS 42"); got != "https://tickets.example/browse/OPS%2042" {
+		t.Fatalf("placeholder URL = %q", got)
+	}
+	appendBase := "https://tickets.example/issues/"
+	cfg.TicketingURL = &appendBase
+	if got := cfg.TicketURLFor("OPS-42"); got != "https://tickets.example/issues/OPS-42" {
+		t.Fatalf("appended URL = %q", got)
+	}
+	if got := (WebConfig{}).TicketURLFor("OPS-42"); got != "" {
+		t.Fatalf("unconfigured URL = %q", got)
 	}
 }
 

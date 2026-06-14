@@ -393,7 +393,12 @@ export default function CostPage() {
     return (
       <>
         <div className="cost-stats">
-          <Card label="Current monthly cost" value={fmt(acur, applyLatest.totalMonthly)} tone="amber" sub={`latest apply · ${relTime(applyLatest.runAt)}`} />
+          <Card
+            label="Current monthly cost"
+            value={fmt(acur, applyLatest.totalMonthly)}
+            tone="amber"
+            sub={`latest apply · ${relTime(applyLatest.runAt)}${applyLatest.ticket ? ` · ${applyLatest.ticket}` : ''}`}
+          />
           <Card label="Projected annual" value={fmt(acur, applyLatest.totalMonthly * 12)} tone="blue" />
           <Card label="Priced resources" value={String(applyLatest.resourceCount)} tone="green" sub={`${svc.length} service${svc.length === 1 ? '' : 's'}`} />
           <Card label="Change vs previous" value={change == null ? '—' : signed(acur, change)} tone={change == null ? undefined : change > 0 ? 'red' : 'green'} sub="apply-over-apply" />
@@ -435,11 +440,18 @@ export default function CostPage() {
           <div className="cost-card-title">Apply history</div>
           <div className="cost-table-wrap">
             <table className="cost-tbl">
-              <thead><tr><th>Run</th><th className="num">Resources</th><th className="num">Monthly cost</th><th>When</th></tr></thead>
+              <thead><tr><th>Run</th><th>Ticket</th><th className="num">Resources</th><th className="num">Monthly cost</th><th>When</th></tr></thead>
               <tbody>
                 {applyItems.map(it => (
                   <tr key={it.report} onClick={() => navigate({ id: 'report', name: it.report })}>
                     <td><span className="cost-run-id">{it.report.replace(/^tf9-/, '').replace(/\.html$/, '')}</span></td>
+                    <td>
+                      {it.ticket
+                        ? it.ticketUrl
+                          ? <a className="cost-ticket" href={it.ticketUrl} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()}>{it.ticket}</a>
+                          : <span className="cost-ticket">{it.ticket}</span>
+                        : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                    </td>
                     <td className="num">{it.resourceCount}</td>
                     <td className="num">{fmt(it.currency, it.totalMonthly)}</td>
                     <td><span className="cost-date">{relTime(it.runAt)}</span></td>

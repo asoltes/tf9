@@ -3,6 +3,7 @@ import Shell from '../Shell';
 import { useNav } from '../nav';
 import { reportsApi } from '../api';
 import { commandCounts, filterByCommand } from '../lib/reportHelpers';
+import { commandStyleClass } from '../lib/commandStyle';
 import type { Report } from '../types';
 import './Reports.css';
 
@@ -28,10 +29,6 @@ type ViewMode = 'cards' | 'list';
 
 // ── Mapping real Report → display fields ────────────────────────────────────
 
-function badgeColor(cmd: string): string {
-  return cmd === 'destroy' ? 'red' : cmd === 'apply' ? 'green' : cmd === 'plan' ? 'blue' : 'orange';
-}
-
 /** Derive a short run identifier from the report filename timestamp. */
 function runId(name: string): string {
   // tf9-plan-20260602-153045.html → 20260602-153045 ; tf9-apply-live.html → live
@@ -51,7 +48,7 @@ function relTime(iso: string): string {
 }
 
 function CmdBadge({ cmd }: { cmd: string }) {
-  return <span className={`badge ${badgeColor(cmd)}`}>{cmd}</span>;
+  return <span className={`badge command-style ${commandStyleClass(cmd)}`}>{cmd}</span>;
 }
 
 function statSpan(v: number, sym: '+' | '~' | '-') {
@@ -205,6 +202,11 @@ export default function ReportsPage() {
               </div>
               <div className="rh-card-meta">
                 <div className="rh-card-targets">
+                  {r.ticket && (
+                    r.ticketUrl
+                      ? <a className="report-ticket" href={r.ticketUrl} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()}>{r.ticket}</a>
+                      : <span className="report-ticket">{r.ticket}</span>
+                  )}
                   {r.envs > 0 && <span className="tc">{envLabel}</span>}
                   {r.failed > 0 && <span className="tm" style={{ color: 'var(--red)' }}>{r.failed} failed</span>}
                 </div>
@@ -225,6 +227,7 @@ export default function ReportsPage() {
             <tr>
               <th>Run ID</th>
               <th>Command</th>
+              <th>Ticket</th>
               <th className="num">Add</th>
               <th className="num">Change</th>
               <th className="num">Destroy</th>
@@ -246,6 +249,13 @@ export default function ReportsPage() {
                 >
                   <td><span className="run-id">{runId(r.name)}</span></td>
                   <td><CmdBadge cmd={r.command} /></td>
+                  <td>
+                    {r.ticket
+                      ? r.ticketUrl
+                        ? <a className="report-ticket" href={r.ticketUrl} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()}>{r.ticket}</a>
+                        : <span className="report-ticket">{r.ticket}</span>
+                      : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                  </td>
                   <td className="num">{statSpan(r.add, '+')}</td>
                   <td className="num">{statSpan(r.change, '~')}</td>
                   <td className="num">{statSpan(r.destroy, '-')}</td>

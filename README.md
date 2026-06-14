@@ -172,6 +172,8 @@ web:
   approval_timeout_seconds: 300
   # Keep the Apply reviewed plan action available for 1 hour.
   reviewed_plan_timeout_seconds: 3600
+  # Optional ticket link. Use {ticket}, or omit it to append /<ticket>.
+  ticketing_url: null
 
 repositories:
   - name: infrastructure
@@ -256,6 +258,11 @@ tf9 plan --repo infrastructure -- -refresh=false
 
 # Resource targeting
 tf9 plan --repo infrastructure --target aws_s3_bucket.example
+tf9 apply --repo infrastructure --target module.network
+
+# Mark or unmark a resource for replacement
+tf9 taint --repo infrastructure --filter dev aws_instance.web
+tf9 untaint --repo infrastructure --filter dev aws_instance.web
 
 # Variable files
 tf9 apply --repo infrastructure --var-file vars/override.tfvars
@@ -421,7 +428,7 @@ All `tf9` commands accept:
 | `--timeout` | 30m | Maximum Terraform run duration |
 | `--force` | false | Skip apply/destroy confirmation |
 | `--parallel` | false | Run up to four targets concurrently |
-| `--target` | — | Terraform resource target (repeatable) |
+| `--target` | — | Terraform resource or module target for plan/apply (repeatable) |
 | `--var-file` | — | Terraform variable file (repeatable) |
 | `--lock-ids` | — | Per-target lock IDs for force-unlock (e.g. `dev:abc,staging:def`) |
 

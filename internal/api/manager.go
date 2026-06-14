@@ -24,28 +24,58 @@ import (
 type RunStatus string
 
 const (
-	StatusRunning   RunStatus = "running"
-	StatusSuccess   RunStatus = "success"
-	StatusFailed    RunStatus = "failed"
-	StatusDenied    RunStatus = "denied"
-	StatusCancelled RunStatus = "cancelled"
+	StatusRunning        RunStatus = "running"
+	StatusSuccess        RunStatus = "success"
+	StatusPartialSuccess RunStatus = "partial_success"
+	StatusFailed         RunStatus = "failed"
+	StatusDenied         RunStatus = "denied"
+	StatusCancelled      RunStatus = "cancelled"
 )
+
+// FinalRunStatus classifies a completed runner invocation. Mixed target
+// outcomes are partial success, while cancellation and denial retain their
+// dedicated statuses.
+func FinalRunStatus(runErr, contextErr error, denied bool, results []report.EnvResult) RunStatus {
+	if contextErr != nil {
+		return StatusCancelled
+	}
+	if denied || errors.Is(runErr, runner.ErrApprovalDenied) {
+		return StatusDenied
+	}
+	if runErr == nil {
+		return StatusSuccess
+	}
+	var succeeded, failed bool
+	for _, result := range results {
+		if result.Failed {
+			failed = true
+		} else {
+			succeeded = true
+		}
+	}
+	if succeeded && failed {
+		return StatusPartialSuccess
+	}
+	return StatusFailed
+}
 
 // RunRequest holds the parameters for a terraform run submitted via the web UI.
 type RunRequest struct {
-	Repo           string                       `json:"repo"`
-	Command        string                       `json:"command"`
-	ExtraArgs      []string                     `json:"extraArgs"`
-	EnvFilter      string                       `json:"envFilter"`
-	Profile        string                       `json:"profile"`
-	NonprodOnly    bool                         `json:"nonprodOnly"`
-	AutoApprove    bool                         `json:"autoApprove"`
-	Parallel       bool                         `json:"parallel"`
-	PromotionOrder []string                     `json:"promotionOrder,omitempty"`
-	LockIDs        map[string]string            `json:"lockIds,omitempty"`
-	ImportAddrs    map[string]runner.ImportSpec `json:"importAddrs,omitempty"`
-	Cost           bool                         `json:"cost,omitempty"`
-	PlanRunID      string                       `json:"planRunId,omitempty"`
+	Repo              string                       `json:"repo"`
+	Command           string                       `json:"command"`
+	ExtraArgs         []string                     `json:"extraArgs"`
+	ResourceAddresses []string                     `json:"resourceAddresses,omitempty"`
+	EnvFilter         string                       `json:"envFilter"`
+	Profile           string                       `json:"profile"`
+	NonprodOnly       bool                         `json:"nonprodOnly"`
+	AutoApprove       bool                         `json:"autoApprove"`
+	Parallel          bool                         `json:"parallel"`
+	PromotionOrder    []string                     `json:"promotionOrder,omitempty"`
+	LockIDs           map[string]string            `json:"lockIds,omitempty"`
+	ImportAddrs       map[string]runner.ImportSpec `json:"importAddrs,omitempty"`
+	Cost              bool                         `json:"cost,omitempty"`
+	PlanRunID         string                       `json:"planRunId,omitempty"`
+	Ticket            string                       `json:"ticket,omitempty"`
 }
 
 // Run represents a single terraform execution.
@@ -429,29 +459,32 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 		}
 
 		baseOpts := runner.Options{
-			SearchRoot:      searchRoot,
-			RepoLabel:       repoLabel,
-			TfArgs:          tfArgs,
-			EnvFilter:       req.EnvFilter,
-			ProfileOverride: req.Profile,
-			NonprodOnly:     req.NonprodOnly,
-			ReportDir:       reportDir,
-			ExplicitTargets: explicitTargets,
-			Output:          io.MultiWriter(lw),
-			Ctx:             ctx,
-			Parallel:        req.Parallel,
-			PromotionOrder:  req.PromotionOrder,
-			LockIDs:         req.LockIDs,
-			ImportAddrs:     req.ImportAddrs,
-			AutoApprove:     req.AutoApprove,
-			OnApprovalWait:  run.setAwaiting,
-			OnProcStart:     run.setPgid,
-			Cost:            costEnabled,
-			InfracostKey:    infracostKey,
-			Currency:        infracostCurrency,
-			SavePlanDir:     savePlanDir,
-			ApplyPlanFiles:  applyPlanFiles,
-			OnGraphReady:    onGraphReady,
+			SearchRoot:        searchRoot,
+			RepoLabel:         repoLabel,
+			Ticket:            req.Ticket,
+			TicketURL:         web.TicketURLFor(req.Ticket),
+			TfArgs:            tfArgs,
+			ResourceAddresses: req.ResourceAddresses,
+			EnvFilter:         req.EnvFilter,
+			ProfileOverride:   req.Profile,
+			NonprodOnly:       req.NonprodOnly,
+			ReportDir:         reportDir,
+			ExplicitTargets:   explicitTargets,
+			Output:            io.MultiWriter(lw),
+			Ctx:               ctx,
+			Parallel:          req.Parallel,
+			PromotionOrder:    req.PromotionOrder,
+			LockIDs:           req.LockIDs,
+			ImportAddrs:       req.ImportAddrs,
+			AutoApprove:       req.AutoApprove,
+			OnApprovalWait:    run.setAwaiting,
+			OnProcStart:       run.setPgid,
+			Cost:              costEnabled,
+			InfracostKey:      infracostKey,
+			Currency:          infracostCurrency,
+			SavePlanDir:       savePlanDir,
+			ApplyPlanFiles:    applyPlanFiles,
+			OnGraphReady:      onGraphReady,
 		}
 
 		var results []report.EnvResult
@@ -505,31 +538,34 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 			}
 		} else {
 			results, reportFilename, err = runner.Run(runner.Options{
-				SearchRoot:      searchRoot,
-				RepoLabel:       repoLabel,
-				TfCommand:       req.Command,
-				TfArgs:          tfArgs,
-				EnvFilter:       req.EnvFilter,
-				ProfileOverride: req.Profile,
-				NonprodOnly:     req.NonprodOnly,
-				ReportDir:       reportDir,
-				ExplicitTargets: explicitTargets,
-				Output:          io.MultiWriter(lw),
-				Ctx:             ctx,
-				Parallel:        req.Parallel,
-				PromotionOrder:  req.PromotionOrder,
-				LockIDs:         req.LockIDs,
-				ImportAddrs:     req.ImportAddrs,
-				AutoApprove:     req.AutoApprove,
-				InputCh:         inputCh,
-				OnApprovalWait:  run.setAwaiting,
-				OnProcStart:     run.setPgid,
-				Cost:            costEnabled,
-				InfracostKey:    infracostKey,
-				Currency:        infracostCurrency,
-				SavePlanDir:     savePlanDir,
-				ApplyPlanFiles:  applyPlanFiles,
-				OnGraphReady:    onGraphReady,
+				SearchRoot:        searchRoot,
+				RepoLabel:         repoLabel,
+				Ticket:            req.Ticket,
+				TicketURL:         web.TicketURLFor(req.Ticket),
+				TfCommand:         req.Command,
+				TfArgs:            tfArgs,
+				ResourceAddresses: req.ResourceAddresses,
+				EnvFilter:         req.EnvFilter,
+				ProfileOverride:   req.Profile,
+				NonprodOnly:       req.NonprodOnly,
+				ReportDir:         reportDir,
+				ExplicitTargets:   explicitTargets,
+				Output:            io.MultiWriter(lw),
+				Ctx:               ctx,
+				Parallel:          req.Parallel,
+				PromotionOrder:    req.PromotionOrder,
+				LockIDs:           req.LockIDs,
+				ImportAddrs:       req.ImportAddrs,
+				AutoApprove:       req.AutoApprove,
+				InputCh:           inputCh,
+				OnApprovalWait:    run.setAwaiting,
+				OnProcStart:       run.setPgid,
+				Cost:              costEnabled,
+				InfracostKey:      infracostKey,
+				Currency:          infracostCurrency,
+				SavePlanDir:       savePlanDir,
+				ApplyPlanFiles:    applyPlanFiles,
+				OnGraphReady:      onGraphReady,
 			})
 		}
 
@@ -550,16 +586,8 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 			run.FinishedAt = &now
 			run.Results = results
 			run.ReportPath = reportFilename
-			if ctx.Err() != nil {
-				run.Status = StatusCancelled
-			} else if err != nil {
-				if run.denied || approvalDenied {
-					run.Status = StatusDenied
-				} else {
-					run.Status = StatusFailed
-				}
-			} else {
-				run.Status = StatusSuccess
+			run.Status = FinalRunStatus(err, ctx.Err(), run.denied || approvalDenied, results)
+			if run.Status == StatusSuccess {
 				if req.Command == "plan" && len(results) > 0 {
 					run.SavedPlanReady = true
 					expiresAt := now.Add(run.reviewedPlanTimeout)
@@ -625,6 +653,9 @@ func (m *RunManager) PrepareReviewedApply(req RunRequest) (RunRequest, error) {
 		}
 	}
 	prepared := planRun.Request
+	if ticket := strings.TrimSpace(req.Ticket); ticket != "" {
+		prepared.Ticket = ticket
+	}
 	prepared.Command = "apply"
 	prepared.PlanRunID = planRun.ID
 	prepared.EnvFilter = strings.Join(targets, ",")

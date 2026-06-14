@@ -137,6 +137,22 @@ describe('buildCliPreview', () => {
     });
     expect(r.line).toBe('AWS_PROFILE=myprofile terraform plan -target=aws_s3_bucket.foo');
   });
+  it('includes structured plan targets', () => {
+    const r = buildCliPreview({
+      uiCommand: 'plan',
+      targets: ['dev'],
+      resourceAddresses: ['module.network', `aws_instance.web["blue"]`],
+    });
+    expect(r.line).toBe('terraform plan -target=module.network -target=aws_instance.web["blue"]');
+  });
+  it('includes the taint resource address positionally', () => {
+    const r = buildCliPreview({
+      uiCommand: 'taint',
+      targets: ['dev'],
+      resourceAddresses: ['aws_instance.web'],
+    });
+    expect(r.line).toBe('terraform taint aws_instance.web');
+  });
   it('no note when no targets', () => {
     const r = buildCliPreview({ uiCommand: 'plan', targets: [] });
     expect(r.note).toBe('');

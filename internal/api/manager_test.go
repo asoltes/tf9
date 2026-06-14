@@ -2,14 +2,58 @@ package api
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/andres/tf9/internal/config"
 	"github.com/andres/tf9/internal/report"
 )
+
+func TestFinalRunStatus(t *testing.T) {
+	targetErr := errors.New("target failed")
+	cases := []struct {
+		name       string
+		runErr     error
+		contextErr error
+		denied     bool
+		results    []report.EnvResult
+		want       RunStatus
+	}{
+		{name: "success", results: []report.EnvResult{{Env: "dev"}}, want: StatusSuccess},
+		{name: "all failed", runErr: targetErr, results: []report.EnvResult{{Env: "dev", Failed: true}}, want: StatusFailed},
+		{
+			name:   "mixed results",
+			runErr: targetErr,
+			results: []report.EnvResult{
+				{Env: "dev"},
+				{Env: "prod", Failed: true},
+			},
+			want: StatusPartialSuccess,
+		},
+		{
+			name:   "skip and failure",
+			runErr: targetErr,
+			results: []report.EnvResult{
+				{Env: "dev"},
+				{Env: "prod", Failed: true},
+			},
+			want: StatusPartialSuccess,
+		},
+		{name: "cancelled", runErr: targetErr, contextErr: context.Canceled, want: StatusCancelled},
+		{name: "denied", runErr: targetErr, denied: true, want: StatusDenied},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := FinalRunStatus(tc.runErr, tc.contextErr, tc.denied, tc.results); got != tc.want {
+				t.Fatalf("FinalRunStatus() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
 
 // newTestRun appends a fresh running run to the manager and returns it.
 func newTestRun(m *RunManager) *Run {
@@ -31,10 +75,11 @@ func TestPrepareReviewedApplyUsesPlanMetadata(t *testing.T) {
 		SavedPlanReady: true,
 		StartedAt:      time.Now(),
 		Request: RunRequest{
-			Command:   "plan",
-			Repo:      "platform",
-			ExtraArgs: []string{"-refresh=false"},
-			Parallel:  true,
+			Command:           "plan",
+			Repo:              "platform",
+			ExtraArgs:         []string{"-refresh=false"},
+			ResourceAddresses: []string{"module.network"},
+			Parallel:          true,
 		},
 		Results: []report.EnvResult{{Env: "dev"}, {Env: "prod"}},
 	}
@@ -58,6 +103,9 @@ func TestPrepareReviewedApplyUsesPlanMetadata(t *testing.T) {
 	}
 	if len(got.ExtraArgs) != 0 || len(got.PromotionOrder) != 2 {
 		t.Fatalf("reviewed apply did not lock plan metadata: %#v", got)
+	}
+	if !reflect.DeepEqual(got.ResourceAddresses, []string{"module.network"}) {
+		t.Fatalf("reviewed apply lost resource addresses: %#v", got.ResourceAddresses)
 	}
 }
 

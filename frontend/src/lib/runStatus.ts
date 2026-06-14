@@ -100,7 +100,7 @@ export interface PlanCounts {
   failed: boolean;
 }
 
-export type TargetStatus = 'done' | 'fail' | 'denied' | 'running' | 'queued';
+export type TargetStatus = 'done' | 'skipped' | 'fail' | 'denied' | 'running' | 'queued';
 
 export interface TargetState {
   name: string;
@@ -260,8 +260,9 @@ const INIT_DONE_RE = /has been successfully initialized|Terraform has been succe
  * Returns 'done' | 'fail' when terminal, or null when the section is still in
  * progress (caller decides running vs. queued).
  */
-export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | 'fail' | 'denied' | null {
+export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | 'skipped' | 'fail' | 'denied' | null {
   let failed = false;
+  let skipped = false;
   let denied = false;
   let sawApplyDone = false;
   let sawInitDone = false;
@@ -270,6 +271,7 @@ export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | '
   for (const line of lines) {
     const plain = stripAnsi(line);
     if (/\[FAILED\]/.test(plain)) failed = true;
+    if (/\[SKIPPED\]/.test(plain)) skipped = true;
     if (/\[DENIED\]/.test(plain)) denied = true;
     if (APPLY_DONE_RE.test(plain)) sawApplyDone = true;
     if (INIT_DONE_RE.test(plain)) sawInitDone = true;
@@ -278,6 +280,7 @@ export function sectionTerminalStatus(lines: string[], ctx?: string): 'done' | '
   }
   if (denied) return 'denied';
   if (failed) return 'fail';
+  if (skipped) return 'skipped';
   if (ctx === 'apply' || ctx === 'destroy') {
     // "No changes" apply skips the approval prompt and still prints "Apply
     // complete!", but accept either marker defensively.
@@ -315,6 +318,7 @@ export function deriveTargetStatuses(lines: string[], expectedTargets?: string[]
     const term = sectionTerminalStatus(s.lines, s.stage ?? command);
     if (term === 'denied') return { name: s.name, status: 'denied' as TargetStatus };
     if (term === 'fail') return { name: s.name, status: 'fail' as TargetStatus };
+    if (term === 'skipped') return { name: s.name, status: 'skipped' as TargetStatus };
     if (term === 'done') return { name: s.name, status: 'done' as TargetStatus };
     // Not terminal yet.
     if (parallel) return { name: s.name, status: 'running' as TargetStatus };

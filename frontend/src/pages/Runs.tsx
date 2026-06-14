@@ -9,6 +9,7 @@ import {
   type RunFilters,
 } from '../lib/runFilters';
 import { commandStyleClass } from '../lib/commandStyle';
+import { ticketURL } from '../lib/ticketing';
 import type { Run, RunStatus, Paginated, Repo, GitProvider } from '../types';
 import './Runs.css';
 
@@ -33,6 +34,9 @@ const ICON_CHECKC = (
 );
 const ICON_X = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M15 9l-6 6M9 9l6 6" /></svg>
+);
+const ICON_PARTIAL = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M8 12h8M12 8v8" /></svg>
 );
 const ICON_STOP = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><rect x="9" y="9" width="6" height="6" rx="1" /></svg>
@@ -64,9 +68,14 @@ type Dock = 'bottom' | 'side';
 
 const PAGE_SIZE = 25;
 
+function statusLabel(status: RunStatus): string {
+  return status === 'partial_success' ? 'Partial Success' : status;
+}
+
 function statusIcon(s: RunStatus): React.ReactNode {
   if (s === 'running') return <span className="spin" />;
   if (s === 'success') return ICON_CHECKC;
+  if (s === 'partial_success') return ICON_PARTIAL;
   if (s === 'failed') return ICON_X;
   if (s === 'denied') return ICON_BAN;
   return ICON_STOP;
@@ -111,7 +120,7 @@ function runTargets(r: Run): string[] {
 }
 
 const BASE_COMMANDS = ['plan', 'apply', 'destroy'];
-const RUN_STATUSES: RunStatus[] = ['running', 'success', 'failed', 'denied', 'cancelled'];
+const RUN_STATUSES: RunStatus[] = ['running', 'success', 'partial_success', 'failed', 'denied', 'cancelled'];
 
 /** Multi-select command filter: checkbox dropdown with an "all" state. */
 function CommandFilter({
@@ -213,7 +222,7 @@ function StatusFilter({
 
   const label = selected.length === 0
     ? 'All statuses'
-    : selected.length === 1 ? `Status: ${selected[0]}` : `Statuses: ${selected.length}`;
+    : selected.length === 1 ? `Status: ${statusLabel(selected[0] as RunStatus)}` : `Statuses: ${selected.length}`;
 
   return (
     <div className="cmdf statusf" ref={rootRef}>
@@ -249,7 +258,7 @@ function StatusFilter({
           {RUN_STATUSES.map(status => (
             <label key={status} className="cmdf-opt status-option">
               <input type="checkbox" checked={selected.includes(status)} onChange={() => toggle(status)} />
-              <span className={`dash-status ${status}`}>{status}</span>
+              <span className={`dash-status ${status}`}>{statusLabel(status)}</span>
             </label>
           ))}
         </div>
@@ -267,6 +276,7 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newRunOpen, setNewRunOpen] = useState(false);
   const [filters, setFilters] = useState<RunFilters>(() => parseHashQuery(filterQuery ?? ''));
+  const [ticketingUrl, setTicketingUrl] = useState<string | null>(null);
 
   // Filter changes reset to page 1 and are mirrored into the hash so refresh
   // and back/forward keep them. replaceState avoids a hashchange re-render.
@@ -307,6 +317,9 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
         setProviders(map);
       })
       .catch(() => { /* provider badges are best-effort; fall back to git icon */ });
+    api.get<import('../types').WebSettings>('/api/web/settings')
+      .then(settings => setTicketingUrl(settings.ticketingUrl))
+      .catch(() => setTicketingUrl(null));
   }, []);
 
   const loadRuns = useCallback(() => {
@@ -463,6 +476,14 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
               selected={filters.statuses}
               onChange={statuses => applyFilters({ ...filters, statuses })}
             />
+            <input
+              className="ticket-filter"
+              type="search"
+              aria-label="Search by ticket number"
+              placeholder="Search ticket"
+              value={filters.ticket}
+              onChange={event => applyFilters({ ...filters, ticket: event.target.value })}
+            />
             {filtersActive && (
               <>
                 <div className="filter-chips">
@@ -493,6 +514,15 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                       >×</button>
                     </span>
                   ))}
+                  {filters.ticket && (
+                    <span className="filter-chip">
+                      Ticket: {filters.ticket}
+                      <button
+                        type="button" aria-label="Remove ticket filter"
+                        onClick={() => applyFilters({ ...filters, ticket: '' })}
+                      >×</button>
+                    </span>
+                  )}
                 </div>
                 <button type="button" className="btn btn-link btn-sm" onClick={() => applyFilters(emptyFilters())}>
                   Clear all filters
@@ -512,26 +542,26 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                 <table className="runs-tbl">
                   <thead>
                     <tr>
-                      <th>Run ID</th><th>Command</th><th>Repo</th><th>Branch</th><th>Targets</th>
+                      <th>Run ID</th><th>Command</th><th>Ticket</th><th>Repo</th><th>Branch</th><th>Targets</th>
                       <th>Mode</th><th>Started</th><th>Duration</th><th>Status</th>
                       <th style={{ width: 140 }}>Changes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {error && (
-                      <tr><td colSpan={10} style={{ padding: 16 }}>
+                      <tr><td colSpan={11} style={{ padding: 16 }}>
                         <span style={{ color: 'var(--red)' }}>{error}</span>
                         <button className="btn btn-normal btn-sm" style={{ marginLeft: 12 }} onClick={loadRuns}>Retry</button>
                       </td></tr>
                     )}
                     {!error && runs.length === 0 && !loading && filtersActive && (
-                      <tr><td colSpan={10} style={{ color: 'var(--text-2)', padding: 24, textAlign: 'center' }}>
+                      <tr><td colSpan={11} style={{ color: 'var(--text-2)', padding: 24, textAlign: 'center' }}>
                         No runs match the current filters.{' '}
                         <button className="btn btn-link btn-sm" onClick={() => applyFilters(emptyFilters())}>Clear all filters</button>
                       </td></tr>
                     )}
                     {!error && runs.length === 0 && !loading && !filtersActive && (
-                      <tr><td colSpan={10} style={{ color: 'var(--text-2)', padding: 24, textAlign: 'center' }}>No runs yet. Click “New run” to get started.</td></tr>
+                      <tr><td colSpan={11} style={{ color: 'var(--text-2)', padding: 24, textAlign: 'center' }}>No runs yet. Click “New run” to get started.</td></tr>
                     )}
                     {runs.map(r => {
                       const sel = r.id === selectedId;
@@ -548,6 +578,16 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                             <span className="run-id">{r.status === 'running' && <span className="live" />}{r.id}</span>
                           </td>
                           <td style={{ width: 96 }}><span className={`run-command command-style ${commandStyleClass(command)}`}>{command}</span></td>
+                          <td style={{ width: 118 }}>
+                            {r.request?.ticket
+                              ? (() => {
+                                  const href = ticketURL(ticketingUrl, r.request.ticket);
+                                  return href
+                                    ? <a className="ticket-cell" href={href} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()}>{r.request.ticket}</a>
+                                    : <span className="ticket-cell">{r.request.ticket}</span>;
+                                })()
+                              : <span className="mono-cell">—</span>}
+                          </td>
                           <td style={{ width: 160 }}>
                             {(() => {
                               const repoName = r.repo || r.request?.repo || '';
@@ -574,7 +614,7 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                           </td>
                           <td style={{ width: 160 }} title={ts.title}><span className="ts-cell">{ts.label}</span></td>
                           <td style={{ width: 90 }}><span className="mono-cell">{r.status === 'running' ? '—' : duration(r.startedAt, r.finishedAt)}</span></td>
-                          <td style={{ width: 120 }}><span className={`rstatus ${r.status}`}>{statusIcon(r.status)}{r.status}</span></td>
+                          <td style={{ width: 140 }}><span className={`rstatus ${r.status}`}>{statusIcon(r.status)}{statusLabel(r.status)}</span></td>
                           <td style={{ width: 140 }}>
                             {(() => {
                               if (r.status === 'running') return <span style={{ color: 'var(--text-2)' }}>—</span>;
@@ -638,6 +678,7 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
               onStatusChange={() => { loadRuns(); if (selectedId) loadRunDetail(selectedId); }}
               onRerun={onRerun}
               onApplyPlan={onApplyPlan}
+              ticketingUrl={ticketingUrl}
             />
           )}
         </div>

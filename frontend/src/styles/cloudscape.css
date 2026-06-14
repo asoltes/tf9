@@ -201,7 +201,7 @@ a:hover{text-decoration:underline}
 .badge.orange{background:#ffe0c2;color:#8a3a00}
 .badge.red{background:#ffd9d9;color:#8b1414}
 .badge svg{width:12px;height:12px}
-.command-style{--command-color:var(--text)}
+.command-style{--command-color:var(--text);--command-contrast:#fff}
 .command-init{--command-color:var(--command-init)}
 .command-plan{--command-color:var(--command-plan)}
 .command-apply{--command-color:var(--command-apply)}
@@ -217,6 +217,13 @@ a:hover{text-decoration:underline}
 .command-force-unlock{--command-color:var(--command-force-unlock)}
 .command-default{--command-color:var(--text)}
 .badge.command-style{background:color-mix(in srgb,var(--command-color) 12%,var(--container));color:var(--command-color)}
+.btn.command-action{
+  background:var(--command-color);border-color:var(--command-color);color:var(--command-contrast);
+}
+.btn.command-action:hover{
+  background:color-mix(in srgb,var(--command-color) 86%,#000);
+  border-color:color-mix(in srgb,var(--command-color) 86%,#000);
+}
 .status{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text)}
 .status svg{width:15px;height:15px}
 .status.ok{color:var(--green)}

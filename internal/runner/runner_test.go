@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -224,7 +225,7 @@ func TestResolveExplicitTargetsUsesFullPathIdentity(t *testing.T) {
 }
 
 func TestBuildArgsForceUnlockWithID(t *testing.T) {
-	args, skip := buildArgs("force-unlock", []string{"-ignored"}, "abc-123", ImportSpec{}, false)
+	args, skip := buildArgs("force-unlock", []string{"-ignored"}, nil, "abc-123", ImportSpec{}, false)
 	if skip {
 		t.Fatalf("force-unlock with id should not skip")
 	}
@@ -240,14 +241,14 @@ func TestBuildArgsForceUnlockWithID(t *testing.T) {
 }
 
 func TestBuildArgsForceUnlockWithoutIDSkips(t *testing.T) {
-	args, skip := buildArgs("force-unlock", nil, "", ImportSpec{}, false)
+	args, skip := buildArgs("force-unlock", nil, nil, "", ImportSpec{}, false)
 	if !skip {
 		t.Fatalf("force-unlock without id should skip, got args=%v", args)
 	}
 }
 
 func TestBuildArgsNormalCommands(t *testing.T) {
-	args, skip := buildArgs("plan", []string{"-refresh=false"}, "", ImportSpec{}, false)
+	args, skip := buildArgs("plan", []string{"-refresh=false"}, nil, "", ImportSpec{}, false)
 	if skip {
 		t.Fatalf("plan should not skip")
 	}
@@ -262,7 +263,7 @@ func TestBuildArgsNormalCommands(t *testing.T) {
 	}
 
 	// autoApprove=true adds -auto-approve
-	args, _ = buildArgs("apply", nil, "", ImportSpec{}, true)
+	args, _ = buildArgs("apply", nil, nil, "", ImportSpec{}, true)
 	want = []string{"apply", "-input=false", "-auto-approve"}
 	if len(args) != len(want) {
 		t.Fatalf("apply autoApprove=true args = %v, want %v", args, want)
@@ -276,7 +277,7 @@ func TestBuildArgsNormalCommands(t *testing.T) {
 	// Interactive apply (autoApprove=false) must NOT add -input=false or
 	// -auto-approve — terraform needs input enabled to read the "yes" approval
 	// from stdin, otherwise the prompt is shown but the run hangs.
-	args, _ = buildArgs("apply", nil, "", ImportSpec{}, false)
+	args, _ = buildArgs("apply", nil, nil, "", ImportSpec{}, false)
 	want = []string{"apply"}
 	if len(args) != len(want) {
 		t.Fatalf("apply autoApprove=false args = %v, want %v", args, want)
@@ -288,9 +289,31 @@ func TestBuildArgsNormalCommands(t *testing.T) {
 	}
 
 	// destroy stays interactive too (never gets -input=false).
-	args, _ = buildArgs("destroy", nil, "", ImportSpec{}, false)
+	args, _ = buildArgs("destroy", nil, nil, "", ImportSpec{}, false)
 	if len(args) != 1 || args[0] != "destroy" {
 		t.Fatalf("interactive destroy args = %v, want [destroy]", args)
+	}
+}
+
+func TestBuildArgsResourceAddresses(t *testing.T) {
+	args, _ := buildArgs("plan", []string{"-refresh=false"}, []string{"module.network", `aws_instance.web["blue"]`}, "", ImportSpec{}, false)
+	want := []string{"plan", "-input=false", "-refresh=false", "-target=module.network", `-target=aws_instance.web["blue"]`}
+	if !reflect.DeepEqual(args, want) {
+		t.Fatalf("plan args = %v, want %v", args, want)
+	}
+
+	args, _ = buildArgs("apply", nil, []string{"module.network"}, "", ImportSpec{}, true)
+	want = []string{"apply", "-input=false", "-auto-approve", "-target=module.network"}
+	if !reflect.DeepEqual(args, want) {
+		t.Fatalf("apply args = %v, want %v", args, want)
+	}
+
+	for _, command := range []string{"taint", "untaint"} {
+		args, _ = buildArgs(command, []string{"-allow-missing"}, []string{`aws_instance.web["blue"]`}, "", ImportSpec{}, false)
+		want = []string{command, "-allow-missing", `aws_instance.web["blue"]`}
+		if !reflect.DeepEqual(args, want) {
+			t.Fatalf("%s args = %v, want %v", command, args, want)
+		}
 	}
 }
 
@@ -388,6 +411,77 @@ func TestApprovalWasDeniedRecognizesApplyAndDestroy(t *testing.T) {
 	}
 	if approvalWasDenied("Error: provider failed") {
 		t.Fatal("ordinary Terraform failure was classified as denial")
+	}
+}
+
+func TestMissingTaintResourceIsSkipped(t *testing.T) {
+	diagnostic := strings.Join([]string{
+		"Error: No such resource instance",
+		"There is no resource instance in the state with the address",
+		"module.region_delta.terraform_data.service_volatile[22].",
+	}, "\n")
+	setupFakeBins(t, "#!/bin/sh\ncat <<'EOF'\n"+diagnostic+"\nEOF\nexit 1\n")
+	tfDir := makeTfDir(t)
+	var out strings.Builder
+
+	results, _, err := Run(Options{
+		SearchRoot:        tfDir,
+		TfCommand:         "taint",
+		ResourceAddresses: []string{"module.region_delta.terraform_data.service_volatile[22]"},
+		ReportDir:         "-",
+		ProfileOverride:   "test-profile",
+		Output:            &out,
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v, want success", err)
+	}
+	if len(results) != 1 || results[0].Failed {
+		t.Fatalf("missing taint resource should be skipped: %#v", results)
+	}
+	if !strings.Contains(out.String(), "[SKIPPED]") || strings.Contains(out.String(), "[FAILED]") {
+		t.Fatalf("output = %q, want skipped without failed", out.String())
+	}
+}
+
+func TestMissingResourceDiagnosticDoesNotMaskOtherCommands(t *testing.T) {
+	output := "Error: No such resource instance\nThere is no resource instance in the state with the address aws_instance.web."
+	if _, skipped := skippableCommandFailure("plan", output); skipped {
+		t.Fatal("plan failure was classified as skipped")
+	}
+	if _, skipped := skippableCommandFailure("taint", "Error: provider failed"); skipped {
+		t.Fatal("ordinary taint failure was classified as skipped")
+	}
+}
+
+func TestForceUnlockAlreadyUnlockedIsSkipped(t *testing.T) {
+	setupFakeBins(t, "#!/bin/sh\necho 'Failed to unlock state: LocalState not locked'\nexit 1\n")
+	tfDir := makeTfDir(t)
+	env := filepath.Base(tfDir)
+	var out strings.Builder
+
+	results, _, err := Run(Options{
+		SearchRoot:      tfDir,
+		TfCommand:       "force-unlock",
+		LockIDs:         map[string]string{env: "abc-123"},
+		ReportDir:       "-",
+		ProfileOverride: "test-profile",
+		Output:          &out,
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v, want success", err)
+	}
+	if len(results) != 1 || results[0].Failed {
+		t.Fatalf("already unlocked state should be skipped: %#v", results)
+	}
+	if !strings.Contains(out.String(), "[SKIPPED]") || !strings.Contains(out.String(), "already unlocked") {
+		t.Fatalf("output = %q, want already-unlocked skip", out.String())
+	}
+}
+
+func TestForceUnlockMismatchedLockIDStillFails(t *testing.T) {
+	output := `Failed to unlock state: state lock ID "abc" does not match existing lock ID "def"`
+	if _, skipped := skippableCommandFailure("force-unlock", output); skipped {
+		t.Fatal("mismatched force-unlock lock ID was classified as skipped")
 	}
 }
 

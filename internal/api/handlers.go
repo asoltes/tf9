@@ -60,6 +60,7 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			"savedPlanApply":             cfg.Web.SavedPlanApply,
 			"approvalTimeoutSeconds":     int(cfg.Web.ApprovalTimeout() / time.Second),
 			"reviewedPlanTimeoutSeconds": int(cfg.Web.ReviewedPlanTimeout() / time.Second),
+			"ticketingUrl":               cfg.Web.TicketingURL,
 		})
 	})
 	mux.HandleFunc("/api/runs", func(w http.ResponseWriter, r *http.Request) {
@@ -756,6 +757,17 @@ func startRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, reportDir
 		jsonErr(w, "bad_request", "command is required", http.StatusBadRequest)
 		return
 	}
+	resourceAddresses, err := validateResourceAddresses(req.Command, req.ResourceAddresses)
+	if err != nil {
+		jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
+		return
+	}
+	req.ResourceAddresses = resourceAddresses
+	req.Ticket = strings.TrimSpace(req.Ticket)
+	if len(req.Ticket) > 128 || strings.ContainsAny(req.Ticket, "\r\n\t") {
+		jsonErr(w, "bad_request", "ticket must be 128 characters or fewer and contain no control characters", http.StatusBadRequest)
+		return
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
@@ -801,6 +813,32 @@ func startRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, reportDir
 	jsonOK(w, map[string]string{"id": run.ID})
 }
 
+func validateResourceAddresses(command string, addresses []string) ([]string, error) {
+	normalized := make([]string, 0, len(addresses))
+	for _, address := range addresses {
+		address = strings.TrimSpace(address)
+		if address == "" {
+			continue
+		}
+		if strings.ContainsAny(address, "\r\n\t") {
+			return nil, fmt.Errorf("resource addresses must not contain control characters")
+		}
+		normalized = append(normalized, address)
+	}
+	switch command {
+	case "taint", "untaint":
+		if len(normalized) != 1 {
+			return nil, fmt.Errorf("%s requires exactly one resource address", command)
+		}
+	case "plan", "apply":
+	default:
+		if len(normalized) > 0 {
+			return nil, fmt.Errorf("resource addresses are not supported for %s", command)
+		}
+	}
+	return normalized, nil
+}
+
 // resolveTargetDirs returns the ordered list of target labels for a run.
 // These labels match the ENV: field emitted by the runner in section banners,
 // so the frontend can map streamed output back to the correct dot/status.
@@ -820,7 +858,8 @@ func resolveTargetDirs(req RunRequest) []string {
 }
 
 // parseRunFilter builds the optional run-list predicate from `from`/`to`
-// (RFC3339, inclusive boundaries) and repeated `command`/`status` parameters.
+// (RFC3339, inclusive boundaries), repeated `command`/`status` parameters,
+// and a case-insensitive ticket substring.
 // Returns nil when no filter parameters are present (legacy behavior) and an
 // error for malformed values, which the caller maps to a 400 response.
 func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
@@ -851,7 +890,7 @@ func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
 		}
 	}
 	validStatuses := map[RunStatus]bool{
-		StatusRunning: true, StatusSuccess: true, StatusFailed: true,
+		StatusRunning: true, StatusSuccess: true, StatusPartialSuccess: true, StatusFailed: true,
 		StatusDenied: true, StatusCancelled: true,
 	}
 	var statuses map[RunStatus]bool
@@ -865,7 +904,8 @@ func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
 			statuses[status] = true
 		}
 	}
-	if from == nil && to == nil && commands == nil && statuses == nil {
+	ticket := strings.ToLower(strings.TrimSpace(q.Get("ticket")))
+	if from == nil && to == nil && commands == nil && statuses == nil && ticket == "" {
 		return nil, nil
 	}
 	return func(run *Run) bool {
@@ -879,6 +919,9 @@ func parseRunFilter(r *http.Request) (func(*Run) bool, error) {
 			return false
 		}
 		if to != nil && run.StartedAt.After(*to) {
+			return false
+		}
+		if ticket != "" && !strings.Contains(strings.ToLower(run.Request.Ticket), ticket) {
 			return false
 		}
 		return true
@@ -1308,6 +1351,8 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 		Currency     string    `json:"currency,omitempty"`
 		TotalMonthly float64   `json:"totalMonthly,omitempty"`
 		DiffMonthly  float64   `json:"diffMonthly,omitempty"`
+		Ticket       string    `json:"ticket,omitempty"`
+		TicketURL    string    `json:"ticketUrl,omitempty"`
 	}
 	out := make([]entry, 0, len(entries))
 	for _, e := range entries {
@@ -1338,6 +1383,8 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 				en.Currency = sum.Currency
 				en.TotalMonthly = sum.TotalMonthly
 				en.DiffMonthly = sum.DiffMonthly
+				en.Ticket = sum.Ticket
+				en.TicketURL = sum.TicketURL
 			}
 		}
 		out = append(out, en)
@@ -1415,6 +1462,8 @@ func costSummary(w http.ResponseWriter, r *http.Request, reportDir string) {
 		Currency      string    `json:"currency"`
 		TotalMonthly  float64   `json:"totalMonthly"`
 		ResourceCount int       `json:"resourceCount"`
+		Ticket        string    `json:"ticket,omitempty"`
+		TicketURL     string    `json:"ticketUrl,omitempty"`
 	}
 	type resourceRow struct {
 		Name        string  `json:"name"`
@@ -1434,6 +1483,8 @@ func costSummary(w http.ResponseWriter, r *http.Request, reportDir string) {
 		ResourceCount int           `json:"resourceCount"`
 		Resources     []resourceRow `json:"resources"`
 		ByService     []serviceRow  `json:"byService"`
+		Ticket        string        `json:"ticket,omitempty"`
+		TicketURL     string        `json:"ticketUrl,omitempty"`
 	}
 
 	items := make([]item, 0, len(entries))
@@ -1463,6 +1514,8 @@ func costSummary(w http.ResponseWriter, r *http.Request, reportDir string) {
 			Currency:      sum.Currency,
 			TotalMonthly:  sum.TotalMonthly,
 			ResourceCount: sum.ResourceCount,
+			Ticket:        sum.Ticket,
+			TicketURL:     sum.TicketURL,
 		})
 		if newest == nil || runAt.After(newestAt) {
 			s := sum
@@ -1484,6 +1537,8 @@ func costSummary(w http.ResponseWriter, r *http.Request, reportDir string) {
 			Currency:      newest.Currency,
 			TotalMonthly:  newest.TotalMonthly,
 			ResourceCount: newest.ResourceCount,
+			Ticket:        newest.Ticket,
+			TicketURL:     newest.TicketURL,
 			Resources:     []resourceRow{},
 			ByService:     []serviceRow{},
 		}

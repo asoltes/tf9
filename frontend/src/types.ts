@@ -1,4 +1,4 @@
-export type RunStatus = 'running' | 'success' | 'failed' | 'cancelled' | 'denied';
+export type RunStatus = 'running' | 'success' | 'partial_success' | 'failed' | 'cancelled' | 'denied';
 
 export interface ImportSpec {
   addr: string;
@@ -11,6 +11,7 @@ export interface RunRequest {
   envFilter: string;
   profile: string;
   extraArgs: string[];
+  resourceAddresses?: string[];
   nonprodOnly: boolean;
   autoApprove: boolean;
   parallel: boolean;
@@ -19,6 +20,7 @@ export interface RunRequest {
   importAddrs?: Record<string, ImportSpec>;
   cost?: boolean;
   planRunId?: string;
+  ticket?: string;
 }
 
 export interface CostResource {
@@ -107,6 +109,7 @@ export interface WebSettings {
   savedPlanApply: boolean;
   approvalTimeoutSeconds: number;
   reviewedPlanTimeoutSeconds: number;
+  ticketingUrl: string | null;
 }
 
 export type GitProvider = 'github' | 'gitlab' | 'git';
@@ -169,6 +172,8 @@ export interface Report {
   currency?: string;
   totalMonthly?: number;
   diffMonthly?: number;
+  ticket?: string;
+  ticketUrl?: string;
 }
 
 export interface ReportEnvResult {
@@ -188,6 +193,8 @@ export interface ReportData {
   command: string;
   runAt?: string;
   repoLabel?: string;
+  ticket?: string;
+  ticketUrl?: string;
   applied: boolean;
   add: number;
   change: number;
@@ -213,6 +220,8 @@ export interface CostSummaryItem {
   currency: string;
   totalMonthly: number;
   resourceCount: number;
+  ticket?: string;
+  ticketUrl?: string;
 }
 
 export interface CostServiceRow {
@@ -229,6 +238,8 @@ export interface CostDetail {
   resourceCount: number;
   resources: CostResource[];
   byService: CostServiceRow[];
+  ticket?: string;
+  ticketUrl?: string;
 }
 
 export interface CostSummary {

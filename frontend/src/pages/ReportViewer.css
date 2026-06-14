@@ -92,11 +92,12 @@ html[data-theme="dark"] .report-viewer {
   --rv-hl:#bb800933; --rv-hl-on:#ffd33d;
 }
 
-/* command accent — plan/apply/destroy share the layout, differ by accent */
-.report-viewer[data-cmd="plan"]    {--rv-cmd:var(--rv-blue);  --rv-cmd-bg:var(--rv-blue-bg);  --rv-cmd-br:var(--rv-blue-br);}
-.report-viewer[data-cmd="apply"]   {--rv-cmd:var(--rv-green); --rv-cmd-bg:var(--rv-green-bg); --rv-cmd-br:var(--rv-green-br);}
-.report-viewer[data-cmd="destroy"] {--rv-cmd:var(--rv-red);   --rv-cmd-bg:var(--rv-red-bg);   --rv-cmd-br:var(--rv-red-br);}
-.report-viewer { --rv-cmd:var(--rv-blue); --rv-cmd-bg:var(--rv-blue-bg); --rv-cmd-br:var(--rv-blue-br); }
+/* Command visuals use the same palette as New Run command cards. */
+.report-viewer{
+  --rv-cmd:var(--command-color);
+  --rv-cmd-bg:color-mix(in srgb,var(--command-color) 12%,var(--rv-surface));
+  --rv-cmd-br:color-mix(in srgb,var(--command-color) 30%,var(--rv-border));
+}
 
 .report-viewer .mono{font-family:var(--rv-mono)}
 .report-viewer .tnum{font-variant-numeric:tabular-nums}
@@ -128,6 +129,8 @@ html[data-theme="dark"] .report-viewer {
 }
 .report-viewer .chip svg{width:12px;height:12px;opacity:.85}
 .report-viewer .chip b{color:var(--rv-text);font-weight:600}
+.report-viewer .chip a{color:var(--rv-cmd);text-decoration:none}
+.report-viewer .chip a:hover{text-decoration:underline}
 .report-viewer .hdr-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
 
 /* command pill */

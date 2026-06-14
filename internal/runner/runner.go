@@ -37,36 +37,39 @@ type ImportSpec struct {
 }
 
 type Options struct {
-	SearchRoot      string
-	RepoLabel       string
-	TfCommand       string
-	TfArgs          []string
-	EnvFilter       string
-	Skip            []string // exact dir/target names to exclude
-	ProfileOverride string
-	ProfileMappings []config.ProfileMapping // ordered dir→profile pairs; slice order = execution order for --recursive
-	Recursive       bool                    // when true, always scan subdirs even if SearchRoot has .tf files
-	NonprodOnly     bool
-	ReportDir       string                // "" = config default; "-" = disable
-	Output          io.Writer             // nil → os.Stdout
-	Ctx             context.Context       // nil → context.Background()
-	ExplicitTargets []config.RepoTarget   // if set, bypass collectDirs; SearchRoot is repo root
-	Parallel        bool                  // run all envs concurrently
-	PromotionOrder  []string              // if set, execute envs in this order (sequential only)
-	LockIDs         map[string]string     // target name → lock id, used by force-unlock
-	ImportAddrs     map[string]ImportSpec // target name → import spec, used by import
-	AutoApprove     bool                  // add -auto-approve; false = interactive approval via InputCh
-	InputCh         <-chan string         // receives "yes" or "no" when terraform prompts for input
-	OnApprovalWait  func(bool)            // called with true when blocked on approval, false when released
-	OnProcStart     func(pid int)         // called with each terraform child PID (process-group leader)
-	SkipApply       map[string]bool       // env labels whose apply is skipped (no plan changes); auto mode
-	Stdin           io.Reader             // if set, wired to terraform's stdin (CLI interactive mode)
-	Cost            bool                  // run infracost cost estimation after each target succeeds
-	InfracostKey    string                // Infracost API key (passed via env to infracost, never logged)
-	Currency        string                // currency code for cost estimates (default USD)
-	SavePlanDir     string                // directory for per-target terraform plan -out files
-	ApplyPlanFiles  map[string]string     // target label → reviewed plan path for terraform apply
-	OnGraphReady    func(target, dir, planFile, command, output string, env []string) error
+	SearchRoot        string
+	RepoLabel         string
+	Ticket            string
+	TicketURL         string
+	TfCommand         string
+	TfArgs            []string
+	ResourceAddresses []string
+	EnvFilter         string
+	Skip              []string // exact dir/target names to exclude
+	ProfileOverride   string
+	ProfileMappings   []config.ProfileMapping // ordered dir→profile pairs; slice order = execution order for --recursive
+	Recursive         bool                    // when true, always scan subdirs even if SearchRoot has .tf files
+	NonprodOnly       bool
+	ReportDir         string                // "" = config default; "-" = disable
+	Output            io.Writer             // nil → os.Stdout
+	Ctx               context.Context       // nil → context.Background()
+	ExplicitTargets   []config.RepoTarget   // if set, bypass collectDirs; SearchRoot is repo root
+	Parallel          bool                  // run all envs concurrently
+	PromotionOrder    []string              // if set, execute envs in this order (sequential only)
+	LockIDs           map[string]string     // target name → lock id, used by force-unlock
+	ImportAddrs       map[string]ImportSpec // target name → import spec, used by import
+	AutoApprove       bool                  // add -auto-approve; false = interactive approval via InputCh
+	InputCh           <-chan string         // receives "yes" or "no" when terraform prompts for input
+	OnApprovalWait    func(bool)            // called with true when blocked on approval, false when released
+	OnProcStart       func(pid int)         // called with each terraform child PID (process-group leader)
+	SkipApply         map[string]bool       // env labels whose apply is skipped (no plan changes); auto mode
+	Stdin             io.Reader             // if set, wired to terraform's stdin (CLI interactive mode)
+	Cost              bool                  // run infracost cost estimation after each target succeeds
+	InfracostKey      string                // Infracost API key (passed via env to infracost, never logged)
+	Currency          string                // currency code for cost estimates (default USD)
+	SavePlanDir       string                // directory for per-target terraform plan -out files
+	ApplyPlanFiles    map[string]string     // target label → reviewed plan path for terraform apply
+	OnGraphReady      func(target, dir, planFile, command, output string, env []string) error
 }
 
 // ApprovalSentinel is emitted as a line to the output stream when terraform
@@ -86,8 +89,9 @@ const approvalAcceptedLine = "  [APPROVED] Approval accepted."
 // For "force-unlock" the command is `force-unlock -force <lockID>`; if lockID
 // is empty the target is skipped. For "import" the command is
 // `import -input=false <addr> <id>`; if either addr or id is empty the target
-// is skipped. All other commands pass standard flags then tfArgs.
-func buildArgs(cmd string, tfArgs []string, lockID string, imp ImportSpec, autoApprove bool) (args []string, skip bool) {
+// is skipped. Resource addresses become positional arguments for taint/untaint
+// and repeatable -target flags for plan/apply.
+func buildArgs(cmd string, tfArgs, resourceAddresses []string, lockID string, imp ImportSpec, autoApprove bool) (args []string, skip bool) {
 	if cmd == "force-unlock" {
 		if lockID == "" {
 			return nil, true
@@ -117,6 +121,14 @@ func buildArgs(cmd string, tfArgs []string, lockID string, imp ImportSpec, autoA
 		args = append(args, "-auto-approve")
 	}
 	args = append(args, tfArgs...)
+	switch cmd {
+	case "taint", "untaint":
+		args = append(args, resourceAddresses...)
+	case "plan", "apply":
+		for _, address := range resourceAddresses {
+			args = append(args, "-target="+address)
+		}
+	}
 	return args, false
 }
 
@@ -341,8 +353,17 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 	}
 
 	cmdDisplay := opts.TfCommand
-	if len(opts.TfArgs) > 0 {
-		cmdDisplay += " " + strings.Join(opts.TfArgs, " ")
+	displayArgs := append([]string{}, opts.TfArgs...)
+	switch opts.TfCommand {
+	case "taint", "untaint":
+		displayArgs = append(displayArgs, opts.ResourceAddresses...)
+	case "plan", "apply":
+		for _, address := range opts.ResourceAddresses {
+			displayArgs = append(displayArgs, "-target="+address)
+		}
+	}
+	if len(displayArgs) > 0 {
+		cmdDisplay += " " + strings.Join(displayArgs, " ")
 	}
 	out := opts.out()
 	fmt.Fprintf(out, "Running: terraform %s | target: %s", cmdDisplay, targetLabel)
@@ -413,7 +434,7 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 			continue
 		}
 
-		args, skip := buildArgs(opts.TfCommand, opts.TfArgs, opts.LockIDs[env], opts.ImportAddrs[env], opts.AutoApprove)
+		args, skip := buildArgs(opts.TfCommand, opts.TfArgs, opts.ResourceAddresses, opts.LockIDs[env], opts.ImportAddrs[env], opts.AutoApprove)
 		if skip {
 			fmt.Fprintf(out, "==> Skipping %s (no lock id / import spec provided)\n", env)
 			continue
@@ -596,6 +617,15 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 				fmt.Fprintf(out, "  Stopping promotion — approval denied for %s.\n", env)
 				break
 			}
+			if reason, skipped := skippableCommandFailure(opts.TfCommand, res.output); skipped {
+				fmt.Fprintf(out, "  [SKIPPED] %s — %s\n", env, reason)
+				results = append(results, res)
+				if opts.ReportDir != "-" {
+					writeLiveReport(results, opts, runAt)
+				}
+				fmt.Fprintln(out)
+				continue
+			}
 			fmt.Fprintf(out, "  [FAILED] %s\n", env)
 			failed = append(failed, env)
 			res.failed = true
@@ -652,6 +682,8 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 		if path, err := report.Generate(final, report.Options{
 			Command:   opts.TfCommand,
 			RepoLabel: opts.RepoLabel,
+			Ticket:    opts.Ticket,
+			TicketURL: opts.TicketURL,
 			RunAt:     runAt,
 			OutputDir: opts.ReportDir,
 		}); err != nil {
@@ -681,6 +713,25 @@ func approvalWasDenied(output string) bool {
 	return strings.Contains(clean, "Apply cancelled.") || strings.Contains(clean, "Destroy cancelled.")
 }
 
+func skippableCommandFailure(command, output string) (string, bool) {
+	clean := reANSI.ReplaceAllString(output, "")
+	if (command == "taint" || command == "untaint") &&
+		strings.Contains(clean, "Error: No such resource instance") &&
+		strings.Contains(clean, "There is no resource instance in the state with the address") {
+		return "resource instance is not present in state", true
+	}
+	if command == "force-unlock" {
+		lower := strings.ToLower(clean)
+		if strings.Contains(lower, "localstate not locked") ||
+			strings.Contains(lower, "state is not locked") ||
+			strings.Contains(lower, "state was not locked") ||
+			strings.Contains(lower, "no state lock") {
+			return "state is already unlocked", true
+		}
+	}
+	return "", false
+}
+
 func approvalPromptShown(output string) bool {
 	clean := reANSI.ReplaceAllString(output, "")
 	return strings.Contains(clean, "Enter a value:")
@@ -698,6 +749,8 @@ func writeLiveReport(results []envResult, opts Options, runAt time.Time) {
 	if _, err := report.Generate(toReportResults(results), report.Options{
 		Command:   opts.TfCommand,
 		RepoLabel: opts.RepoLabel,
+		Ticket:    opts.Ticket,
+		TicketURL: opts.TicketURL,
 		RunAt:     runAt,
 		OutputDir: opts.ReportDir,
 		Filename:  liveFilename(opts.TfCommand),
@@ -1032,7 +1085,7 @@ func runParallel(
 				return
 			}
 
-			args, skipTarget := buildArgs(opts.TfCommand, opts.TfArgs, opts.LockIDs[env], opts.ImportAddrs[env], opts.AutoApprove)
+			args, skipTarget := buildArgs(opts.TfCommand, opts.TfArgs, opts.ResourceAddresses, opts.LockIDs[env], opts.ImportAddrs[env], opts.AutoApprove)
 			if skipTarget {
 				fmt.Fprintf(prefixedOut, "Skipping %s (no lock id / import spec provided)\n", env)
 				ch <- slot{idx: idx, result: envResult{env: env, profile: profile}}
@@ -1092,8 +1145,12 @@ func runParallel(
 			res := envResult{env: env, profile: profile, output: tw.capture.String()}
 			res.summary = summary
 			if exitCode != 0 {
-				fmt.Fprintf(prefixedOut, "[FAILED] %s\n", env)
-				res.failed = true
+				if reason, skipped := skippableCommandFailure(opts.TfCommand, res.output); skipped {
+					fmt.Fprintf(prefixedOut, "[SKIPPED] %s — %s\n", env, reason)
+				} else {
+					fmt.Fprintf(prefixedOut, "[FAILED] %s\n", env)
+					res.failed = true
+				}
 			} else {
 				if supportsGraph(opts.TfCommand) && opts.OnGraphReady != nil {
 					if graphErr := opts.OnGraphReady(env, dir, savedPlanFile, "terraform "+cmdDisplay, res.output, terraformEnv(meta)); graphErr != nil {

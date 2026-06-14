@@ -240,6 +240,20 @@ describe('sectionTerminalStatus', () => {
   it('recognizes an explicitly denied approval', () => {
     expect(sectionTerminalStatus(['Apply cancelled.', '[DENIED] dev'], 'apply')).toBe('denied');
   });
+  it('recognizes an explicitly skipped target', () => {
+    expect(sectionTerminalStatus(['Error: No such resource instance', '[SKIPPED] dev'], 'taint')).toBe('skipped');
+  });
+  it('derives skipped target status from runner marker', () => {
+    const lines = [
+      '════════════════════════════════════════',
+      '  ENV: dev  |  PROFILE: test',
+      '  CMD: terraform taint aws_instance.web',
+      '════════════════════════════════════════',
+      'Error: No such resource instance',
+      '[SKIPPED] dev — resource instance is not present in state',
+    ];
+    expect(deriveTargetStatuses(lines, ['dev'], 'taint')).toEqual([{ name: 'dev', status: 'skipped' }]);
+  });
 });
 
 // ── Approval gate state — Bug 3 regression tests ─────────────────────────────

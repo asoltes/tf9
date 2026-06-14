@@ -6,6 +6,7 @@ import { useNav } from '../nav';
 import { useToast } from './ToastProvider';
 import { envColor } from '../lib/colors';
 import { commandStyleClass } from '../lib/commandStyle';
+import { ticketURL } from '../lib/ticketing';
 import {
   parseEnvSections,
   parseCounts,
@@ -155,6 +156,7 @@ const I = {
   par: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="16" rx="1" /><rect x="15" y="4" width="6" height="16" rx="1" /></svg>,
   check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
   checkc: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="8.5 12 11 14.5 15.5 9.5" /></svg>,
+  skip: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></svg>,
   x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M15 9l-6 6M9 9l6 6" /></svg>,
   stop: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><rect x="9" y="9" width="6" height="6" rx="1" /></svg>,
   expand: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>,
@@ -187,6 +189,7 @@ function statusClass(s: RunStatus): string { return s; }
 function statusIcon(s: RunStatus): React.ReactNode {
   if (s === 'running') return <span className="spin" />;
   if (s === 'success') return I.checkc;
+  if (s === 'partial_success') return I.warn;
   if (s === 'failed') return I.x;
   if (s === 'denied') return I.ban;
   return I.stop;
@@ -230,6 +233,7 @@ function DistBar({ counts }: { counts: ReturnType<typeof parseCounts> }) {
 // Stats chips rendered with the prototype's tc-stats classes.
 function StatsChips({ counts, runStatus }: { counts: ReturnType<typeof parseCounts>; runStatus?: RunStatus }) {
   if (runStatus === 'denied') return <span className="tc-state denied">DENIED</span>;
+  if (runStatus === 'partial_success') return <span className="tc-state partial_success">PARTIAL SUCCESS</span>;
   if (counts.failed) return <span className="tc-state fail">FAILED</span>;
   if (counts.noChanges) return <span className="tc-stats"><span className="c">~0</span></span>;
   if (counts.add > 0 || counts.change > 0 || counts.destroy > 0) {
@@ -254,9 +258,10 @@ interface Props {
   onStatusChange?: () => void;
   onRerun?: (run: Run) => void;
   onApplyPlan?: (run: Run) => void;
+  ticketingUrl?: string | null;
 }
 
-export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatusChange, onRerun, onApplyPlan }: Props) {
+export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatusChange, onRerun, onApplyPlan, ticketingUrl }: Props) {
   const { navigate } = useNav();
   const toast = useToast();
   const [parallelView, setParallelView] = useState<ParallelView>('grid');
@@ -455,7 +460,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   // Cancelled runs stop all remaining targets; denied marks them denied; failed marks them fail.
   const targetStatuses = run && run.status !== 'running'
     ? rawTargetStatuses.map(t =>
-        t.status === 'done'
+        t.status === 'done' || t.status === 'skipped'
           ? t
           : { ...t, status: (run.status === 'success' ? 'done' : run.status === 'denied' ? 'denied' : 'fail') as TargetStatus }
       )
@@ -495,6 +500,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     const seen: TargetState[] = sections.map((s, i) => {
       const term = sectionTerminalStatus(s.lines, s.stage);
       if (term === 'fail') return { name: s.name, status: 'fail' as TargetStatus };
+      if (term === 'skipped') return { name: s.name, status: 'skipped' as TargetStatus };
       if (term === 'done') return { name: s.name, status: 'done' as TargetStatus };
       // Sequential within a stage: only the last started section is running.
       const isLast = i === sections.length - 1;
@@ -503,7 +509,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     const seenByName = new Map(seen.map(t => [t.name, t]));
     const raw = expectedTargets.map(name => seenByName.get(name) ?? { name, status: 'queued' as TargetStatus });
     return run && run.status !== 'running'
-      ? raw.map(t => t.status === 'done' ? t : { ...t, status: (run.status === 'success' ? 'done' : run.status === 'denied' ? 'denied' : 'fail') as TargetStatus })
+      ? raw.map(t => t.status === 'done' || t.status === 'skipped' ? t : { ...t, status: (run.status === 'success' ? 'done' : run.status === 'denied' ? 'denied' : 'fail') as TargetStatus })
       : raw;
   })();
 
@@ -749,16 +755,18 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     const verb = ctx.destructive ? 'destroy' : 'apply';
     return (
       <div
-        className={`sp-approval-bar${variant === 'fs' ? ' fs-approval-bar' : ''}${ctx.destructive ? ' destructive' : ''}${ctx.destructive && destroyApprovalConfirm ? ' final-confirm' : ''}`}
+        className={`sp-approval-bar command-style ${commandStyleClass(verb)} ${ctx.destructive ? 'destructive' : 'apply'}${variant === 'fs' ? ' fs-approval-bar' : ''}${ctx.destructive && destroyApprovalConfirm ? ' final-confirm' : ''}`}
         role="alertdialog"
         aria-label={ctx.destructive && destroyApprovalConfirm ? 'Final Terraform destroy confirmation' : 'Terraform approval required'}
         aria-live="assertive"
       >
         <div className="sp-approval-main">
-          <span className="sp-approval-icon">{I.warn}</span>
+          <span className="sp-approval-icon">{ctx.destructive ? I.warn : I.checkc}</span>
           <div className="sp-approval-text">
             <div className="sp-approval-title">
-              {ctx.destructive && destroyApprovalConfirm ? 'Are you sure?' : 'Approval required'}
+              {ctx.destructive
+                ? destroyApprovalConfirm ? 'Are you sure?' : 'Approval required'
+                : 'Ready to apply'}
               <span className={`sp-approval-cmd${ctx.destructive ? ' bad' : ''}`}>{verb}</span>
               {approvalDeadline !== null && (
                 <span className="sp-approval-countdown">Expires in {countdownLabel(approvalDeadline, clock)}</span>
@@ -767,7 +775,9 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             <div className="sp-approval-sub">
               {ctx.destructive && destroyApprovalConfirm
                 ? <>This permanently destroys the selected infrastructure{ctx.env ? <> in <strong>{ctx.env}</strong></> : null}. Terraform is still waiting for your final confirmation.</>
-                : <>Review the plan below, then choose whether to {verb} these changes{ctx.env ? <> to <strong>{ctx.env}</strong></> : null}.</>}
+                : ctx.destructive
+                  ? <>Review the plan below, then choose whether to destroy these resources{ctx.env ? <> in <strong>{ctx.env}</strong></> : null}.</>
+                  : <>Review the plan below. Applying will make these changes{ctx.env ? <> to <strong>{ctx.env}</strong></> : null}.</>}
             </div>
             {(ctx.stage || ctx.env || ctx.profile || hasCounts) && (
               <div className="sp-approval-ctx">
@@ -791,10 +801,10 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             disabled={approvalSubmitting}
             onClick={() => sendApproval('no')}
           >
-            {ctx.destructive && destroyApprovalConfirm ? 'Cancel destroy' : 'Deny'}
+            {ctx.destructive && destroyApprovalConfirm ? 'Cancel destroy' : ctx.destructive ? 'Deny' : 'Reject'}
           </button>
           <button
-            className={`btn btn-sm ${ctx.destructive ? 'btn-danger' : 'btn-primary'}`}
+            className={`btn btn-sm command-action command-style ${commandStyleClass(verb)}`}
             disabled={approvalSubmitting}
             onClick={() => {
               if (ctx.destructive && !destroyApprovalConfirm) {
@@ -808,7 +818,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
               ? 'Submitting…'
               : ctx.destructive
                 ? destroyApprovalConfirm ? 'Destroy permanently' : 'Approve destroy'
-                : 'Approve apply'}
+                : 'Apply changes'}
           </button>
         </div>
       </div>
@@ -851,6 +861,9 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
         planRunId: undefined,
         lockIds: undefined,
         importAddrs: undefined,
+        resourceAddresses: nextCommand === 'plan' || nextCommand === 'apply'
+          ? run.request.resourceAddresses
+          : undefined,
       },
     });
   }
@@ -892,15 +905,15 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   function cardHead(section: EnvSection, status: TargetStatus | undefined) {
     const counts = parseCounts(section.lines);
     const sd = status === 'running' ? 'run' : status ?? 'queued';
-    const label = status === 'running' ? 'running' : status === 'done' ? 'done' : status === 'fail' ? 'failed' : status === 'denied' ? 'denied' : 'queued';
+    const label = status === 'running' ? 'running' : status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : status === 'fail' ? 'failed' : status === 'denied' ? 'denied' : 'queued';
     return (
       <>
         <span className={`sd ${sd}`} />
         <span className="en">{section.name}</span>
         <span className="pr">{section.profile}</span>
         <span className="sp" />
-        {status === 'done' && <StatsChips counts={counts} />}
-        {status === 'done' && <DistBar counts={counts} />}
+        {(status === 'done' || status === 'skipped') && <StatsChips counts={counts} />}
+        {(status === 'done' || status === 'skipped') && <DistBar counts={counts} />}
         <span className={`tc-state ${sd}`}>{label}</span>
         <button className="tc-exp" title="Fullscreen"
           onClick={(e) => { e.stopPropagation(); openFullscreen(section.name, section.profile, section.name); }}>
@@ -1082,10 +1095,10 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     function promoSection(s: EnvSection, i: number, colKey: string, fsKey: string, effectiveStatus?: TargetStatus) {
       const status = effectiveStatus ?? targetStatuses.find(t => t.name === s.name)?.status;
       const counts = parseCounts(s.lines);
-      const stateCls = status === 'running' ? 'run' : status === 'done' ? 'done' : status === 'fail' ? 'fail' : status === 'denied' ? 'denied' : 'queued';
+      const stateCls = status === 'running' ? 'run' : status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : status === 'fail' ? 'fail' : status === 'denied' ? 'denied' : 'queued';
       const defaultCollapsed = status !== 'running' && status !== 'fail' && status !== 'denied';
       const isCollapsed = colKey in collapsed ? collapsed[colKey] : defaultCollapsed;
-      const step = status === 'done' ? I.check : status === 'fail' ? '!' : status === 'denied' ? I.ban : i + 1;
+      const step = status === 'done' ? I.check : status === 'skipped' ? I.skip : status === 'fail' ? '!' : status === 'denied' ? I.ban : i + 1;
       return (
         <div key={colKey} className={`promo-sec ${stateCls}${isCollapsed ? ' collapsed' : ''}`}>
           <div className="promo-sec-head" onClick={() => setCollapsed(prev => ({ ...prev, [colKey]: !(colKey in prev ? prev[colKey] : defaultCollapsed) }))}>
@@ -1097,6 +1110,8 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
               ? <span className="spin" style={{ borderColor: 'var(--blue)', borderTopColor: 'transparent' }} />
               : status === 'queued'
                 ? <span style={{ fontSize: '11.5px', color: 'var(--text-3)', fontWeight: 600 }}>queued</span>
+                : status === 'skipped'
+                  ? <span style={{ fontSize: '11.5px', color: 'var(--text-3)', fontWeight: 700 }}>SKIPPED</span>
                 : status === 'fail'
                   ? <span style={{ fontSize: '11.5px', color: 'var(--red)', fontWeight: 700 }}>FAILED</span>
                   : (
@@ -1171,7 +1186,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
 
   // ── Progress + dots ──────────────────────────────────────────────────────
   const total = effectiveTargetStatuses.length || 1;
-  const done = effectiveTargetStatuses.filter(t => t.status === 'done').length;
+  const done = effectiveTargetStatuses.filter(t => t.status === 'done' || t.status === 'skipped').length;
   const fail = effectiveTargetStatuses.filter(t => t.status === 'fail').length;
   const runn = effectiveTargetStatuses.filter(t => t.status === 'running').length;
   // When the run is active but no section banners have been parsed yet,
@@ -1183,6 +1198,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     if (!fullscreen) return null;
     const counts = parseCounts(fsLines);
     if (run?.status === 'denied') return <span className="tc-state denied" style={{ fontSize: 12 }}>DENIED</span>;
+    if (run?.status === 'partial_success') return <span className="tc-state partial_success" style={{ fontSize: 12 }}>PARTIAL SUCCESS</span>;
     if (counts.failed) return <span className="tc-state fail" style={{ fontSize: 12 }}>FAILED</span>;
     if (counts.noChanges) return <span className="tc-stats" style={{ fontSize: 13 }}><span className="c">~0</span></span>;
     if (counts.add > 0 || counts.change > 0 || counts.destroy > 0) {
@@ -1264,7 +1280,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
               <div className="sp-head">
                 <div className="sp-title">
                   <span className="rid">{run.id}</span>
-                  <span className={`rstatus ${statusClass(run.status)}`}>{statusIcon(run.status)}{run.status}</span>
+                  <span className={`rstatus ${statusClass(run.status)}`}>{statusIcon(run.status)}{run.status === 'partial_success' ? 'Partial Success' : run.status}</span>
                 </div>
                 <div className="sp-actions">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1325,6 +1341,13 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                     </span>
                   </MetaItem>
                   <MetaItem k="Repo" mono>{run.request?.repo || run.repo || '—'}</MetaItem>
+                  {run.request?.ticket && (
+                    <MetaItem k="Ticket">
+                      {ticketURL(ticketingUrl, run.request.ticket)
+                        ? <a href={ticketURL(ticketingUrl, run.request.ticket)!} target="_blank" rel="noreferrer" className="mono">{run.request.ticket}</a>
+                        : <span className="mono">{run.request.ticket}</span>}
+                    </MetaItem>
+                  )}
                   <MetaItem k="Branch"><span className="branch-cell">{I.git}{run.gitBranch || '—'}</span></MetaItem>
                   <MetaItem k="Targets">{String(effectiveTargetStatuses.length || envSections.length || 1)}</MetaItem>
                   <MetaItem k="Started">{relTime(run.startedAt)}</MetaItem>

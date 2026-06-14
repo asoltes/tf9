@@ -58,6 +58,7 @@ function exactDateTime(iso: string): { date: string; time: string; full: string 
 const STATUS_TILES: { status: RunStatus; label: string }[] = [
   { status: 'running', label: 'Running' },
   { status: 'success', label: 'Succeeded' },
+  { status: 'partial_success', label: 'Partial Success' },
   { status: 'failed', label: 'Failed' },
   { status: 'denied', label: 'Denied' },
   { status: 'cancelled', label: 'Cancelled' },
@@ -133,15 +134,15 @@ export default function Overview(_props: OverviewProps) {
       ),
     });
   }
-  for (const r of runs.filter(r => r.status === 'failed' || r.status === 'denied').slice(0, 3)) {
+  for (const r of runs.filter(r => r.status === 'failed' || r.status === 'partial_success' || r.status === 'denied').slice(0, 3)) {
     attention.push({
       key: r.id,
       node: (
         <>
-          <span className="dot" style={{ background: 'var(--red)' }} />
+          <span className="dot" style={{ background: r.status === 'partial_success' || r.status === 'denied' ? 'var(--amber)' : 'var(--red)' }} />
           <span>
             Run <a href="#runs" onClick={e => { e.preventDefault(); navigate({ id: 'runs' }); }} className="mono">{r.id}</a>
-            {' '}({r.command || r.request?.command}{r.repo ? ` · ${r.repo}` : ''}) {r.status}{' '}
+            {' '}({r.command || r.request?.command}{r.repo ? ` · ${r.repo}` : ''}) {r.status === 'partial_success' ? 'partially succeeded' : r.status}{' '}
             {r.startedAt ? relativeTime(r.startedAt) : ''}.
           </span>
         </>
@@ -253,7 +254,7 @@ export default function Overview(_props: OverviewProps) {
                     <tr key={r.id} className="selectable" onClick={() => navigate({ id: 'runs' })}>
                       <td><span className={`badge command-style ${commandStyleClass(r.command || r.request?.command || '')}`}>{r.command || r.request?.command || '—'}</span></td>
                       <td><span className="mono dash-repo" title={r.repo || ''}>{r.repo || '—'}</span></td>
-                      <td><span className={`dash-status ${r.status}`}>{r.status}</span></td>
+                      <td><span className={`dash-status ${r.status}`}>{r.status === 'partial_success' ? 'Partial Success' : r.status}</span></td>
                       <td title={started.full}><span className="dash-run-date">{started.date}<small>{started.time}</small></span></td>
                       <td>{r.status === 'running' ? 'in progress' : duration(r.startedAt, r.finishedAt)}</td>
                     </tr>

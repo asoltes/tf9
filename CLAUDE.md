@@ -207,6 +207,7 @@ Emitted as a regular output line. Filtered from display on the frontend
 ```go
 StatusRunning  RunStatus = "running"
 StatusSuccess  RunStatus = "success"
+StatusPartialSuccess RunStatus = "partial_success"
 StatusFailed   RunStatus = "failed"
 StatusDenied   RunStatus = "denied"   // user clicked Deny on approval gate
 StatusCancelled RunStatus = "cancelled"
@@ -232,7 +233,7 @@ exit code sets `StatusDenied` instead of `StatusFailed` when `denied` is true.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/runs` | List runs (paginated: `?page=1&limit=20`; optional filters `from`/`to` RFC3339 inclusive + repeated `command=`/`status=`, applied before pagination; malformed values → 400) |
+| `GET` | `/api/runs` | List runs (paginated: `?page=1&limit=20`; optional filters `from`/`to` RFC3339 inclusive + repeated `command=`/`status=` + case-insensitive `ticket=` substring, applied before pagination; malformed values → 400) |
 | `POST` | `/api/runs` | Start a new run |
 | `GET` | `/api/runs/{id}` | Get a single run |
 | `GET` | `/api/runs/{id}/stream` | SSE stream of output lines |
@@ -302,6 +303,12 @@ Visible navigation labels: Dashboard, Run History,
 Repository Workspace, Repositories, Configuration, AWS Profile Mappings,
 Terraform Reports, Graph View, Cost Analysis, System Logs, Documentation — grouped in the
 sidebar as Operations / Configuration / Insights & Support.
+
+`web.ticketing_url` is nullable. When configured, `{ticket}` is replaced with
+the URL-encoded run ticket; without a placeholder, `/<ticket>` is appended.
+Run tickets are optional, persisted in `runs.json`, and searchable in Run History.
+Ticket metadata and its resolved link must also be embedded in report JSON
+sidecars and standalone HTML so Reports and Cost Analysis remain self-contained.
 
 ### Graph View
 
@@ -384,6 +391,9 @@ Edit tool can corrupt them. Use straight ASCII quotes only.
 - Exit code 0 = clean success only; non-zero on any failure.
 - `--force` / explicit confirmation required for apply/destroy.
 - Never skip the `safeJoin` check on report file names.
+- Terraform command visuals must use `commandStyleClass()` and the shared
+  `--command-*` tokens. Icons, badges, cards, report accents, and command
+  actions for the same command must never define a separate color mapping.
 
 ## Error handling and application logging
 

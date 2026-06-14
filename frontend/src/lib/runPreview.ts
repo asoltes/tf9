@@ -188,6 +188,8 @@ export interface CliPreviewInput {
   profile?: string;
   /** Editable extra flags, already split into tokens. */
   extraArgs?: string[];
+  /** Terraform resource/module addresses for taint/untaint or -target flags. */
+  resourceAddresses?: string[];
   /** Apply auto-approve flag. */
   autoApprove?: boolean;
   /** Collected force-unlock lock ids (name → id). */
@@ -221,6 +223,13 @@ export function buildCliPreview(input: CliPreviewInput): { line: string; note: s
   if (input.extraArgs) {
     for (const a of input.extraArgs) {
       if (a) tokens.push(a);
+    }
+  }
+  if (command === 'taint' || command === 'untaint') {
+    tokens.push(...(input.resourceAddresses ?? []));
+  } else if (command === 'plan' || command === 'apply') {
+    for (const address of input.resourceAddresses ?? []) {
+      if (address) tokens.push(`-target=${address}`);
     }
   }
 

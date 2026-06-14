@@ -4,6 +4,7 @@ import Shell from '../Shell';
 import { useNav } from '../nav';
 import { useToast } from '../components/ToastProvider';
 import { reportsApi } from '../api';
+import { commandStyleClass } from '../lib/commandStyle';
 import {
   parseResourceChanges,
   rctBadgeLabel,
@@ -470,12 +471,22 @@ export default function ReportViewer({ name }: { name: string; mode?: 'light' | 
 
   const meta: ReactNode[] = [];
   if (data?.repoLabel) meta.push(<span className="chip" key="repo">{I.repo}<b>{data.repoLabel}</b></span>);
+  if (data?.ticket) {
+    meta.push(
+      <span className="chip" key="ticket">
+        Ticket
+        {data.ticketUrl
+          ? <a href={data.ticketUrl} target="_blank" rel="noreferrer"><b>{data.ticket}</b></a>
+          : <b>{data.ticket}</b>}
+      </span>,
+    );
+  }
   meta.push(<span className="chip" key="hash">#{name}</span>);
   if (data?.runAt) meta.push(<span className="chip" key="time">{fmtTime(data.runAt)}</span>);
 
   return (
     <Shell>
-      <div className="report-viewer" data-cmd={command}>
+      <div className={`report-viewer command-style ${commandStyleClass(command)}`} data-cmd={command}>
         <header className="rv-hdr">
           <div className="hdr-inner">
             <div className="hdr-left">

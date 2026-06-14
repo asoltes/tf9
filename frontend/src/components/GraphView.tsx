@@ -41,6 +41,21 @@ interface GraphControls {
 const SHAPE_KEY = 'tf9-graph-node-shape';
 const COLOR_KEY = 'tf9-graph-color-mode';
 const PALETTE = ['#ef4444', '#f97316', '#3b82f6', '#14b8a6', '#8b5cf6', '#ec4899', '#64748b'];
+const HIERARCHY_KINDS: Array<{ kind: GraphNode['kind']; label: string }> = [
+  { kind: 'group', label: 'Group' },
+  { kind: 'target', label: 'Target' },
+  { kind: 'module', label: 'Module' },
+  { kind: 'managed', label: 'Resource' },
+  { kind: 'data', label: 'Data' },
+];
+const HIERARCHY_COLORS: Record<GraphNode['kind'], string> = {
+  repository: '#7c3aed',
+  group: '#2563eb',
+  target: '#0891b2',
+  module: '#d97706',
+  managed: '#dc2626',
+  data: '#16a34a',
+};
 // Most-impactful first — drives container fill and the impact summary order.
 const SEVERITY: GraphAction[] = ['replace', 'delete', 'update', 'create'];
 const DEFAULT_CONTROLS: GraphControls = {
@@ -142,6 +157,10 @@ function hash(value: string): number {
   return Math.abs(result);
 }
 
+function hierarchyColor(kind: GraphNode['kind']): string {
+  return HIERARCHY_COLORS[kind];
+}
+
 function synthesize(doc: GraphDocument): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const repoLabel = doc.repo || 'repository';
   const repoID = `repo:${repoLabel}`;
@@ -240,6 +259,7 @@ export default function GraphView({ document: doc, compact = false, initialLayou
   const [hovered, setHovered] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [hiddenGroups, setHiddenGroups] = useState<Set<string>>(new Set());
+  const [hiddenKinds, setHiddenKinds] = useState<Set<GraphNode['kind']>>(new Set());
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [actionFilter, setActionFilter] = useState<Set<GraphAction>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -351,7 +371,7 @@ export default function GraphView({ document: doc, compact = false, initialLayou
     collapsed.forEach(hideChildren);
     const term = search.trim().toLowerCase();
     let nodes = graph.nodes.filter(node => {
-      if (hidden.has(node.id) || (node.group && hiddenGroups.has(node.group))) return false;
+      if (hidden.has(node.id) || hiddenKinds.has(node.kind) || (node.group && hiddenGroups.has(node.group))) return false;
       return !term || `${node.label} ${node.address ?? ''} ${node.kind}`.toLowerCase().includes(term);
     });
     if (controls.changedOnly) {
@@ -377,7 +397,7 @@ export default function GraphView({ document: doc, compact = false, initialLayou
       .filter(edge => ids.has(edge.source) && ids.has(edge.target) && (!controls.dependenciesOnly || edge.kind === 'dependency'))
       .map(edge => ({ ...edge, source: edge.source, target: edge.target }));
     return { nodes: nodes.map(node => ({ ...node } as ForceNode)), links };
-  }, [actionFilter, byID, collapsed, controls.changedOnly, controls.dependenciesOnly, effectiveAction, graph, hiddenGroups, search]);
+  }, [actionFilter, byID, collapsed, controls.changedOnly, controls.dependenciesOnly, effectiveAction, graph, hiddenGroups, hiddenKinds, search]);
 
   const selectedNode = graph.nodes.find(node => node.id === selected);
   const hasChildren = useMemo(() => new Set(graph.nodes.flatMap(node => node.parent ? [node.parent] : [])), [graph.nodes]);
@@ -385,10 +405,11 @@ export default function GraphView({ document: doc, compact = false, initialLayou
     ? graph.edges.filter(edge => edge.source === selected || edge.target === selected).length
     : 0;
 
-  const colorFor = useCallback((node: GraphNode) => {
+  const baseColorFor = useCallback((node: GraphNode) => {
     if (node.kind === 'repository') return '#a78bfa';
     return groupColors.get(node.group || '') ?? PALETTE[hash(node.target || node.kind) % PALETTE.length];
   }, [groupColors]);
+  const colorFor = useCallback((node: GraphNode) => hierarchyColor(node.kind), []);
 
   // Resource size encodes blast radius: base by action, grown by downstream
   // dependent count (sqrt-compressed + capped) with a small nudge from the
@@ -475,6 +496,14 @@ export default function GraphView({ document: doc, compact = false, initialLayou
     });
   }
 
+  function toggleKind(kind: GraphNode['kind']) {
+    setHiddenKinds(previous => {
+      const next = new Set(previous);
+      if (next.has(kind)) next.delete(kind); else next.add(kind);
+      return next;
+    });
+  }
+
   function toggleCollapse(id: string) {
     setCollapsed(previous => {
       const next = new Set(previous);
@@ -490,6 +519,7 @@ export default function GraphView({ document: doc, compact = false, initialLayou
   function resetControls() {
     setControls(DEFAULT_CONTROLS);
     setHiddenGroups(new Set());
+    setHiddenKinds(new Set());
     setSearch('');
     setActionFilter(new Set());
   }
@@ -512,12 +542,11 @@ export default function GraphView({ document: doc, compact = false, initialLayou
     const actionCol = actionColor(tokens, action);
     const groupCol = colorFor(node);
     const fill = colorMode === 'action' ? actionCol : groupCol;
-    // Outline stays neutral; group identity lives in the sidebar/legend, and a
-    // colored ring here reads as a (mis-applied) action color.
-    const ring = colorMode === 'group' && action ? actionCol : tokens.neutral;
+    const ring = colorMode === 'group' ? baseColorFor(node) : tokens.neutral;
     const dimmed = !!root && !lit.nodeIds.has(node.id);
     const active = root === node.id;
     const adjacent = !active && !!root && lit.nodeIds.has(node.id);
+    const structural = node.kind === 'repository' || node.kind === 'group' || node.kind === 'target' || node.kind === 'module';
     const labelVisible = scale > controls.textThreshold
       || active
       || node.kind === 'repository'
@@ -548,10 +577,15 @@ export default function GraphView({ document: doc, compact = false, initialLayou
     } else {
       ctx.arc(x, y, radius, 0, Math.PI * 2);
     }
+    if (!dimmed) {
+      ctx.shadowColor = active ? tokens.highlight : fill;
+      ctx.shadowBlur = active ? 14 : structural ? 8 : 5;
+    }
     ctx.fillStyle = `${fill}cc`;
     ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = active ? '#ffffff' : adjacent ? tokens.highlight : ring;
-    ctx.lineWidth = active ? 2.8 : adjacent ? 2.2 : action ? 1.8 : 0.8;
+    ctx.lineWidth = active ? 3.2 : adjacent ? 2.4 : colorMode === 'group' ? 2.2 : structural ? 1.7 : action ? 1.8 : 1;
     ctx.stroke();
 
     if (node.action) {
@@ -574,7 +608,7 @@ export default function GraphView({ document: doc, compact = false, initialLayou
       ctx.fillText(node.label, x + radius + 4, y);
     }
     ctx.restore();
-  }, [controls.textThreshold, lit.nodeIds, colorFor, colorMode, effectiveAction, radiusFor, root, shape, tokens]);
+  }, [baseColorFor, controls.textThreshold, lit.nodeIds, colorFor, colorMode, effectiveAction, radiusFor, root, shape, tokens]);
 
   const paintPointerArea = useCallback((raw: NodeObject<ForceNode>, color: string, ctx: CanvasRenderingContext2D) => {
     const node = raw as ForceNode;
@@ -633,6 +667,22 @@ export default function GraphView({ document: doc, compact = false, initialLayou
               </button>
             ))}
           </div>
+          {colorMode === 'group' && (
+            <div className="gv-hierarchy-key" aria-label="Hierarchy filters">
+              {HIERARCHY_KINDS.map(item => (
+                <button
+                  key={item.kind}
+                  className={hiddenKinds.has(item.kind) ? 'off' : 'on'}
+                  onClick={() => toggleKind(item.kind)}
+                  aria-pressed={!hiddenKinds.has(item.kind)}
+                  title={`${hiddenKinds.has(item.kind) ? 'Show' : 'Hide'} ${item.label.toLowerCase()} nodes`}
+                >
+                  <i style={{ background: hierarchyColor(item.kind) }} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="gv-main">
@@ -650,7 +700,10 @@ export default function GraphView({ document: doc, compact = false, initialLayou
                     return next;
                   })}
                 />
-                <i style={{ background: tokens.neutral }} />
+                <i
+                  className="gv-group-swatch"
+                  style={{ background: groupColors.get(group) }}
+                />
                 <span>{group}</span>
               </label>
             ))}
@@ -741,7 +794,10 @@ export default function GraphView({ document: doc, compact = false, initialLayou
                           return next;
                         })}
                       />
-                      <i style={{ background: groupColors.get(group) }} />
+                      <i
+                        className="gv-group-swatch"
+                        style={{ background: groupColors.get(group) }}
+                      />
                       <span>{group}</span>
                     </label>
                   ))}

@@ -48,7 +48,10 @@
   background:#fff;border:2px solid var(--divider);border-radius:12px;transition:all .12s;text-align:left;
 }
 .run-overlay .cmd-chip:hover{border-color:var(--border-strong);background:#fbfcfd}
-.run-overlay .cmd-chip .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;background:#eef1f4;color:var(--text-2)}
+.run-overlay .cmd-chip .ic{
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;
+  background:color-mix(in srgb,var(--command-color) 9%,var(--container));color:var(--command-color);
+}
 .run-overlay .cmd-chip .ic svg{width:18px;height:18px}
 .run-overlay .cmd-chip .cc-t{font-size:14px;font-weight:700;color:var(--text);font-family:var(--mono);display:block}
 .run-overlay .cmd-chip .cc-d{font-size:11.5px;color:var(--text-2);margin-top:1px;display:block}
@@ -197,6 +200,9 @@
 
 /* ── summary rail ───────────────────────────────────────────────────────── */
 .run-overlay .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:1px 8px;border-radius:4px;background:var(--grey-badge);color:var(--text);white-space:nowrap}
+.run-overlay .pill.command-style{
+  background:color-mix(in srgb,var(--command-color) 12%,var(--container));color:var(--command-color);
+}
 .run-overlay .sum-title{font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px}
 .run-overlay .sum-cmd{display:flex;align-items:center;gap:9px;margin-bottom:14px}
 .run-overlay .sum-cmd .pill{font-family:var(--mono)}
@@ -245,6 +251,11 @@
 
 .run-overlay .field-label{font-weight:700;font-size:13px;color:var(--text);margin-bottom:5px;display:block}
 .run-overlay .field-hint{font-size:12px;color:var(--text-2);margin-top:4px}
+.run-overlay .resource-address-list{display:flex;flex-direction:column;gap:8px}
+.run-overlay .resource-address-row{display:flex;align-items:center;gap:8px}
+.run-overlay .resource-address-row .inp{flex:1}
+.run-overlay .resource-address-remove{flex-shrink:0;height:34px}
+.run-overlay .resource-address-add{margin-top:7px;padding-left:0}
 
 @media(max-width:800px){
   .run-overlay .rm-body{grid-template-columns:1fr}
@@ -266,7 +277,9 @@ html[data-theme="dark"] .run-overlay .cmd-chip .ic,
 html[data-theme="dark"] .run-overlay .tile .ti-ic{background:#0d1117}
 html[data-theme="dark"] .run-overlay .tgroup-head{background:#11161d}
 html[data-theme="dark"] .run-overlay .exec-box,
-html[data-theme="dark"] .run-overlay .sum-cmd .pill{background:#0d1117}
+html[data-theme="dark"] .run-overlay .sum-cmd .pill.command-style{
+  background:color-mix(in srgb,var(--command-color) 18%,var(--container));
+}
 html[data-theme="dark"] .run-overlay .cbox{background:#0d1117;border-color:#4b545e}
 html[data-theme="dark"] .run-overlay .cmd-chip:hover,
 html[data-theme="dark"] .run-overlay .tgt:hover{background:#222a36}

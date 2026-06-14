@@ -1,6 +1,7 @@
 package report
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,6 +53,38 @@ func TestGenerateShowsAppliedBoolean(t *testing.T) {
 	}
 	if strings.Contains(html, "<th>Status</th>") {
 		t.Fatalf("generated report still contains status column")
+	}
+}
+
+func TestGenerateEmbedsTicketInHTMLAndSidecar(t *testing.T) {
+	dir := t.TempDir()
+	path, err := Generate(nil, Options{
+		Command:   "plan",
+		RunAt:     time.Date(2026, time.June, 12, 3, 4, 5, 0, time.UTC),
+		OutputDir: dir,
+		Ticket:    "OPS-42",
+		TicketURL: "https://tickets.example/browse/OPS-42",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsAll(string(data), "Ticket:", "OPS-42", "https://tickets.example/browse/OPS-42") {
+		t.Fatal("generated HTML does not contain ticket metadata")
+	}
+	sidecar, err := os.ReadFile(strings.TrimSuffix(path, ".html") + ".json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sum Summary
+	if err := json.Unmarshal(sidecar, &sum); err != nil {
+		t.Fatal(err)
+	}
+	if sum.Ticket != "OPS-42" || sum.TicketURL != "https://tickets.example/browse/OPS-42" {
+		t.Fatalf("ticket sidecar metadata = %#v", sum)
 	}
 }
 

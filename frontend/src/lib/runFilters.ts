@@ -14,6 +14,8 @@ export interface RunFilters {
   commands: string[];
   /** Selected run statuses; empty = all statuses. */
   statuses: string[];
+  /** Case-insensitive ticket substring. */
+  ticket: string;
 }
 
 export type DatePreset = 'today' | 'yesterday' | 'last7' | 'last30';
@@ -21,11 +23,11 @@ export type DatePreset = 'today' | 'yesterday' | 'last7' | 'last30';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function emptyFilters(): RunFilters {
-  return { from: null, to: null, commands: [], statuses: [] };
+  return { from: null, to: null, commands: [], statuses: [], ticket: '' };
 }
 
 export function isEmptyFilters(f: RunFilters): boolean {
-  return !f.from && !f.to && f.commands.length === 0 && f.statuses.length === 0;
+  return !f.from && !f.to && f.commands.length === 0 && f.statuses.length === 0 && !f.ticket.trim();
 }
 
 /** Returns a user-facing error for an invalid range, or null when valid. */
@@ -82,6 +84,7 @@ export function toQuery(f: RunFilters): string {
   }
   for (const c of f.commands) params.append('command', c);
   for (const status of f.statuses) params.append('status', status);
+  if (f.ticket.trim()) params.set('ticket', f.ticket.trim());
   return params.toString();
 }
 
@@ -92,6 +95,7 @@ export function toHashQuery(f: RunFilters): string {
   if (f.to) params.set('to', f.to);
   for (const c of f.commands) params.append('command', c);
   for (const status of f.statuses) params.append('status', status);
+  if (f.ticket.trim()) params.set('ticket', f.ticket.trim());
   const qs = params.toString();
   return qs ? `?${qs}` : '';
 }
@@ -106,5 +110,6 @@ export function parseHashQuery(qs: string): RunFilters {
     to: to && DATE_RE.test(to) ? to : null,
     commands: params.getAll('command').filter(Boolean),
     statuses: params.getAll('status').filter(Boolean),
+    ticket: params.get('ticket')?.trim() ?? '',
   };
 }

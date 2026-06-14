@@ -3,6 +3,8 @@ web:
   saved_plan_apply: true
   approval_timeout_seconds: 300
   reviewed_plan_timeout_seconds: 3600
+  # Use {ticket} where the ticket number belongs, or omit it to append /<ticket>.
+  ticketing_url: null
 repositories:
   - name: infrastructure
     path: /home/andres/tf-companion/examples/infrastructure

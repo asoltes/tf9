@@ -257,20 +257,11 @@ func runTerraform(cmd *cobra.Command, args []string) error {
 		opts.Stdin = os.Stdin
 	}
 	slog.Info("cli run started", "command", tfCommand, "repo", repoName, "envFilter", envFilter, "parallel", parallel, "recursive", recursive)
-	_, reportName, runErr := runner.Run(opts)
+	results, reportName, runErr := runner.Run(opts)
 	finishedAt := time.Now().UTC()
 	lb.flush()
 
-	status := api.StatusSuccess
-	if runErr != nil {
-		if ctx.Err() != nil {
-			status = api.StatusCancelled
-		} else if errors.Is(runErr, runner.ErrApprovalDenied) {
-			status = api.StatusDenied
-		} else {
-			status = api.StatusFailed
-		}
-	}
+	status := api.FinalRunStatus(runErr, ctx.Err(), false, results)
 	if runErr != nil && !errors.Is(runErr, runner.ErrApprovalDenied) {
 		slog.Warn("cli run finished", "command", tfCommand, "status", status, "duration", finishedAt.Sub(startedAt), "err", runErr.Error())
 	} else {

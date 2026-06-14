@@ -33,7 +33,7 @@ describe('toQuery', () => {
   });
 
   it('converts local dates to inclusive start/end-of-day RFC3339 timestamps', () => {
-    const qs = toQuery({ from: '2026-06-01', to: '2026-06-03', commands: [], statuses: [] });
+    const qs = toQuery({ from: '2026-06-01', to: '2026-06-03', commands: [], statuses: [], ticket: '' });
     const params = new URLSearchParams(qs);
     const from = new Date(params.get('from')!);
     const to = new Date(params.get('to')!);
@@ -42,18 +42,19 @@ describe('toQuery', () => {
   });
 
   it('repeats command params and combines with dates', () => {
-    const qs = toQuery({ from: '2026-06-01', to: null, commands: ['plan', 'apply'], statuses: ['success'] });
+    const qs = toQuery({ from: '2026-06-01', to: null, commands: ['plan', 'apply'], statuses: ['success'], ticket: 'OPS-42' });
     const params = new URLSearchParams(qs);
     expect(params.getAll('command')).toEqual(['plan', 'apply']);
     expect(params.get('from')).toBeTruthy();
     expect(params.get('to')).toBeNull();
     expect(params.getAll('status')).toEqual(['success']);
+    expect(params.get('ticket')).toBe('OPS-42');
   });
 });
 
 describe('hash round-trip', () => {
   it('serializes and parses back the same filters', () => {
-    const f = { from: '2026-06-01', to: '2026-06-12', commands: ['plan', 'destroy'], statuses: ['failed'] };
+    const f = { from: '2026-06-01', to: '2026-06-12', commands: ['plan', 'destroy'], statuses: ['failed'], ticket: 'OPS-42' };
     expect(parseHashQuery(toHashQuery(f))).toEqual(f);
   });
 
@@ -72,6 +73,7 @@ describe('hash round-trip', () => {
       to: null,
       commands: ['plan'],
       statuses: [],
+      ticket: '',
     });
   });
 });
@@ -79,22 +81,23 @@ describe('hash round-trip', () => {
 describe('validateRange', () => {
   it('accepts empty and single-ended ranges', () => {
     expect(validateRange(emptyFilters())).toBeNull();
-    expect(validateRange({ from: '2026-06-01', to: null, commands: [], statuses: [] })).toBeNull();
-    expect(validateRange({ from: null, to: '2026-06-01', commands: [], statuses: [] })).toBeNull();
+    expect(validateRange({ from: '2026-06-01', to: null, commands: [], statuses: [], ticket: '' })).toBeNull();
+    expect(validateRange({ from: null, to: '2026-06-01', commands: [], statuses: [], ticket: '' })).toBeNull();
   });
   it('accepts a single-day range', () => {
-    expect(validateRange({ from: '2026-06-01', to: '2026-06-01', commands: [], statuses: [] })).toBeNull();
+    expect(validateRange({ from: '2026-06-01', to: '2026-06-01', commands: [], statuses: [], ticket: '' })).toBeNull();
   });
   it('rejects end before start', () => {
-    expect(validateRange({ from: '2026-06-02', to: '2026-06-01', commands: [], statuses: [] })).toMatch(/before/i);
+    expect(validateRange({ from: '2026-06-02', to: '2026-06-01', commands: [], statuses: [], ticket: '' })).toMatch(/before/i);
   });
 });
 
 describe('isEmptyFilters', () => {
   it('is true only when nothing is set', () => {
     expect(isEmptyFilters(emptyFilters())).toBe(true);
-    expect(isEmptyFilters({ from: '2026-06-01', to: null, commands: [], statuses: [] })).toBe(false);
-    expect(isEmptyFilters({ from: null, to: null, commands: ['plan'], statuses: [] })).toBe(false);
-    expect(isEmptyFilters({ from: null, to: null, commands: [], statuses: ['failed'] })).toBe(false);
+    expect(isEmptyFilters({ from: '2026-06-01', to: null, commands: [], statuses: [], ticket: '' })).toBe(false);
+    expect(isEmptyFilters({ from: null, to: null, commands: ['plan'], statuses: [], ticket: '' })).toBe(false);
+    expect(isEmptyFilters({ from: null, to: null, commands: [], statuses: ['failed'], ticket: '' })).toBe(false);
+    expect(isEmptyFilters({ from: null, to: null, commands: [], statuses: [], ticket: 'OPS-42' })).toBe(false);
   });
 });
