@@ -161,6 +161,10 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .runs-dock.side .sp-title{justify-content:space-between;flex-wrap:wrap}
 .runs-page .runs-dock.side .sp-actions{justify-content:space-between;align-items:flex-start;min-width:0}
 .runs-page .runs-dock.side .sp-command-actions{flex:1;flex-wrap:wrap;min-width:0}
+.runs-page .sp-head-running .sp-title{flex-direction:column;align-items:flex-start;gap:4px}
+.runs-page .runs-dock.side .sp-head-running{flex-direction:row;align-items:flex-start}
+.runs-page .runs-dock.side .sp-head-running .sp-actions{margin-left:auto}
+.runs-page .runs-dock.side .sp-head-running .sp-command-actions{flex:0 1 auto;justify-content:flex-end}
 .runs-page .rerun-menu{position:relative}
 .runs-page .rerun-menu summary{list-style:none}
 .runs-page .rerun-menu summary::-webkit-details-marker{display:none}

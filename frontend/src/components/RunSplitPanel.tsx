@@ -1316,7 +1316,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             </>
           ) : (
             <>
-              <div className="sp-head">
+              <div className={`sp-head${run.status === 'running' ? ' sp-head-running' : ''}`}>
                 <div className="sp-title">
                   <span className="rid">{run.id}</span>
                   <span className={`rstatus ${statusClass(run.status)}`}>{statusIcon(run.status)}{run.status === 'partial_success' ? 'Partial Success' : run.status}</span>

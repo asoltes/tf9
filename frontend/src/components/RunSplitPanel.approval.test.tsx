@@ -78,6 +78,8 @@ describe('RunSplitPanel approval', () => {
     const button = () => Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
       .find(item => item.textContent?.trim() === 'Approve destroy');
     expect(button()).toBeDefined();
+    expect(container.querySelector('.sp-head-running .sp-title .rstatus.running')).not.toBeNull();
+    expect(container.querySelector('.sp-head-running .sp-actions')).not.toBeNull();
 
     await act(async () => button()!.click());
     expect(inputs).toEqual([]);
