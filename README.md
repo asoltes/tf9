@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/tf9-mark.svg" alt="tf9 logo" width="96">
+</p>
+
 # tf9
 
 `tf9` runs Terraform commands across ordered repository targets. The CLI and
