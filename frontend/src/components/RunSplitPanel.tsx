@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { api, graphApi, repoGit } from '../api';
-import { buildReconcilePrompt } from '../lib/reconcilePrompt';
-import { setPendingChatSeed } from '../lib/pendingChat';
+import { setPendingReconcileChat } from '../lib/pendingChat';
 import { useNav } from '../nav';
 import { useToast } from './ToastProvider';
 import { envColor } from '../lib/colors';
@@ -868,27 +867,15 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     });
   }
 
-  // Build a drift-reconcile prompt from this run's repo state plus the terraform
-  // output already on screen, stash it, and hand off to the Repository Workspace
-  // where the AI chat picks it up. The terminal output gives Claude the exact
-  // drifted resource addresses the workspace-only flow lacks.
-  async function reconcileWithAI() {
+  // Hand off the output already on screen and navigate immediately. The
+  // workspace loads remote git context after it mounts, keeping git fetch off
+  // the navigation path.
+  function reconcileWithAI() {
     const repoName = run?.request?.repo || run?.repo;
     if (!repoName || reconcileLoading) return;
     setReconcileLoading(true);
-    try {
-      const [status, branches] = await Promise.all([
-        repoGit.reconcile(repoName),
-        repoGit.activeBranches(repoName).catch(() => null),
-      ]);
-      const planOutput = displayLines.join('\n');
-      setPendingChatSeed(repoName, buildReconcilePrompt(repoName, status, branches, planOutput));
-      navigate({ id: 'workspace', name: repoName });
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'Could not load reconcile status', 'error');
-    } finally {
-      setReconcileLoading(false);
-    }
+    setPendingReconcileChat(repoName, displayLines.join('\n'));
+    navigate({ id: 'workspace', name: repoName });
   }
 
   function openFullscreen(env: string, profile: string, sectionName: string | null) {
@@ -1433,6 +1420,8 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
           <button
             className={`sp-reconcile-ai${reconcileLoading ? ' loading' : ''}`}
             onClick={reconcileWithAI}
+            onPointerEnter={() => { void import('../pages/RepositoryWorkspace'); }}
+            onFocus={() => { void import('../pages/RepositoryWorkspace'); }}
             disabled={reconcileLoading}
             aria-label={reconcileLoading ? 'Loading Reconcile with AI' : 'Reconcile with AI'}
             title="Reconcile with AI"

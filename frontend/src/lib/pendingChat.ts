@@ -1,24 +1,26 @@
-// Transient handoff for a pre-built AI chat prompt across a page navigation.
+// Transient handoff for AI reconcile context across a page navigation.
 //
-// The live terminal (RunSplitPanel) builds a drift-reconcile prompt and then
-// navigates to the Repository Workspace. We can't carry the prompt in the Page
-// object: navigate() writes window.location.hash, which fires hashchange and
-// re-derives the Page from the hash (dropping any transient fields), and the
-// workspace is lazy-loaded so it mounts after that round-trip. A module-level
-// one-shot store survives both. The workspace takes (and clears) it on mount.
-let pending: { repo: string; seed: string } | null = null;
-
-export function setPendingChatSeed(repo: string, seed: string): void {
-  pending = { repo, seed };
+// The terminal navigates immediately, without waiting for the comparatively
+// slow git fetch used to build the final prompt. The workspace takes this
+// context once, loads the git details after mount, and then fills the chat.
+export interface PendingReconcileChat {
+  repo: string;
+  planOutput: string;
 }
 
-// takePendingChatSeed returns the seed for repo once, then clears it so a later
-// manual visit to the workspace doesn't re-trigger it.
-export function takePendingChatSeed(repo: string): string | null {
+let pending: PendingReconcileChat | null = null;
+
+export function setPendingReconcileChat(repo: string, planOutput: string): void {
+  pending = { repo, planOutput };
+}
+
+// Returns the context for repo once, then clears it so a later manual visit to
+// the workspace doesn't re-trigger reconciliation.
+export function takePendingReconcileChat(repo: string): PendingReconcileChat | null {
   if (pending && pending.repo === repo) {
-    const seed = pending.seed;
+    const context = pending;
     pending = null;
-    return seed;
+    return context;
   }
   return null;
 }

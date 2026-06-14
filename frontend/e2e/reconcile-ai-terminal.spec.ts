@@ -22,9 +22,16 @@ test('reconcile-with-ai button seeds the workspace chat from a finished run', as
   await expect(reconcileBtn).toBeVisible();
   await shot(page, 'reconcile-ai-terminal-button');
 
-  // Click → navigate to the workspace with the chat prefilled.
+  // Remote git reconciliation can be slow. It must not block opening the
+  // workspace; the prompt is populated after the page mounts.
+  await page.route('**/api/repos/e2e-repo/reconcile', async route => {
+    await new Promise(resolve => setTimeout(resolve, 2_000));
+    await route.continue();
+  });
+
+  // Click → navigate immediately, then fill the chat when git context arrives.
   await reconcileBtn.click();
-  await expect(page).toHaveURL(/#workspace\/e2e-repo/);
+  await expect(page).toHaveURL(/#workspace\/e2e-repo/, { timeout: 1_000 });
 
   const textarea = page.getByLabel('Message Claude');
   await expect(textarea).toBeVisible();

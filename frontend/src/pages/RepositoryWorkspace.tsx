@@ -11,7 +11,7 @@ import type {
   WorkspaceChatMode, WorkspaceEntry, WorkspaceFile,
 } from '../types';
 import { buildReconcilePrompt } from '../lib/reconcilePrompt';
-import { takePendingChatSeed } from '../lib/pendingChat';
+import { takePendingReconcileChat } from '../lib/pendingChat';
 import { stripAnsi } from '../lib/runStatus';
 import { useNav } from '../nav';
 import { parseGitDiff } from '../lib/gitDiff';
@@ -494,10 +494,11 @@ function ChatContent({ content, live = false }: { content: string; live?: boolea
   return <div className="rw-chat-content">{blocks}{live && <i className="rw-chat-cursor" />}</div>;
 }
 
-function WorkspaceChat({ repo, active, seed, onSeedConsumed }: {
+function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
   repo: string;
   active: boolean;
   seed?: string;
+  seedLoading?: boolean;
   onSeedConsumed?: () => void;
 }) {
   const [messages, setMessages] = useState<WorkspaceChatMessage[]>([]);
@@ -691,9 +692,9 @@ function WorkspaceChat({ repo, active, seed, onSeedConsumed }: {
       <div className="rw-chat-compose">
         <textarea
           value={draft}
-          disabled={!available}
+          disabled={!available || seedLoading}
           aria-label="Message Claude"
-          placeholder={available ? `Ask about ${repo}…` : 'Claude Code login required'}
+          placeholder={seedLoading ? 'Loading reconciliation context…' : available ? `Ask about ${repo}…` : 'Claude Code login required'}
           onChange={event => setDraft(event.target.value)}
           onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -1316,6 +1317,7 @@ function Workbench({
   const [gitOperationsOpen, setGitOperationsOpen] = useState(false);
   const [reconcileOpen, setReconcileOpen] = useState(false);
   const [chatSeed, setChatSeed] = useState('');
+  const [chatSeedLoading, setChatSeedLoading] = useState(false);
   const [entryModal, setEntryModal] = useState<WorkspaceEntry | null>(null);
   const [explorerWidth, setExplorerWidth] = useState(250);
   const [diffWidth, setDiffWidth] = useState(initialDiffWidth);
@@ -1338,15 +1340,30 @@ function Workbench({
       ? 'Commit, stash, or discard working-tree changes before running Git operations.'
       : '';
 
-  // A "Reconcile with AI" click in the live terminal stashes a prompt and
-  // navigates here. Pick it up once on mount, open the chat panel, and seed it.
+  // A terminal handoff navigates here immediately. Build the final prompt after
+  // mount so remote git fetch latency does not delay opening the workspace.
   useEffect(() => {
-    const seed = takePendingChatSeed(name);
-    if (seed) {
-      setRightPanelTab('chat');
-      setDiffVisible(true);
-      setChatSeed(seed);
-    }
+    const context = takePendingReconcileChat(name);
+    if (!context) return;
+    let cancelled = false;
+    setRightPanelTab('chat');
+    setDiffVisible(true);
+    setChatSeedLoading(true);
+    Promise.all([
+      repoGit.reconcile(name),
+      repoGit.activeBranches(name).catch(() => null),
+    ]).then(([status, activeBranches]) => {
+      if (!cancelled) {
+        setChatSeed(buildReconcilePrompt(name, status, activeBranches, context.planOutput));
+      }
+    }).catch(err => {
+      if (!cancelled) {
+        setError(err instanceof Error ? err.message : 'Could not load reconcile status.');
+      }
+    }).finally(() => {
+      if (!cancelled) setChatSeedLoading(false);
+    });
+    return () => { cancelled = true; };
   }, [name]);
 
   function openTerminal(directory = '') {
@@ -1966,7 +1983,13 @@ function Workbench({
                     <button title="Close right panel" onClick={() => setDiffVisible(false)}><WorkbenchIcon name="close" /></button>
                   </div>
                   <div className="rw-dock-content" hidden={rightPanelTab !== 'chat'}>
-                    <WorkspaceChat repo={name} active={active && rightPanelTab === 'chat'} seed={chatSeed} onSeedConsumed={() => setChatSeed('')} />
+                    <WorkspaceChat
+                      repo={name}
+                      active={active && rightPanelTab === 'chat'}
+                      seed={chatSeed}
+                      seedLoading={chatSeedLoading}
+                      onSeedConsumed={() => setChatSeed('')}
+                    />
                   </div>
                   <div className="rw-dock-content rw-diff" hidden={rightPanelTab !== 'diff'}>
                     <div className="rw-diff-code">
