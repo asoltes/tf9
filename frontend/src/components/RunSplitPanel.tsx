@@ -870,12 +870,56 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   // Hand off the output already on screen and navigate immediately. The
   // workspace loads remote git context after it mounts, keeping git fetch off
   // the navigation path.
-  function reconcileWithAI() {
+  function reconcileWithAI(srcLines: string[] = displayLines) {
     const repoName = run?.request?.repo || run?.repo;
     if (!repoName || reconcileLoading) return;
     setReconcileLoading(true);
-    setPendingReconcileChat(repoName, displayLines.join('\n'));
+    setPendingReconcileChat(repoName, srcLines.join('\n'));
     navigate({ id: 'workspace', name: repoName });
+  }
+
+  // Small AI icon shown in a terminal card head once that session is inactive
+  // (done / skipped / failed / denied). Reconciles against that session's output.
+  // Only shown when reconciling is meaningful: the session errored/failed, or it
+  // produced changes. A clean success with no changes hides it.
+  function reconcileHeadBtn(srcLines: string[], status: TargetStatus | undefined) {
+    if (!(run?.request?.repo || run?.repo)) return null;
+    const counts = parseCounts(srcLines);
+    const hasChanges = counts.add + counts.change + counts.destroy > 0;
+    const errored = status === 'fail' || status === 'denied';
+    if (!hasChanges && !errored) return null;
+    return (
+      <button
+        className={`tc-reconcile command-style ${commandStyleClass(command)}${reconcileLoading ? ' loading' : ''}`}
+        title="Reconcile with AI"
+        aria-label="Reconcile with AI"
+        onClick={(e) => { e.stopPropagation(); reconcileWithAI(srcLines); }}
+        onPointerEnter={() => { void import('../pages/RepositoryWorkspace'); }}
+        onFocus={() => { void import('../pages/RepositoryWorkspace'); }}
+        disabled={reconcileLoading}
+      >
+        {I.ai}<span>Reconcile</span>
+      </button>
+    );
+  }
+
+  // Big circular FAB shown at the bottom-right of a terminal that is awaiting
+  // input/approval. Reconciles against that session's output.
+  function reconcileFab(srcLines: string[]) {
+    if (!(run?.request?.repo || run?.repo)) return null;
+    return (
+      <button
+        className={`sp-reconcile-ai command-style ${commandStyleClass(command)}${reconcileLoading ? ' loading' : ''}`}
+        title="Reconcile with AI"
+        aria-label="Reconcile with AI"
+        onClick={(e) => { e.stopPropagation(); reconcileWithAI(srcLines); }}
+        onPointerEnter={() => { void import('../pages/RepositoryWorkspace'); }}
+        onFocus={() => { void import('../pages/RepositoryWorkspace'); }}
+        disabled={reconcileLoading}
+      >
+        {I.ai}
+      </button>
+    );
   }
 
   function openFullscreen(env: string, profile: string, sectionName: string | null) {
@@ -902,6 +946,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
         {(status === 'done' || status === 'skipped') && <StatsChips counts={counts} />}
         {(status === 'done' || status === 'skipped') && <DistBar counts={counts} />}
         <span className={`tc-state ${sd}`}>{label}</span>
+        {status && status !== 'running' && status !== 'queued' && reconcileHeadBtn(section.lines, status)}
         <button className="tc-exp" title="Fullscreen"
           onClick={(e) => { e.stopPropagation(); openFullscreen(section.name, section.profile, section.name); }}>
           {I.expand}
@@ -931,6 +976,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             <span className="sp" />
             {(status === 'done' || runStatus !== 'running') && <StatsChips counts={counts} runStatus={runStatus} />}
             {(status === 'done' || runStatus !== 'running') && <DistBar counts={counts} />}
+            {runStatus && runStatus !== 'running' && reconcileHeadBtn(displayLines, status)}
             <button className="tc-exp" title="Fullscreen"
               onClick={(e) => { e.stopPropagation(); openFullscreen(envName, run?.request?.profile || '', null); }}>
               {I.expand}
@@ -939,6 +985,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
           {spFilter === 'changes'
             ? <ResourceChangeTable lines={displayLines} search={spSearch} {...rctProps('single')} />
             : <TerminalBody lines={applyFilter(displayLines, spFilter, spSearch)} autoScroll={!spSearch && spFilter === 'all'} />}
+          {approvalPending && runStatus === 'running' && reconcileFab(displayLines)}
         </div>
       </div>
     );
@@ -970,6 +1017,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                 {spFilter === 'changes'
                   ? <ResourceChangeTable lines={s.lines} search={spSearch} {...rctProps(s.name)} />
                   : <TerminalBody lines={applyFilter(s.lines, spFilter, spSearch)} autoScroll={!spSearch && spFilter === 'all'} />}
+                {approvalPending && status === 'running' && reconcileFab(s.lines)}
               </div>
             );
           })}
@@ -997,6 +1045,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
               {spFilter === 'changes'
                 ? <ResourceChangeTable lines={active.lines} search={spSearch} {...rctProps(active.name)} />
                 : <TerminalBody lines={applyFilter(active.lines, spFilter, spSearch)} autoScroll={!spSearch && spFilter === 'all'} />}
+              {approvalPending && activeStatus === 'running' && reconcileFab(active.lines)}
             </div>
           )}
         </>
@@ -1111,6 +1160,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                       <DistBar counts={counts} />
                     </>
                   )}
+            {status && status !== 'running' && status !== 'queued' && reconcileHeadBtn(s.lines, status)}
             <button className="tc-exp" title="Fullscreen" style={{ color: 'var(--text-3)' }}
               onClick={(e) => { e.stopPropagation(); openFullscreen(s.name, s.profile, fsKey); }}>
               {I.expand}
@@ -1121,6 +1171,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             {spFilter === 'changes'
               ? <ResourceChangeTable lines={s.lines} search={spSearch} {...rctProps(colKey)} />
               : <TerminalBody lines={applyFilter(s.lines, spFilter, spSearch)} autoScroll={!spSearch && spFilter === 'all'} />}
+            {approvalPending && status === 'running' && reconcileFab(s.lines)}
           </div>
         </div>
       );
@@ -1416,19 +1467,6 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
             </>
           )}
         </div>
-        {run && run.status !== 'running' && (run.request?.repo || run.repo) && ['plan', 'apply', 'auto'].includes(command) && (
-          <button
-            className={`sp-reconcile-ai${reconcileLoading ? ' loading' : ''}`}
-            onClick={reconcileWithAI}
-            onPointerEnter={() => { void import('../pages/RepositoryWorkspace'); }}
-            onFocus={() => { void import('../pages/RepositoryWorkspace'); }}
-            disabled={reconcileLoading}
-            aria-label={reconcileLoading ? 'Loading Reconcile with AI' : 'Reconcile with AI'}
-            title="Reconcile with AI"
-          >
-            {I.ai}
-          </button>
-        )}
       </div>
 
       {fullscreen && (
@@ -1454,6 +1492,15 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                     title={fsWrap ? 'Unwrap lines' : 'Wrap lines'}
                     onClick={() => setFsWrap(v => !v)}
                   >{fsWrap ? I.wrap : I.nowrap}{fsWrap ? 'Wrap' : 'Unwrap'}</button>
+                  {(run?.request?.repo || run?.repo) && (
+                    <button className={`fs-action-btn fs-reconcile command-style ${commandStyleClass(command)}${reconcileLoading ? ' loading' : ''}`}
+                      title="Reconcile with AI"
+                      onClick={() => reconcileWithAI(fsLines)}
+                      onPointerEnter={() => { void import('../pages/RepositoryWorkspace'); }}
+                      disabled={reconcileLoading}>
+                      {I.ai}Reconcile
+                    </button>
+                  )}
                 </div>
                 <div className="fs-divider" />
                 <button className="fs-close" aria-label="Close fullscreen" onClick={closeFullscreen}>{I.close}</button>

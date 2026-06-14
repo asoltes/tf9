@@ -181,23 +181,64 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .dock-toggle button.on{background:var(--blue);color:#fff}
 .runs-page .sp-body{flex:1;overflow:auto;padding:16px 20px;min-height:0}
 .runs-page .sp-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-2);font-size:14px}
-.runs-page .sp-reconcile-ai{
-  position:absolute;right:26px;bottom:24px;z-index:12;width:54px;height:54px;
-  display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--blue) 72%,var(--border));
-  border-radius:50%;background:linear-gradient(145deg,var(--blue),color-mix(in srgb,var(--blue) 62%,var(--purple)));
-  color:#fff;cursor:pointer;
-  box-shadow:0 0 0 5px color-mix(in srgb,var(--blue) 12%,transparent),0 0 22px color-mix(in srgb,var(--blue) 58%,transparent),0 8px 22px rgba(0,0,0,.24);
-  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
-  animation:sp-ai-glow 2.6s ease-in-out infinite;
+/* Reconcile-with-AI controls: tinted by the active Terraform command color
+   (via .command-style on the button), falling back to orange. */
+.runs-page .sp-reconcile-ai,
+.runs-page .tc-reconcile{
+  --ai-accent:var(--command-color,#ff7a18);
 }
-.runs-page .sp-reconcile-ai svg{width:25px;height:25px;stroke-width:1.9}
-.runs-page .sp-reconcile-ai:hover{transform:translateY(-2px) scale(1.04);filter:brightness(1.08);box-shadow:0 0 0 7px color-mix(in srgb,var(--blue) 15%,transparent),0 0 30px color-mix(in srgb,var(--blue) 72%,transparent),0 11px 26px rgba(0,0,0,.3)}
-.runs-page .sp-reconcile-ai:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 38%,transparent);outline-offset:4px}
-.runs-page .sp-reconcile-ai:disabled{cursor:wait;opacity:.8}
+/* Active-terminal FAB — white circle sized to the terminal, with a command-tinted
+   "speed of light" comet (plus a trailing second comet) orbiting the rim. */
+.runs-page .sp-reconcile-ai{
+  position:absolute;right:clamp(10px,2.4%,18px);bottom:clamp(10px,2.4%,18px);z-index:12;
+  width:clamp(34px,8cqw,46px);height:clamp(34px,8cqw,46px);aspect-ratio:1;
+  display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--ai-accent) 25%,rgba(0,0,0,.08));
+  border-radius:50%;background:radial-gradient(circle at 34% 26%,#fff,color-mix(in srgb,var(--ai-accent) 16%,#fff));
+  color:var(--ai-accent);cursor:pointer;isolation:isolate;
+  box-shadow:0 4px 14px rgba(0,0,0,.22),0 0 12px color-mix(in srgb,var(--ai-accent) 38%,transparent);
+  transition:transform .16s ease,filter .16s ease;
+}
+/* Leading comet — bright white head with a long orange trail. */
+.runs-page .sp-reconcile-ai::before,
+.runs-page .sp-reconcile-ai::after{
+  content:'';position:absolute;inset:-1px;border-radius:50%;pointer-events:none;
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+          mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));
+}
+.runs-page .sp-reconcile-ai::before{
+  background:conic-gradient(from 0deg,transparent 0 42%,color-mix(in srgb,var(--ai-accent) 12%,transparent) 58%,color-mix(in srgb,var(--ai-accent) 55%,transparent) 82%,color-mix(in srgb,var(--ai-accent) 40%,#fff) 94%,#fff 99%,transparent 100%);
+  filter:drop-shadow(0 0 4px var(--ai-accent)) drop-shadow(0 0 9px color-mix(in srgb,var(--ai-accent) 70%,transparent));
+  animation:sp-orbit .8s linear infinite;
+}
+/* Trailing comet — fainter, slower and offset, for a layered light trail. */
+.runs-page .sp-reconcile-ai::after{
+  background:conic-gradient(from 150deg,transparent 0 55%,color-mix(in srgb,var(--ai-accent) 22%,transparent) 80%,color-mix(in srgb,var(--ai-accent) 55%,#fff) 95%,transparent 100%);
+  filter:drop-shadow(0 0 5px color-mix(in srgb,var(--ai-accent) 60%,transparent));
+  opacity:.65;animation:sp-orbit 1.2s linear infinite;
+}
+.runs-page .sp-reconcile-ai svg{width:46%;height:46%;stroke-width:1.9;color:var(--ai-accent)}
+.runs-page .sp-reconcile-ai:hover{transform:scale(1.06);filter:brightness(1.04)}
+.runs-page .sp-reconcile-ai:focus-visible{outline:2px solid color-mix(in srgb,var(--ai-accent) 60%,transparent);outline-offset:3px}
+.runs-page .sp-reconcile-ai:disabled{cursor:wait;opacity:.85}
 .runs-page .sp-reconcile-ai.loading svg{animation:sp-ai-spin 1.2s linear infinite}
-@keyframes sp-ai-glow{0%,100%{box-shadow:0 0 0 5px color-mix(in srgb,var(--blue) 10%,transparent),0 0 18px color-mix(in srgb,var(--blue) 48%,transparent),0 8px 22px rgba(0,0,0,.24)}50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--blue) 16%,transparent),0 0 30px color-mix(in srgb,var(--blue) 68%,transparent),0 8px 24px rgba(0,0,0,.28)}}
+@keyframes sp-orbit{to{transform:rotate(360deg)}}
 @keyframes sp-ai-spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.runs-page .sp-reconcile-ai,.runs-page .sp-reconcile-ai.loading svg{animation:none}}
+@media(prefers-reduced-motion:reduce){.runs-page .sp-reconcile-ai::before,.runs-page .sp-reconcile-ai::after,.runs-page .sp-reconcile-ai.loading svg{animation:none}}
+
+/* Small in-head Reconcile-with-AI button (inactive sessions) — labeled pill,
+   theme-aware, matching the fullscreen toolbar action with an orange AI glyph. */
+.runs-page .tc-reconcile{
+  display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+  height:24px;padding:0 9px;border-radius:7px;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--text-2);
+  font-family:var(--sans);font-size:11.5px;font-weight:600;white-space:nowrap;cursor:pointer;
+  transition:background .12s ease,color .12s ease,border-color .12s ease;
+}
+.runs-page .tc-reconcile svg{width:13px;height:13px;stroke-width:1.9;color:var(--ai-accent);flex-shrink:0}
+.runs-page .tc-reconcile:hover{background:var(--surface-2);color:var(--text);border-color:color-mix(in srgb,var(--ai-accent) 45%,var(--border))}
+.runs-page .tc-reconcile:focus-visible{outline:2px solid color-mix(in srgb,var(--ai-accent) 55%,transparent);outline-offset:2px}
+.runs-page .tc-reconcile:disabled{cursor:wait;opacity:.8}
+.runs-page .tc-reconcile.loading svg{animation:sp-ai-spin 1.2s linear infinite}
 
 /* Inline terraform approval panel */
 .runs-page .sp-approval-bar{
@@ -372,7 +413,7 @@ html[data-theme="dark"] .runs-page .progress-bar{background:#1c2430}
 .runs-page .term-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .runs-page .term-grid.one{grid-template-columns:1fr}
 .runs-page .runs-dock.side .term-grid{grid-template-columns:1fr}
-.runs-page .term-card{display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:1px solid var(--tc-border);background:var(--tc-card-bg);min-height:170px}
+.runs-page .term-card{position:relative;container-type:inline-size;display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:1px solid var(--tc-border);background:var(--tc-card-bg);min-height:170px}
 .runs-page .term-card.run{border-color:var(--tc-run-border);box-shadow:0 0 0 1px rgba(56,139,253,.35)}
 .runs-page .term-card.done{border-color:var(--tc-done-border)}
 .runs-page .term-card.skipped{border-color:var(--border-strong)}
@@ -426,7 +467,7 @@ html[data-theme="light"] .runs-page .tc-state.denied{color:#9a6700;background:#f
 .runs-page .term-tab .d.run{background:var(--blue);animation:runsPulse 1.1s ease-in-out infinite}
 .runs-page .term-tab .d.done{background:var(--green)}.runs-page .term-tab .d.skipped{background:var(--text-3)}.runs-page .term-tab .d.fail{background:var(--red)}
 .runs-page .term-tab.on{background:var(--tc-card-bg);color:var(--tc-head-text);border-color:var(--tc-border)}
-.runs-page .term-single{border:1px solid var(--tc-border);border-radius:0 10px 10px 10px;background:var(--tc-card-bg);overflow:hidden}
+.runs-page .term-single{position:relative;container-type:inline-size;border:1px solid var(--tc-border);border-radius:0 10px 10px 10px;background:var(--tc-card-bg);overflow:hidden}
 .runs-page .term-single .tc-body{max-height:300px}
 
 /* merged */
@@ -454,7 +495,7 @@ html[data-theme="dark"] .runs-page .promo-sec.queued .promo-step{background:#1c2
 .runs-page .promo-chev svg{width:16px;height:16px}
 .runs-page .promo-sec.collapsed .promo-chev{transform:rotate(-90deg)}
 .runs-page .promo-sec.collapsed .promo-term{display:none}
-.runs-page .promo-term{border-top:1px solid var(--divider);background:var(--tc-card-bg)}
+.runs-page .promo-term{position:relative;container-type:inline-size;border-top:1px solid var(--divider);background:var(--tc-card-bg)}
 .runs-page .promo-term .tc-body{max-height:260px}
 
 /* ── Auto-run stage groups ───────────────────────────────────────────────── */
@@ -531,6 +572,9 @@ html[data-theme="dark"] .fs-backdrop{background:rgba(0,0,0,.75)}
 .fs-modal .fs-action-btn.active{background:#1b2740;color:#7ec8e3;border-color:#3d5166}
 .fs-modal .fs-action-btn.active:hover{color:#a8d8ea}
 .fs-modal .fs-action-btn svg{flex-shrink:0;width:14px;height:14px}
+/* Inherits .fs-action-btn (theme-aware); glyph tinted by the command color. */
+.fs-modal .fs-reconcile svg{color:var(--command-color,#ff7a18)}
+.fs-modal .fs-reconcile.loading svg{animation:sp-ai-spin 1.2s linear infinite}
 .fs-modal .fs-divider{width:1px;height:20px;background:#2a3b52;margin:0 2px}
 
 .fs-modal .fs-dots{display:flex;gap:6px;flex-shrink:0}
@@ -591,12 +635,18 @@ html[data-theme="dark"] .fs-backdrop{background:rgba(0,0,0,.75)}
 .fs-modal .fs-stats .tc-stats{font-size:13px}
 
 /* Approval panel pinned at the bottom of the fullscreen terminal (dark context) */
-.fs-modal .fs-approval-bar{
+/* Qualified with .apply/.destructive so the dark bar beats the higher-specificity
+   base rule (.runs-page .sp-approval-bar.apply), keeping the light text readable. */
+.fs-modal .fs-approval-bar,
+.fs-modal .fs-approval-bar.apply,
+.fs-modal .fs-approval-bar.destructive,
+.fs-modal .fs-approval-bar.destructive.final-confirm{
   margin:0;border-radius:0;flex-shrink:0;box-shadow:none;
   border:none;border-top:2px solid #d29922;
-  background:#1c1708;
+  background:#1c1708;animation:none;
 }
-.fs-modal .fs-approval-bar.destructive{border-top-color:#f85149}
+.fs-modal .fs-approval-bar.destructive,
+.fs-modal .fs-approval-bar.destructive.final-confirm{border-top-color:#f85149}
 .fs-modal .fs-approval-bar .sp-approval-title{color:#f0f3f6}
 .fs-modal .fs-approval-bar .sp-approval-sub{color:#c9d1d9}
 .fs-modal .fs-approval-bar .sp-approval-sub strong{color:#fff}
