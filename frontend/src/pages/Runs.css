@@ -156,6 +156,11 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .sp-title{display:flex;align-items:center;gap:11px;min-width:0}
 .runs-page .sp-title .rid{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text)}
 .runs-page .sp-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.runs-page .sp-command-actions{display:flex;align-items:center;gap:8px}
+.runs-page .runs-dock.side .sp-head{flex-direction:column;align-items:stretch;gap:10px}
+.runs-page .runs-dock.side .sp-title{justify-content:space-between;flex-wrap:wrap}
+.runs-page .runs-dock.side .sp-actions{justify-content:space-between;align-items:flex-start;min-width:0}
+.runs-page .runs-dock.side .sp-command-actions{flex:1;flex-wrap:wrap;min-width:0}
 .runs-page .rerun-menu{position:relative}
 .runs-page .rerun-menu summary{list-style:none}
 .runs-page .rerun-menu summary::-webkit-details-marker{display:none}

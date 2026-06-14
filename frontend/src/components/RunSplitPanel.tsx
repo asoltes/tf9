@@ -1322,7 +1322,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                   <span className={`rstatus ${statusClass(run.status)}`}>{statusIcon(run.status)}{run.status === 'partial_success' ? 'Partial Success' : run.status}</span>
                 </div>
                 <div className="sp-actions">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="sp-command-actions">
                     {run.status === 'running' ? (
                       <>
                         <button className="btn btn-normal btn-sm" onClick={() => setConfirmCancel(true)}>{I.stop}Cancel run</button>
