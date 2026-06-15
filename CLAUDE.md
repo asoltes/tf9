@@ -290,6 +290,34 @@ filtered on the frontend before display.
 
 ---
 
+## Workspace AI chat — `internal/api/workspace_chat.go`
+
+The Repository Workspace page hosts an AI assistant scoped to one repository.
+It shells out to the **Claude Code CLI** (`claude`, resolved via `exec.LookPath`
+at manager construction; if absent the chat returns `claude_unavailable`). Each
+turn runs `claude -p <prompt> --model <model> --output-format stream-json
+--include-partial-messages` with `cmd.Dir` set to the repo root, and the
+stream-json output is parsed into SSE `workspaceChatEvent`s (`stream_event`,
+`assistant`, `result`, `status`, `error`, `done`).
+
+- **Routes** are nested under the repo: `/api/repos/{name}/chat` (GET state) and
+  `/api/repos/{name}/chat/{action}` — `message` (POST), `stream` (GET SSE),
+  `mode` (POST), `model` (POST), `cancel` (POST), `reset` (DELETE). Dispatched
+  from `handleRepoWorkspace` in `workspace.go`.
+- **Modes** map to Claude permission modes: `autoApply` → `acceptEdits`
+  (default), `review` → `plan`. Mode/model are per-repo and persisted with the
+  message history (capped at `workspaceChatHistoryLimit` = 100).
+- **Tool policy** is enforced via `--tools` / `--allowedTools` /
+  `--disallowedTools`. Allowed: `Read,Glob,Grep`, `Bash(git *)`, the Go/npm
+  build-test commands, `terraform fmt -check`/`validate`, and `tf9 init`/`plan`.
+  Denied (deny overrides allow): `git push`, `terraform apply`/`destroy`, and
+  `rm/sudo/curl/wget/ssh/scp`. **Pushing and applying are always the human's
+  job** (the Promote button + the terraform approval gate).
+- The configurable model list comes from `/api/web/ai-models`; the default is
+  `web.DefaultAIModelID()`.
+
+---
+
 ## Frontend (plain React — no Cloudscape)
 
 The UI was pixel-ported off AWS Cloudscape onto a hand-rolled design system that
@@ -399,9 +427,22 @@ Edit tool can corrupt them. Use straight ASCII quotes only.
 | File | Purpose |
 |---|---|
 | `config.yaml` | Repositories and ordered targets with directory, AWS profile, optional account ID/region, and disabled flag |
+| `backups/` | Rolling `config-YYYYMMDD-HHMMSS.yaml` snapshots (see below) |
 | `runs.json` | Persisted run history (last 200, capped at 5000 lines each) |
 | `reports/` | HTML plan report files |
 | `serve.pid` | PID of running `tf9 serve` process (killed on next `serve`) |
+
+### Config backup/restore — `internal/config/backup.go`
+
+Every config write (`config.go` save, plus a restore) first calls
+`backupCurrentLocked()`, snapshotting the current `config.yaml` into
+`backups/config-<timestamp>.yaml`. The ring is bounded by `maxBackups` (20);
+older snapshots are pruned. `RestoreBackup(name)` validates the snapshot is
+parseable, schema-valid YAML, then **backs up the about-to-be-replaced config
+first** so a restore is itself undoable. `name` must be a bare filename —
+path traversal (`/`, `\`, non-base names) is rejected, same guard in
+`DeleteBackup`. Surfaced via `/api/config/backups` (GET list),
+`/api/config/backups/{name}` (POST restore / DELETE remove).
 
 ---
 

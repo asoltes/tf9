@@ -424,6 +424,34 @@ Each repository is shown as a card or table row. Actions:
   promotion gates
 - **Drag-and-drop reorder** — drag stage cards to change execution order
 
+### Repository Workspace
+
+The Repository Workspace page combines git operations over a registered repo
+with an AI chat assistant. The assistant runs the local Claude Code CLI scoped
+to the repository directory and helps investigate branches and reconcile drift.
+
+- **Modes** — *Auto-apply* (default) lets the assistant edit files directly;
+  *Review* asks it to propose a plan first. Switch modes from the chat header.
+- **Model** — pick from a configurable model list (managed in Global settings);
+  the choice is remembered per repository along with the conversation history.
+- **What it can do** — read code, search, run git investigation commands
+  (`fetch`/`log`/`diff`/`show`), reconcile drift via rebase/cherry-pick/merge,
+  and verify with `tf9 init` / `tf9 plan`.
+- **What it can never do** — `git push`, `terraform apply`, and
+  `terraform destroy` are always blocked. Promoting and applying stay with you,
+  through the Promote button and the terraform approval gate.
+
+The CLI must be installed and logged in (`claude auth login`); otherwise the
+chat shows an authentication notice.
+
+### Config backup and restore
+
+Every save to `config.yaml` — from the YAML editor or a CLI config command —
+first writes a timestamped snapshot to `~/.config/tf9/backups/`. The Config
+page lists snapshots and can restore any of them; a restore validates the
+snapshot and backs up the current config first, so it can be undone. The most
+recent 20 snapshots are kept.
+
 ## Global CLI Flags
 
 All `tf9` commands accept:
