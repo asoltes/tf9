@@ -328,22 +328,6 @@ func executeRun(ctx context.Context, p superviseParams, out io.Writer, inputCh <
 		return graphdata.SaveTarget(graphPath(p.ID), p.ID, p.RepoLabel, targetGroups[target], target, targetGraph)
 	}
 
-	// Resolve Infracost settings when cost estimation is requested.
-	costEnabled := req.Cost
-	var infracostKey, infracostCurrency string
-	if costEnabled {
-		ic, icErr := config.LoadInfracost()
-		if icErr != nil {
-			slog.Warn("could not load infracost settings", "err", icErr)
-		}
-		infracostKey = ic.APIKey
-		infracostCurrency = ic.Currency
-		if infracostKey == "" {
-			costEnabled = false
-			fmt.Fprintln(out, "[WARN] cost estimation requested but no Infracost API key is configured — running without cost.")
-		}
-	}
-
 	baseOpts := runner.Options{
 		SearchRoot:        searchRoot,
 		RepoLabel:         p.RepoLabel,
@@ -365,9 +349,6 @@ func executeRun(ctx context.Context, p superviseParams, out io.Writer, inputCh <
 		AutoApprove:       req.AutoApprove,
 		OnApprovalWait:    onApprovalWait,
 		OnProcStart:       onProcStart,
-		Cost:              costEnabled,
-		InfracostKey:      infracostKey,
-		Currency:          infracostCurrency,
 		SavePlanDir:       savePlanDir,
 		ApplyPlanFiles:    applyPlanFiles,
 		OnGraphReady:      onGraphReady,

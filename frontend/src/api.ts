@@ -1,5 +1,5 @@
 import type {
-  CostScanHistoryItem, CostScanResult, CostSummary, GitCommit, Identity, InfracostSettings,
+  CostScanHistoryItem, CostScanResult, GitCommit, Identity, InfracostSettings,
   LogLevel, LogsResponse, WorkspaceChatMode, WorkspaceChatModel, WorkspaceChatState, WorkspaceEntry, WorkspaceFile,
 } from './types';
 
@@ -94,6 +94,8 @@ export const reportsApi = {
     api.get<import('./types').Paginated<import('./types').Report>>(`/api/reports?page=${page}&limit=${limit}`),
   data:   (name: string) =>
     api.get<import('./types').ReportData>(`/api/reports/${encodeURIComponent(name)}/data`),
+  costData: (name: string) =>
+    api.get<import('./types').CostReportData>(`/api/reports/${encodeURIComponent(name)}/data`),
   delete: (name: string) =>
     api.delete<void>(`/api/reports?name=${encodeURIComponent(name)}`),
   rawUrl: (name: string) => `/api/reports/${encodeURIComponent(name)}/raw`,
@@ -105,7 +107,6 @@ export const costApi = {
   settings: () => api.get<InfracostSettings>('/api/infracost/settings'),
   saveSettings: (body: { token?: string | null; enabledByDefault: boolean; currency: string }) =>
     api.put<InfracostSettings>('/api/infracost/settings', body),
-  summary: () => api.get<CostSummary>('/api/cost/summary'),
   // Breakdown scans across configured repo targets.
   runScan: () => api.post<CostScanResult>('/api/cost/scan', {}),
   getScan: () => api.get<CostScanResult>('/api/cost/scan'),

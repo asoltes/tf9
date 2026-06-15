@@ -72,7 +72,6 @@ type RunRequest struct {
 	PromotionOrder    []string                     `json:"promotionOrder,omitempty"`
 	LockIDs           map[string]string            `json:"lockIds,omitempty"`
 	ImportAddrs       map[string]runner.ImportSpec `json:"importAddrs,omitempty"`
-	Cost              bool                         `json:"cost,omitempty"`
 	PlanRunID         string                       `json:"planRunId,omitempty"`
 	Ticket            string                       `json:"ticket,omitempty"`
 }
@@ -766,7 +765,6 @@ func (m *RunManager) PrepareReviewedApply(req RunRequest) (RunRequest, error) {
 	prepared.ExtraArgs = nil
 	prepared.Parallel = req.Parallel
 	prepared.AutoApprove = true
-	prepared.Cost = false
 	return prepared, nil
 }
 

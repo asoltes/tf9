@@ -19,7 +19,7 @@ html[data-theme="dark"]{
   --command-init:#58a6ff; --command-plan:#3fb950; --command-apply:#ffa657; --command-destroy:#ff7b72;
   --command-auto:#bc8cff; --command-validate:#39c5cf; --command-refresh:#9aa5b1; --command-state:#e3b341;
   --command-output:#d2a8ff; --command-import:#79c0ff; --command-taint:#f0883e; --command-untaint:#a5d6ff;
-  --command-force-unlock:#ffa198;
+  --command-force-unlock:#ffa198; --command-cost:#d29922;
   --grey-badge:#30363d;
   --surface-1:#161b22; --surface-2:#1b222c; --surface-3:#21262d;
   --border:#3d444d; --text-1:#e6edf3;
@@ -212,7 +212,7 @@ html[data-variant="dim"]{
   --command-init:#6cb6ff; --command-plan:#57ab5a; --command-apply:#f69d50; --command-destroy:#f47067;
   --command-auto:#dcbdfb; --command-validate:#45c2c9; --command-refresh:#909dab; --command-state:#daaa3f;
   --command-output:#b083f0; --command-import:#96d0ff; --command-taint:#e0823d; --command-untaint:#c8e1ff;
-  --command-force-unlock:#e8958f;
+  --command-force-unlock:#e8958f; --command-cost:#c69026;
   --grey-badge:#373e47;
   --surface-1:#2d333b; --surface-2:#323942; --surface-3:#373e47;
   --border:#545d68; --text-1:#adbac7;

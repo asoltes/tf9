@@ -511,21 +511,12 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 		}
 	})
 
-	// Aggregate cost data across saved reports for the Cost dashboard.
-	mux.HandleFunc("/api/cost/summary", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			methodNotAllowed(w)
-			return
-		}
-		costSummary(w, r, reportDir)
-	})
-
 	// Infracost breakdown scans across configured repo targets (Breakdown/Diff
 	// dashboards). POST runs a new scan; GET returns the latest scan + diff.
 	mux.HandleFunc("/api/cost/scan", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			runCostScan(w, r)
+			runCostScan(w, r, reportDir)
 		case http.MethodGet:
 			getCostScan(w, r)
 		default:
@@ -1415,23 +1406,33 @@ func listReports(w http.ResponseWriter, r *http.Request, reportDir string) {
 			SizeKB:  info.Size() / 1024,
 			IsLive:  isLive,
 		}
-		// Load companion JSON sidecar if it exists.
+		// Load companion JSON sidecar if it exists. Cost reports carry a cost
+		// scan rather than a terraform plan summary, so they read differently.
 		jsonPath := filepath.Join(reportDir, strings.TrimSuffix(e.Name(), ".html")+".json")
 		if b, err := os.ReadFile(jsonPath); err == nil {
-			var sum report.Summary
-			if json.Unmarshal(b, &sum) == nil {
-				en.Add = sum.Add
-				en.Applied = sum.Applied
-				en.Change = sum.Change
-				en.Destroy = sum.Destroy
-				en.Envs = sum.Envs
-				en.Failed = sum.Failed
-				en.HasCost = sum.HasCost
-				en.Currency = sum.Currency
-				en.TotalMonthly = sum.TotalMonthly
-				en.DiffMonthly = sum.DiffMonthly
-				en.Ticket = sum.Ticket
-				en.TicketURL = sum.TicketURL
+			if cmd == "cost" {
+				var rd cost.ReportData
+				if json.Unmarshal(b, &rd) == nil && rd.Scan != nil {
+					en.HasCost = true
+					en.Currency = rd.Scan.Currency
+					en.TotalMonthly = rd.Scan.TotalMonthly
+					en.Envs = len(rd.Scan.Targets)
+					if rd.Diff != nil {
+						en.DiffMonthly = rd.Diff.Change
+					}
+				}
+			} else {
+				var sum report.Summary
+				if json.Unmarshal(b, &sum) == nil {
+					en.Add = sum.Add
+					en.Applied = sum.Applied
+					en.Change = sum.Change
+					en.Destroy = sum.Destroy
+					en.Envs = sum.Envs
+					en.Failed = sum.Failed
+					en.Ticket = sum.Ticket
+					en.TicketURL = sum.TicketURL
+				}
 			}
 		}
 		out = append(out, en)
@@ -1494,131 +1495,6 @@ func putInfracostSettings(w http.ResponseWriter, r *http.Request) {
 	getInfracostSettings(w, r)
 }
 
-// costSummary aggregates cost data from saved apply reports for the Cost
-// dashboard. Only `apply` runs are included — they reflect the cost of what is
-// actually deployed, whereas plans are speculative.
-func costSummary(w http.ResponseWriter, r *http.Request, reportDir string) {
-	entries, err := os.ReadDir(reportDir)
-	if err != nil {
-		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
-		return
-	}
-	type item struct {
-		Report        string    `json:"report"`
-		RunAt         time.Time `json:"runAt"`
-		Currency      string    `json:"currency"`
-		TotalMonthly  float64   `json:"totalMonthly"`
-		ResourceCount int       `json:"resourceCount"`
-		Ticket        string    `json:"ticket,omitempty"`
-		TicketURL     string    `json:"ticketUrl,omitempty"`
-	}
-	type resourceRow struct {
-		Name        string  `json:"name"`
-		Type        string  `json:"type"`
-		MonthlyCost float64 `json:"monthlyCost"`
-	}
-	type serviceRow struct {
-		Type        string  `json:"type"`
-		Count       int     `json:"count"`
-		MonthlyCost float64 `json:"monthlyCost"`
-	}
-	type detail struct {
-		Report        string        `json:"report"`
-		RunAt         time.Time     `json:"runAt"`
-		Currency      string        `json:"currency"`
-		TotalMonthly  float64       `json:"totalMonthly"`
-		ResourceCount int           `json:"resourceCount"`
-		Resources     []resourceRow `json:"resources"`
-		ByService     []serviceRow  `json:"byService"`
-		Ticket        string        `json:"ticket,omitempty"`
-		TicketURL     string        `json:"ticketUrl,omitempty"`
-	}
-
-	items := make([]item, 0, len(entries))
-	var newest *report.Summary
-	var newestName string
-	var newestAt time.Time
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasPrefix(e.Name(), "tf9-") || !strings.HasSuffix(e.Name(), ".html") {
-			continue
-		}
-		cmd, runAt, isLive := report.ParseReportName(e.Name())
-		if cmd != "apply" || isLive {
-			continue
-		}
-		jsonPath := filepath.Join(reportDir, strings.TrimSuffix(e.Name(), ".html")+".json")
-		b, rerr := os.ReadFile(jsonPath)
-		if rerr != nil {
-			continue
-		}
-		var sum report.Summary
-		if json.Unmarshal(b, &sum) != nil || !sum.HasCost {
-			continue
-		}
-		items = append(items, item{
-			Report:        e.Name(),
-			RunAt:         runAt,
-			Currency:      sum.Currency,
-			TotalMonthly:  sum.TotalMonthly,
-			ResourceCount: sum.ResourceCount,
-			Ticket:        sum.Ticket,
-			TicketURL:     sum.TicketURL,
-		})
-		if newest == nil || runAt.After(newestAt) {
-			s := sum
-			newest = &s
-			newestName = e.Name()
-			newestAt = runAt
-		}
-	}
-	// Newest first for the time-series / table.
-	sort.Slice(items, func(i, j int) bool { return items[i].RunAt.After(items[j].RunAt) })
-
-	// Build the detail view from the most recent apply: a flat resource list plus
-	// a per-type ("by service") rollup for monitoring where cost concentrates.
-	var det *detail
-	if newest != nil {
-		d := detail{
-			Report:        newestName,
-			RunAt:         newestAt,
-			Currency:      newest.Currency,
-			TotalMonthly:  newest.TotalMonthly,
-			ResourceCount: newest.ResourceCount,
-			Ticket:        newest.Ticket,
-			TicketURL:     newest.TicketURL,
-			Resources:     []resourceRow{},
-			ByService:     []serviceRow{},
-		}
-		svc := map[string]*serviceRow{}
-		for _, res := range newest.Results {
-			if res.Cost == nil {
-				continue
-			}
-			for _, rr := range res.Cost.Resources {
-				d.Resources = append(d.Resources, resourceRow{Name: rr.Name, Type: rr.Type, MonthlyCost: rr.MonthlyCost})
-				s := svc[rr.Type]
-				if s == nil {
-					s = &serviceRow{Type: rr.Type}
-					svc[rr.Type] = s
-				}
-				s.Count++
-				s.MonthlyCost += rr.MonthlyCost
-			}
-		}
-		sort.Slice(d.Resources, func(i, j int) bool { return d.Resources[i].MonthlyCost > d.Resources[j].MonthlyCost })
-		for _, s := range svc {
-			d.ByService = append(d.ByService, *s)
-		}
-		sort.Slice(d.ByService, func(i, j int) bool { return d.ByService[i].MonthlyCost > d.ByService[j].MonthlyCost })
-		det = &d
-	}
-
-	jsonOK(w, struct {
-		Items  []item  `json:"items"`
-		Latest *detail `json:"latest"`
-	}{Items: items, Latest: det})
-}
-
 // resolveInfracost returns the API key + currency, or an error suitable for a
 // 400 when no key is configured.
 func resolveInfracost() (key, currency string, err error) {
@@ -1634,7 +1510,7 @@ func resolveInfracost() (key, currency string, err error) {
 
 // runCostScan runs an Infracost breakdown across all configured repo targets,
 // saves it, and returns the new scan plus a diff against the previous scan.
-func runCostScan(w http.ResponseWriter, r *http.Request) {
+func runCostScan(w http.ResponseWriter, r *http.Request, reportDir string) {
 	key, currency, err := resolveInfracost()
 	if err != nil {
 		jsonErr(w, "no_api_key", err.Error(), http.StatusBadRequest)
@@ -1658,10 +1534,18 @@ func runCostScan(w http.ResponseWriter, r *http.Request) {
 	if err := cost.SaveScan(scan); err != nil {
 		slog.Warn("could not save cost scan", "err", err)
 	}
+	diff := cost.Diff(scan, prevLatest)
+	// Persist the scan as a first-class report so it appears on the Reports page
+	// and opens in the ReportViewer, with history — not just a one-off download.
+	if reportDir != "-" {
+		if err := cost.SaveReport(reportDir, scan, diff); err != nil {
+			slog.Warn("could not save cost report", "err", err)
+		}
+	}
 	jsonOK(w, struct {
 		Scan *cost.Scan     `json:"scan"`
 		Diff *cost.ScanDiff `json:"diff"`
-	}{Scan: scan, Diff: cost.Diff(scan, prevLatest)})
+	}{Scan: scan, Diff: diff})
 }
 
 // getCostScan returns the latest saved scan and its diff against the prior scan.
@@ -1748,6 +1632,27 @@ func getReportData(w http.ResponseWriter, _ *http.Request, reportDir, name strin
 		jsonErr(w, "bad_request", "invalid report name", http.StatusBadRequest)
 		return
 	}
+	// Cost reports carry a cost scan sidecar (not a terraform plan summary);
+	// return it verbatim for the breakdown view.
+	if cmd, _, _ := report.ParseReportName(name); cmd == "cost" {
+		b, err := os.ReadFile(jsonPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				jsonErr(w, "not_found", "cost report data not found", http.StatusNotFound)
+				return
+			}
+			jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+			return
+		}
+		var rd cost.ReportData
+		if err := json.Unmarshal(b, &rd); err != nil {
+			jsonErr(w, "internal", "failed to parse cost report data", http.StatusInternalServerError)
+			return
+		}
+		jsonOK(w, rd)
+		return
+	}
+
 	b, err := os.ReadFile(jsonPath)
 	if err != nil {
 		if os.IsNotExist(err) {

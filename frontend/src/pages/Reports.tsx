@@ -104,26 +104,25 @@ export default function ReportsPage() {
 
   const counts = useMemo(() => {
     const c = commandCounts(reports);
-    return { all: c.all ?? 0, plan: c.plan ?? 0, apply: c.apply ?? 0, destroy: c.destroy ?? 0 };
+    return { all: c.all ?? 0, plan: c.plan ?? 0, apply: c.apply ?? 0, destroy: c.destroy ?? 0, cost: c.cost ?? 0 };
   }, [reports]);
 
   const list = useMemo(() => filterByCommand(reports, filter), [reports, filter]);
 
-  // Cost roll-up across the loaded reports (reports are newest-first). The latest
-  // apply reflects deployed cost; the latest plan carries a projected change.
+  // Cost roll-up across the loaded reports (reports are newest-first). Cost data
+  // now lives only on dedicated cost reports; the latest one anchors deployed
+  // monthly cost and its diff carries the change since the previous scan.
   const cost = useMemo(() => {
-    const withCost = reports.filter(r => r.hasCost);
+    const withCost = reports.filter(r => r.command === 'cost' && r.hasCost);
     if (withCost.length === 0) return null;
-    const latestApply = withCost.find(r => r.command === 'apply');
-    const latestPlan = withCost.find(r => r.command === 'plan');
-    const anchor = latestApply ?? withCost[0];
+    const anchor = withCost[0];
     return {
       count: withCost.length,
       currency: anchor.currency ?? 'USD',
       monthly: anchor.totalMonthly ?? 0,
       anchorCmd: anchor.command,
       annual: (anchor.totalMonthly ?? 0) * 12,
-      change: latestPlan ? (latestPlan.diffMonthly ?? 0) : null,
+      change: anchor.diffMonthly ?? null,
     };
   }, [reports]);
 
@@ -134,6 +133,7 @@ export default function ReportsPage() {
     { key: 'plan', label: 'Plan' },
     { key: 'apply', label: 'Apply' },
     { key: 'destroy', label: 'Destroy' },
+    { key: 'cost', label: 'Cost' },
   ];
 
   function renderBody() {
@@ -171,8 +171,11 @@ export default function ReportsPage() {
     return (
       <div className="rh-cards">
         {list.map(r => {
+          const isCost = r.command === 'cost';
           const status = r.applied ? 'success' : 'not-applied';
-          const envLabel = `${r.envs} env${r.envs === 1 ? '' : 's'}`;
+          const envLabel = isCost
+            ? `${r.envs} target${r.envs === 1 ? '' : 's'}`
+            : `${r.envs} env${r.envs === 1 ? '' : 's'}`;
           return (
             <div
               key={r.name}
@@ -187,16 +190,23 @@ export default function ReportsPage() {
                   <CmdBadge cmd={r.command} />
                   <span className="rh-card-id">{runId(r.name)}</span>
                 </div>
-                <span className={`rh-card-status ${status}`}>
-                  {r.applied ? ICON_CHECKC : ICON_X}Applied: {r.applied ? 'True' : 'False'}
-                </span>
+                {!isCost && (
+                  <span className={`rh-card-status ${status}`}>
+                    {r.applied ? ICON_CHECKC : ICON_X}Applied: {r.applied ? 'True' : 'False'}
+                  </span>
+                )}
               </div>
-              <ChangeBar add={r.add} change={r.change} destroy={r.destroy} />
+              {!isCost && <ChangeBar add={r.add} change={r.change} destroy={r.destroy} />}
               <div className="rh-card-stats">
-                {statSpan(r.add, '+')} {statSpan(r.change, '~')} {statSpan(r.destroy, '-')}
+                {!isCost && <>{statSpan(r.add, '+')} {statSpan(r.change, '~')} {statSpan(r.destroy, '-')}</>}
                 {r.hasCost && (
-                  <span style={{ color: 'var(--amber)', marginLeft: 'auto' }}>
+                  <span style={{ color: 'var(--amber)', marginLeft: isCost ? 0 : 'auto' }}>
                     {r.currency} {(r.totalMonthly ?? 0).toFixed(2)}/mo
+                    {isCost && r.diffMonthly != null && r.diffMonthly !== 0 && (
+                      <span style={{ color: r.diffMonthly > 0 ? 'var(--red)' : 'var(--green)', marginLeft: 6 }}>
+                        ({r.diffMonthly >= 0 ? '+' : ''}{r.diffMonthly.toFixed(2)})
+                      </span>
+                    )}
                   </span>
                 )}
               </div>
@@ -240,8 +250,10 @@ export default function ReportsPage() {
           </thead>
           <tbody>
             {list.map(r => {
+              const isCost = r.command === 'cost';
               const status = r.applied ? 'success' : 'not-applied';
               const total = r.add + r.change + r.destroy || 1;
+              const dash = <span style={{ color: 'var(--text-3)' }}>—</span>;
               return (
                 <tr
                   key={r.name}
@@ -254,29 +266,33 @@ export default function ReportsPage() {
                       ? r.ticketUrl
                         ? <a className="report-ticket" href={r.ticketUrl} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()}>{r.ticket}</a>
                         : <span className="report-ticket">{r.ticket}</span>
-                      : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                      : dash}
                   </td>
-                  <td className="num">{statSpan(r.add, '+')}</td>
-                  <td className="num">{statSpan(r.change, '~')}</td>
-                  <td className="num">{statSpan(r.destroy, '-')}</td>
+                  <td className="num">{isCost ? dash : statSpan(r.add, '+')}</td>
+                  <td className="num">{isCost ? dash : statSpan(r.change, '~')}</td>
+                  <td className="num">{isCost ? dash : statSpan(r.destroy, '-')}</td>
                   <td>
-                    <span className="dist">
-                      <i style={{ width: `${(r.add / total) * 100}%`, background: 'var(--green)' }} />
-                      <i style={{ width: `${(r.change / total) * 100}%`, background: 'var(--amber)' }} />
-                      <i style={{ width: `${(r.destroy / total) * 100}%`, background: 'var(--red)' }} />
-                    </span>
+                    {isCost ? dash : (
+                      <span className="dist">
+                        <i style={{ width: `${(r.add / total) * 100}%`, background: 'var(--green)' }} />
+                        <i style={{ width: `${(r.change / total) * 100}%`, background: 'var(--amber)' }} />
+                        <i style={{ width: `${(r.destroy / total) * 100}%`, background: 'var(--red)' }} />
+                      </span>
+                    )}
                   </td>
                   <td className="num">{r.envs}</td>
                   <td className="num">
                     {r.hasCost
                       ? <span style={{ color: 'var(--amber)' }}>{r.currency} {(r.totalMonthly ?? 0).toFixed(2)}</span>
-                      : <span style={{ color: 'var(--text-3)' }}>—</span>}
+                      : dash}
                   </td>
                   <td><span className="date">{relTime(r.runAt)}</span></td>
                   <td>
-                    <span className={`st ${status}`}>
-                      {r.applied ? ICON_CHECKC : ICON_X}{r.applied ? 'True' : 'False'}
-                    </span>
+                    {isCost ? dash : (
+                      <span className={`st ${status}`}>
+                        {r.applied ? ICON_CHECKC : ICON_X}{r.applied ? 'True' : 'False'}
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
@@ -305,7 +321,7 @@ export default function ReportsPage() {
           <div className="rh-cost-cards">
             <div className="rh-cost-card amber">
               <div className="rh-cost-val">{cost.currency} {cost.monthly.toFixed(2)}</div>
-              <div className="rh-cost-lbl">{cost.anchorCmd === 'apply' ? 'deployed monthly cost' : 'latest monthly cost'}</div>
+              <div className="rh-cost-lbl">latest monthly cost</div>
             </div>
             <div className="rh-cost-card blue">
               <div className="rh-cost-val">{cost.currency} {cost.annual.toFixed(2)}</div>
@@ -315,7 +331,7 @@ export default function ReportsPage() {
               <div className="rh-cost-val">
                 {cost.change == null ? '—' : `${cost.change >= 0 ? '+' : ''}${cost.currency} ${cost.change.toFixed(2)}`}
               </div>
-              <div className="rh-cost-lbl">latest plan cost change</div>
+              <div className="rh-cost-lbl">change since previous scan</div>
             </div>
             <div className="rh-cost-card">
               <div className="rh-cost-val">{cost.count}</div>

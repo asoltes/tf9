@@ -224,6 +224,52 @@ writeFileSync(fakeClaude, [
 ].join('\n'));
 chmodSync(fakeClaude, 0o755);
 
+// ── Seeded cost report ──────────────────────────────────────────────────────
+// A breakdown scan needs the real `infracost` binary + a pricing-API key, which
+// the offline localtest can't provide. So we seed one cost report artifact —
+// the exact HTML + JSON sidecar pair that cost.SaveReport writes — so the
+// Reports list and the cost ReportViewer can be exercised offline. The JSON
+// sidecar shape matches Go's cost.ReportData ({scan, diff}).
+const costStem = 'tf9-cost-20240102-030405';
+const costScan = {
+  runAt: '2024-01-02T03:04:05Z',
+  currency: 'USD',
+  totalMonthly: 742.5,
+  targets: [
+    {
+      repo: 'e2e-repo', target: 'dev', group: 'nonprod', directory: 'environments/dev',
+      currency: 'USD', totalMonthly: 312.5, resourceCount: 2,
+      resources: [
+        { name: 'aws_instance.api', type: 'aws_instance', monthlyCost: 250 },
+        { name: 'aws_db_instance.main', type: 'aws_db_instance', monthlyCost: 62.5 },
+      ],
+    },
+    {
+      repo: 'e2e-repo', target: 'prod', group: 'prod', directory: 'environments/prod',
+      currency: 'USD', totalMonthly: 430, resourceCount: 1,
+      resources: [
+        { name: 'aws_instance.api', type: 'aws_instance', monthlyCost: 430 },
+      ],
+    },
+  ],
+};
+const costDiff = {
+  oldRunAt: '2024-01-01T03:04:05Z',
+  newRunAt: costScan.runAt,
+  currency: 'USD',
+  oldTotal: 700,
+  newTotal: 742.5,
+  change: 42.5,
+  targets: [
+    { repo: 'e2e-repo', target: 'prod', group: 'prod', oldMonthly: 400, newMonthly: 430, change: 30, status: 'increased' },
+  ],
+  resources: [],
+};
+writeFileSync(join(reports, `${costStem}.json`), JSON.stringify({ scan: costScan, diff: costDiff }));
+writeFileSync(join(reports, `${costStem}.html`),
+  '<!doctype html><html><head><meta charset="utf-8"><title>Infrastructure Cost Report</title></head>'
+  + '<body><h1>Infrastructure Cost Report</h1><p>USD 742.50/mo · seeded e2e fixture</p></body></html>\n');
+
 run(process.env.GO_BINARY || '/usr/local/go/bin/go', ['build', '-o', binary, './cmd/tf9']);
 
 const server = spawn(binary, [

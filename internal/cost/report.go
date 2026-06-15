@@ -2,11 +2,57 @@ package cost
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
+
+// ReportData is the sidecar payload saved alongside a cost report's HTML. It
+// carries the full scan plus the diff so the Reports list and viewer can render
+// a breakdown without re-running Infracost.
+type ReportData struct {
+	Scan *Scan     `json:"scan"`
+	Diff *ScanDiff `json:"diff,omitempty"`
+}
+
+// ReportStem returns the timestamped filename stem for a scan's saved report,
+// matching report.ParseReportName's "tf9-<cmd>-<ts>" convention so it parses
+// back to command "cost".
+func ReportStem(s *Scan) string {
+	return fmt.Sprintf("tf9-cost-%s", s.RunAt.Format("20060102-150405"))
+}
+
+// SaveReport persists a scan as a first-class report in reportDir: a
+// self-contained HTML file plus a JSON sidecar. This is what makes a breakdown
+// show up on the Reports page and open in the ReportViewer, with history.
+func SaveReport(reportDir string, scan *Scan, diff *ScanDiff) error {
+	if scan == nil {
+		return fmt.Errorf("nil scan")
+	}
+	if err := os.MkdirAll(reportDir, 0o755); err != nil {
+		return fmt.Errorf("create report dir: %w", err)
+	}
+	stem := ReportStem(scan)
+	html, err := HTMLReport(scan, diff)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(reportDir, stem+".html"), html, 0o644); err != nil {
+		return fmt.Errorf("write cost report html: %w", err)
+	}
+	b, err := json.Marshal(ReportData{Scan: scan, Diff: diff})
+	if err != nil {
+		return fmt.Errorf("marshal cost report data: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(reportDir, stem+".json"), b, 0o644); err != nil {
+		return fmt.Errorf("write cost report json: %w", err)
+	}
+	return nil
+}
 
 // money formats a value with the currency prefix.
 func money(currency string, v float64) string {

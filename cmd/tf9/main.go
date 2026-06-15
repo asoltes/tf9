@@ -82,7 +82,6 @@ var (
 	targets         []string
 	varFiles        []string
 	lockIDs         string
-	cost            bool
 )
 
 // parseLockIDs parses a "name:id,name:id" string into a map of target name to
@@ -155,7 +154,6 @@ func newRootCmd() *cobra.Command {
 	root.Flags().StringArrayVar(&targets, "target", nil, "Terraform resource target (repeatable)")
 	root.Flags().StringArrayVar(&varFiles, "var-file", nil, "Terraform variable file (repeatable)")
 	root.Flags().StringVar(&lockIDs, "lock-ids", "", "Per-target lock ids for force-unlock (e.g. dev:abc,staging:def)")
-	root.Flags().BoolVar(&cost, "cost", false, "Estimate infrastructure cost with Infracost (needs an API key in infracost.yaml or INFRACOST_API_KEY)")
 
 	root.AddCommand(newConfigCmd(), newServeCmd(), newVersionCmd(), newSuperviseCmd())
 	return root
@@ -230,18 +228,6 @@ func runTerraform(cmd *cobra.Command, args []string) error {
 
 	cfg, _ := config.Load()
 
-	costEnabled := cost
-	var infracostKey, infracostCurrency string
-	if costEnabled {
-		ic, _ := config.LoadInfracost()
-		infracostKey = ic.APIKey
-		infracostCurrency = ic.Currency
-		if infracostKey == "" {
-			costEnabled = false
-			fmt.Fprintln(os.Stderr, "  [WARN] --cost requested but no Infracost API key configured (infracost.yaml / INFRACOST_API_KEY); running without cost.")
-		}
-	}
-
 	var lb lineBuf
 	startedAt := time.Now().UTC()
 	opts := runner.Options{
@@ -262,9 +248,6 @@ func runTerraform(cmd *cobra.Command, args []string) error {
 		LockIDs:         parseLockIDs(lockIDs),
 		AutoApprove:     cliAutoApprove,
 		Output:          io.MultiWriter(os.Stdout, &lb),
-		Cost:            costEnabled,
-		InfracostKey:    infracostKey,
-		Currency:        infracostCurrency,
 	}
 	// For interactive apply/destroy (without --force), wire the real stdin so
 	// terraform can present its "Enter a value:" prompt directly to the user.
@@ -290,7 +273,6 @@ func runTerraform(cmd *cobra.Command, args []string) error {
 		NonprodOnly: nonprodOnly,
 		Parallel:    parallel,
 		ExtraArgs:   tfArgs,
-		Cost:        costEnabled,
 	}
 	runID := api.AppendCLIRun(req, startedAt, finishedAt, status, lb.snapshot(), reportName, "")
 	if runID != "" {

@@ -18,7 +18,6 @@ export interface RunRequest {
   promotionOrder: string[];
   lockIds?: Record<string, string>;
   importAddrs?: Record<string, ImportSpec>;
-  cost?: boolean;
   planRunId?: string;
   ticket?: string;
 }
@@ -27,15 +26,6 @@ export interface CostResource {
   name: string;
   type: string;
   monthlyCost: number;
-}
-
-export interface CostEstimate {
-  currency: string;
-  totalMonthly: number;
-  diffMonthly: number;
-  hasDiff: boolean;
-  resourceCount?: number;
-  resources?: CostResource[];
 }
 
 export interface Run {
@@ -188,7 +178,6 @@ export interface ReportEnvResult {
   change: number;
   destroy: number;
   output: string;
-  cost?: CostEstimate;
 }
 
 export interface ReportData {
@@ -204,49 +193,12 @@ export interface ReportData {
   envs: number;
   failed: number;
   results?: ReportEnvResult[];
-  hasCost?: boolean;
-  currency?: string;
-  totalMonthly?: number;
-  diffMonthly?: number;
 }
 
 export interface InfracostSettings {
   enabledByDefault: boolean;
   currency: string;
   tokenConfigured: boolean;
-}
-
-export interface CostSummaryItem {
-  report: string;
-  runAt: string;
-  currency: string;
-  totalMonthly: number;
-  resourceCount: number;
-  ticket?: string;
-  ticketUrl?: string;
-}
-
-export interface CostServiceRow {
-  type: string;
-  count: number;
-  monthlyCost: number;
-}
-
-export interface CostDetail {
-  report: string;
-  runAt: string;
-  currency: string;
-  totalMonthly: number;
-  resourceCount: number;
-  resources: CostResource[];
-  byService: CostServiceRow[];
-  ticket?: string;
-  ticketUrl?: string;
-}
-
-export interface CostSummary {
-  items: CostSummaryItem[];
-  latest: CostDetail | null;
 }
 
 // ── Breakdown scans (infracost breakdown across configured repo targets) ──
@@ -304,6 +256,13 @@ export interface CostScanDiff {
 export interface CostScanResult {
   scan: CostScan | null;
   diff: CostScanDiff | null;
+}
+
+// Sidecar payload of a saved cost report (GET /api/reports/{name}/data when the
+// report command is "cost").
+export interface CostReportData {
+  scan: CostScan | null;
+  diff?: CostScanDiff | null;
 }
 
 export interface CostScanHistoryItem {

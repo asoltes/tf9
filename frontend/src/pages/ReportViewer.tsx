@@ -12,8 +12,10 @@ import {
   type ResourceChange,
   type ResourceChangeSort,
 } from '../lib/planChanges';
-import type { ReportData, ReportEnvResult } from '../types';
+import { CostBreakdownView } from '../components/CostBreakdownView';
+import type { CostReportData, ReportData, ReportEnvResult } from '../types';
 import './ReportViewer.css';
+import './Cost.css';
 
 // ── Inline icons (stroke=currentColor), ported from report.js ───────────────
 
@@ -298,16 +300,6 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
           {result.profile && <span className="env-pr">{result.profile}</span>}
           <span className="env-meta" />
           {nums}
-          {result.cost && (
-            <span className="env-cost" style={{ marginLeft: 10, color: 'var(--amber)', fontSize: 12.5 }}>
-              {result.cost.currency} {result.cost.totalMonthly.toFixed(2)}/mo
-              {result.cost.hasDiff && (
-                <span style={{ color: result.cost.diffMonthly > 0 ? 'var(--amber)' : result.cost.diffMonthly < 0 ? 'var(--green)' : 'var(--rv-faint)', marginLeft: 4 }}>
-                  ({result.cost.diffMonthly >= 0 ? '+' : ''}{result.cost.diffMonthly.toFixed(2)})
-                </span>
-              )}
-            </span>
-          )}
         </div>
         <span className={`sb ${result.applied ? 'sb-changes' : 'sb-none'}`}>
           <span className="d" />Applied: {result.applied ? 'True' : 'False'}
@@ -357,6 +349,85 @@ function EnvBlock({ result, command, open, hidden, query, wrap, onToggle, onScro
 }
 
 export default function ReportViewer({ name }: { name: string; mode?: 'light' | 'dark' | 'dim' }) {
+  // Cost reports carry a breakdown scan, not terraform plan output — render them
+  // through the shared breakdown view instead of the plan/apply layout.
+  if (name.startsWith('tf9-cost-')) {
+    return <CostReportViewer name={name} />;
+  }
+  return <PlanReportViewer name={name} />;
+}
+
+function CostReportViewer({ name }: { name: string }) {
+  const { navigate } = useNav();
+  const toast = useToast();
+  const [data, setData] = useState<CostReportData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    reportsApi.costData(name)
+      .then(d => { setData(d); setLoading(false); })
+      .catch(e => { setError(e instanceof Error ? e.message : 'Failed to load cost report.'); setLoading(false); });
+  }, [name]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <Shell>
+      <div className={`report-viewer command-style ${commandStyleClass('cost')}`} data-cmd="cost">
+        <header className="rv-hdr">
+          <div className="hdr-inner">
+            <div className="hdr-left">
+              <div className="mark">{I.cube}</div>
+              <div className="hdr-titles">
+                <div className="hdr-title">
+                  Cost Report
+                  <span className="pill"><span className="dot" />cost</span>
+                </div>
+                <div className="hdr-sub">
+                  <span className="chip" key="hash">#{name}</span>
+                  {data?.scan?.runAt && <span className="chip" key="time">{fmtTime(data.scan.runAt)}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="hdr-right">
+              <button className="rv-back" onClick={() => navigate({ id: 'reports' })}>{I.back}Back to Reports</button>
+              <a
+                className="btn"
+                href={reportsApi.rawUrl(name)}
+                download={name}
+                title="Download full HTML report"
+                onClick={() => toast('Downloading report…', 'success')}
+              >{I.download}Download</a>
+              <button className="btn" onClick={() => window.print()} title="Print / Save as PDF">{I.print}Print</button>
+            </div>
+          </div>
+        </header>
+
+        {loading && !data && <div className="rv-msg">Loading cost report…</div>}
+        {error && (
+          <div className="rv-msg">
+            <div style={{ marginBottom: 6, fontWeight: 700 }}>Couldn't load cost report</div>
+            <div>{error}</div>
+            <button className="rh-retry" onClick={load}>Retry</button>
+          </div>
+        )}
+        {data?.scan && (
+          <div className="cost-page" style={{ padding: '0 0 24px' }}>
+            <CostBreakdownView scan={data.scan} />
+          </div>
+        )}
+        {data && !data.scan && !loading && !error && (
+          <div className="rv-msg">This cost report has no scan data.</div>
+        )}
+      </div>
+    </Shell>
+  );
+}
+
+function PlanReportViewer({ name }: { name: string; mode?: 'light' | 'dark' | 'dim' }) {
   const { navigate } = useNav();
   const toast = useToast();
   const [data, setData] = useState<ReportData | null>(null);

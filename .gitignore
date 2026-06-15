@@ -12,6 +12,7 @@ coverage.*
 /frontend/playwright-report/
 /frontend/test-results/
 /frontend/e2e/screenshots/
+/docs/e2e/recording/
 /internal/web/dist/
 node_modules/
 

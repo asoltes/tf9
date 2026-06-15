@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { api, repoGit, costApi } from '../api';
+import { api, repoGit } from '../api';
 import type { Repo, Paginated, GitChangedFile, ReconcileStatus, WebSettings } from '../types';
 import { useToast } from './ToastProvider';
 import { useNav } from '../nav';
@@ -170,8 +170,6 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const [extra, setExtra] = useState('');
   const [resourceAddresses, setResourceAddresses] = useState<string[]>(['']);
   const [advOpen, setAdvOpen] = useState(false);
-  const [estimateCost, setEstimateCost] = useState(false);
-  const [costTokenSet, setCostTokenSet] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -204,7 +202,6 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const isTaintCommand = cmd === 'taint' || cmd === 'untaint';
   const supportsResourceTargets = cmd === 'plan' || cmd === 'apply';
   const isAuto = cmd === 'auto';
-  const costEligible = cmd === 'plan' || isApply || isAuto;
   const lockSequential = isApply || isDestroy || isAuto;
   const isMore = !PRIMARY_COMMANDS.includes(cmd as typeof PRIMARY_COMMANDS[number]);
 
@@ -244,20 +241,6 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
     return () => { cancelled = true; };
   }, [visible, loadRepoData]);
 
-  // Load Infracost settings so the cost toggle can default to the configured
-  // preference and hide itself when no token is set.
-  useEffect(() => {
-    if (!visible) return;
-    let cancelled = false;
-    costApi.settings()
-      .then(s => {
-        if (cancelled) return;
-        setCostTokenSet(s.tokenConfigured);
-        setEstimateCost(s.tokenConfigured && s.enabledByDefault);
-      })
-      .catch(() => { if (!cancelled) setCostTokenSet(false); });
-    return () => { cancelled = true; };
-  }, [visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -635,7 +618,6 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
         parallel: mode === 'parallel',
         promotionOrder: mode === 'promotion' ? checked.map(t => t.name) : [],
         ...(ticket.trim() ? { ticket: ticket.trim() } : {}),
-        ...(costEligible && estimateCost ? { cost: true } : {}),
         ...(isForceUnlock && lockIds ? { lockIds } : {}),
         ...(isImport && importAddrs && Object.keys(importAddrs).length > 0 ? { importAddrs } : {}),
       });
@@ -1035,25 +1017,6 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                       <div className="field-hint">Appended verbatim to the terraform command. Example: -refresh=false</div>
                     </div>
                   </div>
-                  {costEligible && (
-                    costTokenSet ? (
-                      <div className={`aa-control${estimateCost ? ' on' : ''}`} onClick={() => setEstimateCost(v => !v)}>
-                        <span className={`switch${estimateCost ? ' on' : ''}`} />
-                        <span><span className="aa-t">Estimate cost</span><span className="aa-d">Run Infracost after the plan to show the monthly cost impact.</span></span>
-                      </div>
-                    ) : (
-                      <div className="aa-control disabled">
-                        <span className="switch" />
-                        <span>
-                          <span className="aa-t">Estimate cost</span>
-                          <span className="aa-d">
-                            Requires an Infracost token.{' '}
-                            <a href="#cost" onClick={e => { e.preventDefault(); onDismiss(); navigate({ id: 'cost' }); }}>Configure on Cost page</a>
-                          </span>
-                        </span>
-                      </div>
-                    )
-                  )}
                 </div>
               )}
             </div>

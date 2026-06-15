@@ -13,6 +13,7 @@ const COMMAND_CLASSES: Record<string, string> = {
   taint: 'command-taint',
   untaint: 'command-untaint',
   'force-unlock': 'command-force-unlock',
+  cost: 'command-cost',
 };
 
 export function commandStyleClass(command: string): string {

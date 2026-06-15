@@ -41,6 +41,7 @@
   --command-taint:#b35900;
   --command-untaint:#218bff;
   --command-force-unlock:#a40e26;
+  --command-cost:#b4690e;
   --grey-badge:#e9ebed;
   --surface-1:#ffffff; --surface-2:#f3f6f9; --surface-3:#e9ebed;
   --border:#c6c6cd; --text-1:#0f141a;
@@ -215,6 +216,7 @@ a:hover{text-decoration:underline}
 .command-taint{--command-color:var(--command-taint)}
 .command-untaint{--command-color:var(--command-untaint)}
 .command-force-unlock{--command-color:var(--command-force-unlock)}
+.command-cost{--command-color:var(--command-cost)}
 .command-default{--command-color:var(--text)}
 .badge.command-style{background:color-mix(in srgb,var(--command-color) 12%,var(--container));color:var(--command-color)}
 .btn.command-action{

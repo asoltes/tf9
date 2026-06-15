@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -64,9 +63,6 @@ type Options struct {
 	OnProcStart       func(pid int)         // called with each terraform child PID (process-group leader)
 	SkipApply         map[string]bool       // env labels whose apply is skipped (no plan changes); auto mode
 	Stdin             io.Reader             // if set, wired to terraform's stdin (CLI interactive mode)
-	Cost              bool                  // run infracost cost estimation after each target succeeds
-	InfracostKey      string                // Infracost API key (passed via env to infracost, never logged)
-	Currency          string                // currency code for cost estimates (default USD)
 	SavePlanDir       string                // directory for per-target terraform plan -out files
 	ApplyPlanFiles    map[string]string     // target label → reviewed plan path for terraform apply
 	OnGraphReady      func(target, dir, planFile, command, output string, env []string) error
@@ -224,7 +220,6 @@ type envResult struct {
 	failed  bool
 	summary *planSummary
 	output  string
-	cost    *report.CostEstimate
 }
 
 type planSummary struct {
@@ -463,29 +458,6 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 			}
 		}
 
-		// When cost estimation is requested, capture a plan to a temp file so
-		// infracost can compute the cost diff from it afterwards.
-		//   - plan:    add -out to the plan we're already running.
-		//   - destroy: generate a separate destroy plan BEFORE teardown (while the
-		//     resources still exist) so infracost reflects cost falling to ~$0
-		//     with a negative diff. A directory breakdown can't show this because
-		//     infracost parses the (unchanged) HCL, not the deployed state.
-		costPlanFile := ""
-		if opts.Cost && opts.TfCommand == "plan" {
-			costPlanFile = savedPlanFile
-			if costPlanFile == "" {
-				costPlanFile = costPlanPath()
-				args = append(args, "-out="+costPlanFile)
-			}
-		} else if opts.Cost && opts.TfCommand == "destroy" {
-			costPlanFile = costPlanPath()
-			if err := generateDestroyPlan(ctx, dir, meta, costPlanFile); err != nil {
-				fmt.Fprintf(out, "  [WARN] could not capture destroy plan for cost: %v\n", err)
-				slog.Warn("destroy cost plan failed", "env", env, "err", err)
-				costPlanFile = ""
-			}
-		}
-
 		fmt.Fprintln(out, "════════════════════════════════════════")
 		fmt.Fprintf(out, "  ENV: %s  |  PROFILE: %s\n", env, profile)
 		fmt.Fprintf(out, "  CMD: terraform %s\n", cmdDisplay)
@@ -606,11 +578,6 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 		}
 
 		if exitCode != 0 {
-			if costPlanFile != "" && costPlanFile != savedPlanFile {
-				if err := os.Remove(costPlanFile); err != nil && !os.IsNotExist(err) {
-					slog.Debug("could not remove cost plan file", "file", costPlanFile, "err", err)
-				}
-			}
 			if approvalWasDenied(tw.capture.String()) {
 				fmt.Fprintf(out, "  [DENIED] %s\n", env)
 				results = append(results, res)
@@ -648,24 +615,6 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 				if graphErr := opts.OnGraphReady(env, dir, savedPlanFile, "terraform "+cmdDisplay, res.output, terraformEnv(meta)); graphErr != nil {
 					fmt.Fprintf(out, "  [WARN] graph extraction failed for %s: %v\n", env, graphErr)
 					slog.Warn("graph extraction failed", "env", env, "err", graphErr)
-				}
-			}
-			if opts.Cost && summary != nil && !summary.noChanges {
-				if cost, cerr := runInfracost(ctx, dir, costPlanFile, meta, opts); cerr != nil {
-					fmt.Fprintf(out, "  [WARN] cost estimation failed for %s: %v\n", env, cerr)
-					slog.Warn("infracost failed", "env", env, "err", cerr)
-				} else {
-					res.cost = cost
-					fmt.Fprintf(out, "  Cost: %s %.2f/mo", cost.Currency, cost.TotalMonthly)
-					if cost.HasDiff {
-						fmt.Fprintf(out, " (%+.2f)", cost.DiffMonthly)
-					}
-					fmt.Fprintln(out)
-				}
-			}
-			if costPlanFile != "" && costPlanFile != savedPlanFile {
-				if err := os.Remove(costPlanFile); err != nil && !os.IsNotExist(err) {
-					slog.Debug("could not remove cost plan file", "file", costPlanFile, "err", err)
 				}
 			}
 			results = append(results, res)
@@ -774,7 +723,6 @@ func toReportResults(results []envResult) []report.EnvResult {
 			Applied: r.applied,
 			Failed:  r.failed,
 			Output:  reportOutput(r.output),
-			Cost:    r.cost,
 		}
 		if r.summary != nil {
 			rr[i].Add = r.summary.add
@@ -1117,21 +1065,6 @@ func runParallel(
 					args = []string{"apply", "-input=false", pf}
 				}
 			}
-			costPlanFile := ""
-			if opts.Cost && opts.TfCommand == "plan" {
-				costPlanFile = savedPlanFile
-				if costPlanFile == "" {
-					costPlanFile = costPlanPath()
-					args = append(args, "-out="+costPlanFile)
-				}
-				defer func() {
-					if costPlanFile != savedPlanFile {
-						if err := os.Remove(costPlanFile); err != nil && !os.IsNotExist(err) {
-							slog.Debug("could not remove cost plan file", "file", costPlanFile, "err", err)
-						}
-					}
-				}()
-			}
 			cmd := exec.CommandContext(ctx, "terraform", args...)
 			cmd.Dir = dir
 			cmd.Env = terraformEnv(meta)
@@ -1170,19 +1103,6 @@ func runParallel(
 					if graphErr := opts.OnGraphReady(env, dir, savedPlanFile, "terraform "+cmdDisplay, res.output, terraformEnv(meta)); graphErr != nil {
 						fmt.Fprintf(prefixedOut, "[WARN] graph extraction failed for %s: %v\n", env, graphErr)
 						slog.Warn("graph extraction failed", "env", env, "err", graphErr)
-					}
-				}
-				if opts.Cost && summary != nil && !summary.noChanges {
-					if cost, cerr := runInfracost(ctx, dir, costPlanFile, meta, opts); cerr != nil {
-						fmt.Fprintf(prefixedOut, "[WARN] cost estimation failed for %s: %v\n", env, cerr)
-						slog.Warn("infracost failed", "env", env, "err", cerr)
-					} else {
-						res.cost = cost
-						fmt.Fprintf(prefixedOut, "Cost: %s %.2f/mo", cost.Currency, cost.TotalMonthly)
-						if cost.HasDiff {
-							fmt.Fprintf(prefixedOut, " (%+.2f)", cost.DiffMonthly)
-						}
-						fmt.Fprintln(prefixedOut)
 					}
 				}
 			}
@@ -1266,170 +1186,6 @@ func ensureSessions(ctx context.Context, dirs []string, metaFor map[string]targe
 		}
 	}
 	return nil
-}
-
-// costPlanPath returns a unique temp path for a captured terraform plan file.
-func costPlanPath() string {
-	f, err := os.CreateTemp("", "tf9-cost-*.tfplan")
-	if err != nil {
-		return filepath.Join(os.TempDir(), fmt.Sprintf("tf9-cost-%d.tfplan", time.Now().UnixNano()))
-	}
-	name := f.Name()
-	f.Close()
-	return name
-}
-
-// generateDestroyPlan writes a destroy plan to outFile so infracost can price
-// the teardown. It must run while the resources still exist (before the actual
-// destroy) so the plan's prior state is the full deployment and infracost shows
-// the cost falling toward zero.
-func generateDestroyPlan(ctx context.Context, dir string, meta targetMeta, outFile string) error {
-	cmd := exec.CommandContext(ctx, "terraform", "plan", "-destroy", "-input=false", "-out="+outFile)
-	cmd.Dir = dir
-	cmd.Env = terraformEnv(meta)
-	if _, err := cmd.Output(); err != nil {
-		return infracostErr(err)
-	}
-	return nil
-}
-
-// runInfracost computes a cost estimate for a target. When planFile is set, the
-// plan is converted to JSON and infracost reports the cost diff; otherwise it
-// runs a directory breakdown for the total monthly cost. The API key is passed
-// only via the child environment and is never logged.
-func runInfracost(ctx context.Context, dir, planFile string, meta targetMeta, opts Options) (*report.CostEstimate, error) {
-	apiKey := opts.InfracostKey
-	if apiKey == "" {
-		apiKey = os.Getenv("INFRACOST_API_KEY")
-	}
-	if apiKey == "" {
-		return nil, fmt.Errorf("no infracost api key configured")
-	}
-	currency := opts.Currency
-	if currency == "" {
-		currency = "USD"
-	}
-
-	inputPath := dir
-	hasDiff := false
-	if planFile != "" {
-		jsonFile, err := os.CreateTemp("", "tf9-cost-*.json")
-		if err != nil {
-			return nil, fmt.Errorf("create plan json temp: %w", err)
-		}
-		jsonPath := jsonFile.Name()
-		defer func() {
-			if rerr := os.Remove(jsonPath); rerr != nil && !os.IsNotExist(rerr) {
-				slog.Debug("could not remove plan json temp", "file", jsonPath, "err", rerr)
-			}
-		}()
-		show := exec.CommandContext(ctx, "terraform", "show", "-json", planFile)
-		show.Dir = dir
-		show.Env = terraformEnv(meta)
-		showOut, err := show.Output()
-		if err != nil {
-			jsonFile.Close()
-			return nil, fmt.Errorf("terraform show -json: %w", infracostErr(err))
-		}
-		if _, err := jsonFile.Write(showOut); err != nil {
-			jsonFile.Close()
-			return nil, fmt.Errorf("write plan json: %w", err)
-		}
-		jsonFile.Close()
-		inputPath = jsonPath
-		hasDiff = true
-	}
-
-	ic := exec.CommandContext(ctx, "infracost", "breakdown", "--path", inputPath, "--format", "json")
-	ic.Dir = dir
-	ic.Env = append(os.Environ(), "INFRACOST_API_KEY="+apiKey, "INFRACOST_CURRENCY="+currency)
-	icOut, err := ic.Output()
-	if err != nil {
-		return nil, fmt.Errorf("infracost breakdown: %w", infracostErr(err))
-	}
-
-	var parsed struct {
-		Currency             string `json:"currency"`
-		TotalMonthlyCost     string `json:"totalMonthlyCost"`
-		DiffTotalMonthlyCost string `json:"diffTotalMonthlyCost"`
-		Projects             []struct {
-			Breakdown struct {
-				Resources []struct {
-					Name        string  `json:"name"`
-					MonthlyCost *string `json:"monthlyCost"`
-				} `json:"resources"`
-			} `json:"breakdown"`
-		} `json:"projects"`
-	}
-	if err := json.Unmarshal(icOut, &parsed); err != nil {
-		return nil, fmt.Errorf("parse infracost output: %w", err)
-	}
-	cur := parsed.Currency
-	if cur == "" {
-		cur = currency
-	}
-
-	var resources []report.CostResource
-	for _, p := range parsed.Projects {
-		for _, r := range p.Breakdown.Resources {
-			mc := 0.0
-			if r.MonthlyCost != nil {
-				mc = parseMoney(*r.MonthlyCost)
-			}
-			resources = append(resources, report.CostResource{
-				Name:        r.Name,
-				Type:        resourceType(r.Name),
-				MonthlyCost: mc,
-			})
-		}
-	}
-	// Highest-cost first so the UI's "top resources" view is meaningful, and cap
-	// the list to keep report sidecars small.
-	sort.Slice(resources, func(i, j int) bool { return resources[i].MonthlyCost > resources[j].MonthlyCost })
-	if len(resources) > 200 {
-		resources = resources[:200]
-	}
-
-	return &report.CostEstimate{
-		Currency:      cur,
-		TotalMonthly:  parseMoney(parsed.TotalMonthlyCost),
-		DiffMonthly:   parseMoney(parsed.DiffTotalMonthlyCost),
-		HasDiff:       hasDiff,
-		ResourceCount: len(resources),
-		Resources:     resources,
-	}, nil
-}
-
-// resourceType extracts the terraform resource type from an Infracost resource
-// address (e.g. "module.vpc.aws_subnet.private[0]" → "aws_subnet"). The type is
-// the dot-segment immediately before the resource name.
-func resourceType(name string) string {
-	if name == "" {
-		return ""
-	}
-	// Drop any trailing index like [0] or ["a"].
-	if i := strings.IndexByte(name, '['); i >= 0 {
-		name = name[:i]
-	}
-	parts := strings.Split(name, ".")
-	if len(parts) >= 2 {
-		return parts[len(parts)-2]
-	}
-	return parts[0]
-}
-
-// infracostErr surfaces captured stderr from a failed exec so warnings are
-// actionable (api key issues, missing binary, etc.).
-func infracostErr(err error) error {
-	if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
-		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(ee.Stderr)))
-	}
-	return err
-}
-
-func parseMoney(s string) float64 {
-	f, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
-	return f
 }
 
 func terraformEnv(meta targetMeta) []string {
