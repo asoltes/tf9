@@ -808,17 +808,21 @@ func startRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, reportDir
 		jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if cfg.Web.SavedPlanApply {
-		if req.Command == "auto" {
-			jsonErr(w, "bad_request", "auto is disabled while web.saved_plan_apply is enabled; run and review a plan first", http.StatusBadRequest)
+	if cfg.Web.SavedPlanApply && req.Command == "auto" {
+		jsonErr(w, "bad_request", "auto is disabled while web.saved_plan_apply is enabled; run and review a plan first", http.StatusBadRequest)
+		return
+	}
+	// A reviewed-plan apply (planRunId set) must always be expanded to the exact
+	// targets and saved plan files of the reviewed plan — regardless of
+	// saved_plan_apply. Without this, the apply carries no target selection, so it
+	// re-plans and applies every configured target and prompts for each instead of
+	// applying only the reviewed plan. When saved_plan_apply is enabled, every
+	// apply is additionally required to originate from a reviewed plan.
+	if req.Command == "apply" && (cfg.Web.SavedPlanApply || req.PlanRunID != "") {
+		req, err = mgr.PrepareReviewedApply(req)
+		if err != nil {
+			jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
 			return
-		}
-		if req.Command == "apply" {
-			req, err = mgr.PrepareReviewedApply(req)
-			if err != nil {
-				jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
-				return
-			}
 		}
 	}
 
