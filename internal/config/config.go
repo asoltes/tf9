@@ -271,6 +271,26 @@ func SavedPlanDir() string {
 	return dir
 }
 
+// RunsDir returns the directory holding per-run supervisor artifacts
+// (output log, status, meta, approval fifo) for runs that survive a server
+// restart. Each run gets its own subdirectory via RunDir.
+func RunsDir() string {
+	dir := filepath.Join(runtimeDir(), "runs")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		slog.Warn("could not create runs dir", "dir", dir, "err", err)
+	}
+	return dir
+}
+
+// RunDir returns the per-run artifact directory for the given run id.
+func RunDir(id string) string {
+	dir := filepath.Join(RunsDir(), id)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		slog.Warn("could not create run dir", "dir", dir, "err", err)
+	}
+	return dir
+}
+
 func RunsFile() string {
 	if err := os.MkdirAll(runtimeDir(), 0o755); err == nil {
 		return filepath.Join(runtimeDir(), "runs.json")

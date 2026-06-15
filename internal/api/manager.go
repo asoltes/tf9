@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/andres/tf9/internal/config"
-	graphdata "github.com/andres/tf9/internal/graph"
 	"github.com/andres/tf9/internal/report"
 	"github.com/andres/tf9/internal/runner"
 )
@@ -105,6 +104,9 @@ type Run struct {
 	denied              bool // set when the user explicitly sends "no" to the approval gate
 	forced              bool // set by ForceKill so the goroutine's finish logic does not override status
 	pgid                int  // current terraform process-group leader PID, for force-kill
+	supervised          bool // true when driven by a detached supervisor process (survives restart)
+	supervisorPID       int  // pid of the detached supervisor, for cross-process cancel/kill
+	tailOffset          int  // byte offset consumed from the supervisor's output log
 }
 
 // setAwaiting records whether terraform is currently blocked on the approval gate.
@@ -176,20 +178,45 @@ func (r *Run) appendLine(line string) {
 // for terraform interactive approval. Returns false if the run is not waiting.
 func (r *Run) SendInput(value string) bool {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	ch := r.inputCh
-	if ch == nil || !r.AwaitingInput {
+	if !r.AwaitingInput {
+		r.mu.Unlock()
 		return false
 	}
-	select {
-	case ch <- value:
-		r.AwaitingInput = false
-		r.ApprovalExpiresAt = nil
-		if strings.TrimSpace(value) != "yes" {
-			r.denied = true
+	supervised := r.supervised
+	ch := r.inputCh
+	if !supervised && ch == nil {
+		r.mu.Unlock()
+		return false
+	}
+	// Optimistically clear the awaiting flag so the UI unsticks immediately.
+	r.AwaitingInput = false
+	r.ApprovalExpiresAt = nil
+	if strings.TrimSpace(value) != "yes" {
+		r.denied = true
+	}
+	id := r.ID
+	r.mu.Unlock()
+
+	if supervised {
+		// Deliver to the detached supervisor via its approval FIFO.
+		if err := writeApprovalInput(id, value); err != nil {
+			slog.Warn("could not deliver approval input to supervisor", "id", id, "err", err)
+			r.mu.Lock()
+			r.AwaitingInput = true
+			r.mu.Unlock()
+			return false
 		}
 		return true
+	}
+
+	select {
+	case ch <- value:
+		return true
 	default:
+		// Could not deliver; restore the awaiting flag.
+		r.mu.Lock()
+		r.AwaitingInput = true
+		r.mu.Unlock()
 		return false
 	}
 }
@@ -266,21 +293,11 @@ func (m *RunManager) loadFromDisk() {
 		if n, err := strconv.Atoi(strings.TrimPrefix(rec.ID, "run-")); err == nil && n > m.seq {
 			m.seq = n
 		}
-		status := rec.Status
-		finishedAt := rec.FinishedAt
-		if status == StatusRunning {
-			// Process was killed mid-run — mark as cancelled.
-			status = StatusCancelled
-			if finishedAt == nil {
-				now := time.Now().UTC()
-				finishedAt = &now
-			}
-		}
 		run := &Run{
 			ID:                 rec.ID,
 			StartedAt:          rec.StartedAt,
-			FinishedAt:         finishedAt,
-			Status:             status,
+			FinishedAt:         rec.FinishedAt,
+			Status:             rec.Status,
 			Request:            rec.Request,
 			ReportPath:         rec.ReportPath,
 			Results:            rec.Results,
@@ -289,10 +306,108 @@ func (m *RunManager) loadFromDisk() {
 			SavedPlanExpiresAt: rec.SavedPlanExpiresAt,
 			AppliedByRunID:     rec.AppliedByRunID,
 			lines:              rec.Lines,
-			cancel:             func() {}, // no-op for restored runs
+			cancel:             func() {}, // replaced below if reattached
+		}
+		if rec.Status == StatusRunning {
+			m.reattachOrFinalize(run)
 		}
 		m.runs = append(m.runs, run)
 	}
+}
+
+// reattachOrFinalize handles a run that was StatusRunning when this server last
+// stopped. If its supervisor is still alive, the run is reattached: a tailer is
+// restarted from the current log offset so output keeps streaming and the
+// approval gate keeps working. Otherwise the run is finalized from its status
+// file (if the supervisor finished while we were down) or marked failed.
+func (m *RunManager) reattachOrFinalize(run *Run) {
+	dir := config.RunDir(run.ID)
+
+	// A terminal status written by the supervisor wins regardless of liveness.
+	if data, err := os.ReadFile(filepath.Join(dir, statusFile)); err == nil {
+		var res supervisedResult
+		if json.Unmarshal(data, &res) == nil && res.Status != "" {
+			run.Status = res.Status
+			run.FinishedAt = &res.FinishedAt
+			run.Results = res.Results
+			run.ReportPath = res.ReportPath
+			run.SavedPlanReady = res.SavedPlanReady
+			run.SavedPlanExpiresAt = res.SavedPlanExpiresAt
+			run.lines = mergeLogLines(dir, run.lines)
+			return
+		}
+	}
+
+	var meta runMeta
+	if err := readJSON(filepath.Join(dir, metaFile), &meta); err == nil && supervisorAlive(meta.SupervisorPID) {
+		// Live supervisor — reattach and keep streaming.
+		run.supervised = true
+		run.supervisorPID = meta.SupervisorPID
+		run.pgid = meta.Pgid
+		if cfg, cerr := config.Load(); cerr == nil {
+			run.approvalTimeout = cfg.Web.ApprovalTimeout()
+			run.reviewedPlanTimeout = cfg.Web.ReviewedPlanTimeout()
+		}
+		run.lines = mergeLogLines(dir, run.lines)
+		run.tailOffset = logSize(dir)
+		// If the run was sitting at the approval gate when the server died, the
+		// sentinel is already in the log and the tailer (starting at end-of-log)
+		// will not re-emit it — so restore the awaiting state directly.
+		if awaitingFromLines(run.lines) {
+			run.setAwaiting(true)
+		}
+		pid := meta.SupervisorPID
+		run.cancel = func() { terminateRun(pid) }
+		slog.Info("reattaching to live supervised run", "id", run.ID, "supervisorPid", pid, "awaitingInput", run.AwaitingInput)
+		go m.tail(run)
+		return
+	}
+
+	// No status and no live supervisor — the run was lost with the server.
+	now := time.Now().UTC()
+	run.Status = StatusFailed
+	run.FinishedAt = &now
+	run.lines = mergeLogLines(dir, run.lines)
+	run.lines = append(run.lines, "  [server restarted; run state lost]")
+}
+
+// awaitingFromLines reports whether the output ends in an unresolved approval
+// gate: the last approval sentinel seen has no clear sentinel after it.
+func awaitingFromLines(lines []string) bool {
+	awaiting := false
+	for _, line := range lines {
+		switch strings.TrimSpace(line) {
+		case runner.ApprovalSentinel:
+			awaiting = true
+		case runner.ApprovalClearSentinel:
+			awaiting = false
+		}
+	}
+	return awaiting
+}
+
+// logSize returns the current size of a run's output log, or 0 if absent.
+func logSize(dir string) int {
+	info, err := os.Stat(filepath.Join(dir, outputLog))
+	if err != nil {
+		return 0
+	}
+	return int(info.Size())
+}
+
+// mergeLogLines replaces persisted lines with the fuller on-disk output log when
+// one exists (the supervisor's log is authoritative and may contain output
+// produced after the last persist). Falls back to the persisted lines.
+func mergeLogLines(dir string, persisted []string) []string {
+	data, err := os.ReadFile(filepath.Join(dir, outputLog))
+	if err != nil {
+		return persisted
+	}
+	lines := strings.Split(strings.TrimSuffix(string(data), "\n"), "\n")
+	if len(lines) == 1 && lines[0] == "" {
+		return persisted
+	}
+	return lines
 }
 
 func (m *RunManager) persist() {
@@ -306,7 +421,10 @@ func (m *RunManager) persist() {
 	for i := len(snapshot) - 1; i >= 0 && len(records) < maxPersistedRuns; i-- {
 		r := snapshot[i]
 		r.mu.RLock()
-		if r.Status == StatusRunning {
+		// Skip in-flight runs unless they are supervised: a supervised run must be
+		// persisted as running so a restart can rediscover and reattach to it. Its
+		// output lives in the supervisor's output log, so we omit Lines here.
+		if r.Status == StatusRunning && !r.supervised {
 			r.mu.RUnlock()
 			continue
 		}
@@ -346,269 +464,128 @@ func (m *RunManager) persist() {
 	}
 }
 
-// Start launches a new terraform run in a background goroutine.
+// Start launches a new terraform run. On unix the run is executed by a detached
+// supervisor process so it survives this server being killed/restarted; the
+// server tails the supervisor's output log and reattaches on startup. On
+// platforms without the supervisor it falls back to running in-process.
 func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir string, web config.WebConfig) (*Run, error) {
 	m.mu.Lock()
 	m.seq++
 	id := fmt.Sprintf("run-%04d", m.seq)
-	ctx, cancel := context.WithTimeout(context.Background(), defaultRunTimeout)
+	m.mu.Unlock()
 
+	params := superviseParams{
+		ID:                  id,
+		Request:             req,
+		SearchRoot:          searchRoot,
+		RepoLabel:           repoLabel,
+		ReportDir:           reportDir,
+		TicketURL:           web.TicketURLFor(req.Ticket),
+		GitBranch:           gitBranch(searchRoot),
+		ApprovalTimeout:     web.ApprovalTimeout(),
+		ReviewedPlanTimeout: web.ReviewedPlanTimeout(),
+	}
+
+	if supervisorSupported {
+		return m.startSupervised(id, params)
+	}
+	return m.startInProcess(id, params)
+}
+
+// startSupervised launches a detached supervisor for the run and starts a tailer
+// that mirrors its output log into the in-memory Run so SSE and the UI work
+// unchanged.
+func (m *RunManager) startSupervised(id string, params superviseParams) (*Run, error) {
 	run := &Run{
 		ID:                  id,
 		StartedAt:           time.Now().UTC(),
 		Status:              StatusRunning,
-		Request:             req,
-		cancel:              cancel,
-		approvalTimeout:     web.ApprovalTimeout(),
-		reviewedPlanTimeout: web.ReviewedPlanTimeout(),
+		Request:             params.Request,
+		GitBranch:           params.GitBranch,
+		approvalTimeout:     params.ApprovalTimeout,
+		reviewedPlanTimeout: params.ReviewedPlanTimeout,
+		supervised:          true,
+		cancel:              func() {},
 	}
+
+	m.mu.Lock()
 	m.runs = append(m.runs, run)
 	m.mu.Unlock()
 
-	savePlanDir := ""
-	applyPlanFiles := map[string]string{}
-	if req.Command == "plan" {
-		savePlanDir = filepath.Join(config.SavedPlanDir(), id)
-	} else if req.Command == "apply" && req.PlanRunID != "" {
-		for _, target := range resolveTargetDirs(req) {
-			applyPlanFiles[target] = savedPlanPath(req.PlanRunID, target)
-		}
+	// Persist immediately as running so a restart that happens before completion
+	// can discover and reattach to this run.
+	m.persist()
+
+	pid, err := launchSupervisor(id, params)
+	if err != nil {
+		now := time.Now().UTC()
+		run.mu.Lock()
+		run.Status = StatusFailed
+		run.FinishedAt = &now
+		run.mu.Unlock()
+		run.appendLine("  [ERROR] could not launch run supervisor: " + err.Error())
+		m.persist()
+		return run, nil
+	}
+	run.mu.Lock()
+	run.supervisorPID = pid
+	run.cancel = func() { terminateRun(pid) }
+	run.mu.Unlock()
+
+	slog.Info("supervised run started", "id", id, "command", params.Request.Command, "repo", params.Request.Repo, "supervisorPid", pid)
+	go m.tail(run)
+	return run, nil
+}
+
+// startInProcess runs the orchestration in a goroutine within this server
+// process (non-unix fallback). Output is buffered in memory only and the run
+// does not survive a server restart.
+func (m *RunManager) startInProcess(id string, params superviseParams) (*Run, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRunTimeout)
+	run := &Run{
+		ID:                  id,
+		StartedAt:           time.Now().UTC(),
+		Status:              StatusRunning,
+		Request:             params.Request,
+		GitBranch:           params.GitBranch,
+		cancel:              cancel,
+		approvalTimeout:     params.ApprovalTimeout,
+		reviewedPlanTimeout: params.ReviewedPlanTimeout,
 	}
 
-	slog.Info("run started", "id", id, "command", req.Command, "repo", req.Repo, "envFilter", req.EnvFilter, "parallel", req.Parallel)
+	req := params.Request
+	needsInteractive := (req.Command == "apply" || req.Command == "destroy" || req.Command == "auto") && !req.AutoApprove
+	if needsInteractive {
+		run.inputCh = make(chan string, 1)
+	}
+
+	m.mu.Lock()
+	m.runs = append(m.runs, run)
+	m.mu.Unlock()
 
 	go func() {
 		defer cancel()
-		defer func() {
-			if rec := recover(); rec != nil {
-				run.appendLine(fmt.Sprintf("  [PANIC] %v", rec))
-				now := time.Now().UTC()
-				run.mu.Lock()
-				if !run.forced {
-					run.FinishedAt = &now
-					run.Status = StatusFailed
-				}
-				run.AwaitingInput = false
-				run.ApprovalExpiresAt = nil
-				run.mu.Unlock()
-				m.persist()
-			}
-		}()
 		lw := &lineWriter{run: run}
-		tfArgs := append([]string{}, req.ExtraArgs...)
-		if req.Command == "apply" && req.PlanRunID != "" {
-			run.appendLine("  [APPROVED] Reviewed plan approved for apply.")
+		var inCh <-chan string
+		if run.inputCh != nil {
+			inCh = run.inputCh
 		}
-
-		// Create an input channel when interactive approval is needed.
-		needsInteractive := (req.Command == "apply" || req.Command == "destroy" || req.Command == "auto") && !req.AutoApprove
-		var inputCh chan string
-		if needsInteractive {
-			inputCh = make(chan string, 1)
-			run.mu.Lock()
-			run.inputCh = inputCh
-			run.mu.Unlock()
-		}
-
-		var explicitTargets []config.RepoTarget
-		if req.Repo != "" {
-			if rc, err := config.LoadRepoConfig(req.Repo); err == nil && len(rc.Targets) > 0 {
-				explicitTargets = rc.Targets
-				repos, _ := config.LoadRepos()
-				if repoRoot, ok := repos[req.Repo]; ok {
-					searchRoot = repoRoot
-				}
-			}
-		}
-
-		run.GitBranch = gitBranch(searchRoot)
-
-		targetGroups := make(map[string]string)
-		for _, target := range explicitTargets {
-			group := strings.TrimSpace(target.Group)
-			if group == "" {
-				group = strings.Split(strings.Trim(target.Directory, "/"), "/")[0]
-			}
-			if group == "" {
-				group = target.Name
-			}
-			targetGroups[target.Name] = group
-		}
-		var graphMu sync.Mutex
-		onGraphReady := func(target, dir, planFile, command, output string, env []string) error {
-			targetGraph, err := graphdata.Extract(planFile, dir, repoLabel, targetGroups[target], target, command, output, env)
-			if err != nil {
-				return err
-			}
-			graphMu.Lock()
-			defer graphMu.Unlock()
-			return graphdata.SaveTarget(graphPath(id), id, repoLabel, targetGroups[target], target, targetGraph)
-		}
-
-		// Resolve Infracost settings when cost estimation is requested. A missing
-		// key is non-fatal: warn into the stream and run without cost.
-		costEnabled := req.Cost
-		var infracostKey, infracostCurrency string
-		if costEnabled {
-			ic, icErr := config.LoadInfracost()
-			if icErr != nil {
-				slog.Warn("could not load infracost settings", "err", icErr)
-			}
-			infracostKey = ic.APIKey
-			infracostCurrency = ic.Currency
-			if infracostKey == "" {
-				costEnabled = false
-				run.appendLine("[WARN] cost estimation requested but no Infracost API key is configured — running without cost.")
-			}
-		}
-
-		baseOpts := runner.Options{
-			SearchRoot:        searchRoot,
-			RepoLabel:         repoLabel,
-			Ticket:            req.Ticket,
-			TicketURL:         web.TicketURLFor(req.Ticket),
-			TfArgs:            tfArgs,
-			ResourceAddresses: req.ResourceAddresses,
-			EnvFilter:         req.EnvFilter,
-			ProfileOverride:   req.Profile,
-			NonprodOnly:       req.NonprodOnly,
-			ReportDir:         reportDir,
-			ExplicitTargets:   explicitTargets,
-			Output:            io.MultiWriter(lw),
-			Ctx:               ctx,
-			Parallel:          req.Parallel,
-			PromotionOrder:    req.PromotionOrder,
-			LockIDs:           req.LockIDs,
-			ImportAddrs:       req.ImportAddrs,
-			AutoApprove:       req.AutoApprove,
-			OnApprovalWait:    run.setAwaiting,
-			OnProcStart:       run.setPgid,
-			Cost:              costEnabled,
-			InfracostKey:      infracostKey,
-			Currency:          infracostCurrency,
-			SavePlanDir:       savePlanDir,
-			ApplyPlanFiles:    applyPlanFiles,
-			OnGraphReady:      onGraphReady,
-		}
-
-		var results []report.EnvResult
-		var reportFilename string
-		var err error
-
-		if req.Command == "auto" {
-			// Envs whose plan reported no changes — their apply phase is skipped.
-			skipApply := map[string]bool{}
-			for i, step := range []string{"init", "plan", "apply"} {
-				run.appendLine("")
-				run.appendLine(fmt.Sprintf("=== auto: step %d/3 — %s ===", i+1, step))
-				opts := baseOpts
-				opts.TfCommand = step
-				opts.Parallel = false // apply must be sequential; keep all steps consistent
-				if step == "apply" {
-					opts.InputCh = inputCh
-					opts.SkipApply = skipApply
-				}
-				var stepRes []report.EnvResult
-				var stepReport string
-				stepRes, stepReport, err = runner.Run(opts)
-				// After the plan phase, record which envs had no changes so the
-				// apply phase can skip them with an explicit "Skipping Apply" note.
-				if step == "plan" {
-					for _, res := range stepRes {
-						if res.NoChanges && !res.Failed {
-							skipApply[res.Env] = true
-						}
-					}
-				}
-				if lw.buf != "" {
-					run.appendLine(lw.buf)
-					lw.buf = ""
-				}
-				if stepRes != nil {
-					results = stepRes
-				}
-				if stepReport != "" {
-					reportFilename = stepReport
-				}
-				if err != nil {
-					break
-				}
-				run.mu.RLock()
-				wasDenied := run.denied
-				run.mu.RUnlock()
-				if wasDenied {
-					break
-				}
-			}
-		} else {
-			results, reportFilename, err = runner.Run(runner.Options{
-				SearchRoot:        searchRoot,
-				RepoLabel:         repoLabel,
-				Ticket:            req.Ticket,
-				TicketURL:         web.TicketURLFor(req.Ticket),
-				TfCommand:         req.Command,
-				TfArgs:            tfArgs,
-				ResourceAddresses: req.ResourceAddresses,
-				EnvFilter:         req.EnvFilter,
-				ProfileOverride:   req.Profile,
-				NonprodOnly:       req.NonprodOnly,
-				ReportDir:         reportDir,
-				ExplicitTargets:   explicitTargets,
-				Output:            io.MultiWriter(lw),
-				Ctx:               ctx,
-				Parallel:          req.Parallel,
-				PromotionOrder:    req.PromotionOrder,
-				LockIDs:           req.LockIDs,
-				ImportAddrs:       req.ImportAddrs,
-				AutoApprove:       req.AutoApprove,
-				InputCh:           inputCh,
-				OnApprovalWait:    run.setAwaiting,
-				OnProcStart:       run.setPgid,
-				Cost:              costEnabled,
-				InfracostKey:      infracostKey,
-				Currency:          infracostCurrency,
-				SavePlanDir:       savePlanDir,
-				ApplyPlanFiles:    applyPlanFiles,
-				OnGraphReady:      onGraphReady,
-			})
-		}
-
+		res := executeRun(ctx, params, lw, inCh, run.setPgid, run.setAwaiting)
 		if lw.buf != "" {
 			run.appendLine(lw.buf)
 		}
-		approvalDenied := errors.Is(err, runner.ErrApprovalDenied)
-		if err != nil && ctx.Err() == nil && !approvalDenied {
-			run.appendLine("  [ERROR] " + err.Error())
-		}
-
-		now := time.Now().UTC()
 		run.mu.Lock()
 		run.AwaitingInput = false
 		run.ApprovalExpiresAt = nil
 		if !run.forced {
-			// A force kill has already finalized the record; don't override it.
-			run.FinishedAt = &now
-			run.Results = results
-			run.ReportPath = reportFilename
-			run.Status = FinalRunStatus(err, ctx.Err(), run.denied || approvalDenied, results)
-			if run.Status == StatusSuccess {
-				if req.Command == "plan" && len(results) > 0 {
-					run.SavedPlanReady = true
-					expiresAt := now.Add(run.reviewedPlanTimeout)
-					run.SavedPlanExpiresAt = &expiresAt
-				}
-			}
+			run.FinishedAt = &res.FinishedAt
+			run.Results = res.Results
+			run.ReportPath = res.ReportPath
+			run.Status = res.Status
+			run.SavedPlanReady = res.SavedPlanReady
+			run.SavedPlanExpiresAt = res.SavedPlanExpiresAt
 		}
-		finalStatus := run.Status
 		run.mu.Unlock()
-
-		logFinish := slog.Info
-		if err != nil && !approvalDenied {
-			logFinish = slog.Warn
-		}
-		logFinish("run finished", "id", id, "command", req.Command, "status", finalStatus,
-			"duration", now.Sub(run.StartedAt), "err", errString(err))
-
 		m.persist()
 	}()
 
@@ -621,6 +598,128 @@ func savedPlanPath(runID, target string) string {
 
 func graphPath(runID string) string {
 	return filepath.Join(config.SavedPlanDir(), runID, "graph.json")
+}
+
+// tail mirrors a supervised run's on-disk output log into the in-memory Run
+// (so SSE streaming works unchanged) and finalizes the Run when the supervisor
+// writes status.json. It is safe to start from any byte offset, so it both
+// follows a freshly launched run and reattaches to one already in progress after
+// a server restart. It returns when the run is finalized.
+func (m *RunManager) tail(run *Run) {
+	dir := config.RunDir(run.ID)
+	logPath := filepath.Join(dir, outputLog)
+	statusPath := filepath.Join(dir, statusFile)
+
+	run.mu.RLock()
+	offset := int64(run.tailOffset)
+	run.mu.RUnlock()
+
+	var carry string
+	poll := time.NewTicker(200 * time.Millisecond)
+	defer poll.Stop()
+
+	for {
+		// Drain any new bytes from the log.
+		if f, err := os.Open(logPath); err == nil {
+			if _, serr := f.Seek(offset, io.SeekStart); serr == nil {
+				buf := make([]byte, 32*1024)
+				for {
+					n, rerr := f.Read(buf)
+					if n > 0 {
+						offset += int64(n)
+						carry += string(buf[:n])
+						for {
+							idx := strings.IndexByte(carry, '\n')
+							if idx == -1 {
+								break
+							}
+							m.ingestLine(run, carry[:idx])
+							carry = carry[idx+1:]
+						}
+					}
+					if rerr != nil {
+						break
+					}
+				}
+			}
+			f.Close()
+		}
+
+		// Finalize when the supervisor has written its terminal status.
+		if data, err := os.ReadFile(statusPath); err == nil {
+			var res supervisedResult
+			if jerr := json.Unmarshal(data, &res); jerr == nil {
+				if carry != "" {
+					m.ingestLine(run, carry)
+					carry = ""
+				}
+				run.mu.Lock()
+				run.tailOffset = int(offset)
+				if !run.forced {
+					run.FinishedAt = &res.FinishedAt
+					run.Results = res.Results
+					run.ReportPath = res.ReportPath
+					run.Status = res.Status
+					run.SavedPlanReady = res.SavedPlanReady
+					run.SavedPlanExpiresAt = res.SavedPlanExpiresAt
+				}
+				run.AwaitingInput = false
+				run.ApprovalExpiresAt = nil
+				finalStatus := run.Status
+				run.mu.Unlock()
+				slog.Info("supervised run finalized", "id", run.ID, "status", finalStatus)
+				m.persist()
+				return
+			}
+		}
+
+		// Detect a dead supervisor with no status — an orphaned run.
+		run.mu.RLock()
+		supPID := run.supervisorPID
+		forced := run.forced
+		run.mu.RUnlock()
+		if forced {
+			return
+		}
+		if supPID > 0 && !supervisorAlive(supPID) {
+			// Give the status file a brief grace window in case the supervisor is
+			// mid-write, then re-check before declaring the run orphaned.
+			time.Sleep(300 * time.Millisecond)
+			if _, err := os.Stat(statusPath); err == nil {
+				continue
+			}
+			m.ingestLine(run, "  [ERROR] run supervisor exited without recording a result")
+			now := time.Now().UTC()
+			run.mu.Lock()
+			if !run.forced {
+				run.Status = StatusFailed
+				run.FinishedAt = &now
+				run.AwaitingInput = false
+				run.ApprovalExpiresAt = nil
+			}
+			run.mu.Unlock()
+			slog.Warn("supervised run orphaned", "id", run.ID, "supervisorPid", supPID)
+			m.persist()
+			return
+		}
+
+		<-poll.C
+	}
+}
+
+// ingestLine records one output line into the Run and updates approval state
+// when it observes the approval sentinels emitted by the runner.
+func (m *RunManager) ingestLine(run *Run, line string) {
+	run.appendLine(line)
+	switch strings.TrimSpace(line) {
+	case runner.ApprovalSentinel:
+		run.setAwaiting(true)
+	case runner.ApprovalClearSentinel:
+		run.mu.Lock()
+		run.AwaitingInput = false
+		run.ApprovalExpiresAt = nil
+		run.mu.Unlock()
+	}
 }
 
 // PrepareReviewedApply validates and replaces an apply request with the exact
@@ -853,13 +952,27 @@ func (m *RunManager) ForceKill(id string) bool {
 	run.ApprovalExpiresAt = nil
 	pgid := run.pgid
 	cancel := run.cancel
+	supervised := run.supervised
+	supPID := run.supervisorPID
 	run.mu.Unlock()
 
 	run.appendLine("  [force-killed] run terminated by user")
 	if cancel != nil {
 		cancel()
 	}
-	runner.KillProcessGroup(pgid)
+	if supervised {
+		// The server never received OnProcStart for a detached run, so recover the
+		// terraform process group from the supervisor's meta file. Kill the whole
+		// terraform tree and the supervisor itself.
+		var meta runMeta
+		if readJSON(filepath.Join(config.RunDir(id), metaFile), &meta) == nil && meta.Pgid > 0 {
+			pgid = meta.Pgid
+		}
+		killTerraformGroup(pgid)
+		killSupervisor(supPID)
+	} else {
+		runner.KillProcessGroup(pgid)
+	}
 	m.persist()
 	return true
 }

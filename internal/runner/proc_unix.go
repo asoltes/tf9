@@ -18,6 +18,26 @@ func setProcGroup(cmd *exec.Cmd) {
 	cmd.SysProcAttr.Setpgid = true
 }
 
+// DetachSession starts the child in a brand-new session (Setsid) so it has no
+// controlling terminal and is not part of the parent's process group. A detached
+// supervisor therefore survives the tf9 server being killed and is never reaped
+// by signals sent to the server's group.
+func DetachSession(cmd *exec.Cmd) {
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	cmd.SysProcAttr.Setsid = true
+}
+
+// ProcessAlive reports whether a process with the given pid currently exists.
+// It uses signal 0, which performs error checking without delivering a signal.
+func ProcessAlive(pid int) bool {
+	if pid <= 0 {
+		return false
+	}
+	return syscall.Kill(pid, 0) == nil
+}
+
 // setForegroundTTY puts the child in its own process group AND makes that group
 // the foreground group of the controlling terminal, so an interactive terraform
 // can read its "Enter a value:" approval prompt from the TTY without being

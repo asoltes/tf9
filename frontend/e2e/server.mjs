@@ -60,6 +60,30 @@ for (const env of envs) {
   ].join('\n'));
 }
 
+// A deliberately slow environment: a local-exec provisioner sleeps on apply so
+// the run stays in-flight long enough for restart-persistence tests to kill the
+// server mid-apply. Still fully offline (no provider download) — terraform_data
+// + local-exec only.
+mkdirSync(join(repo, 'environments', 'slow'), { recursive: true });
+writeFileSync(join(repo, 'environments', 'slow', 'main.tf'), [
+  'terraform {',
+  '  required_version = ">= 1.5.0"',
+  '}',
+  '',
+  'resource "terraform_data" "slow" {',
+  '  input            = "slow"',
+  '  triggers_replace = [timestamp()]',
+  '  provisioner "local-exec" {',
+  '    command = "sleep ${var.sleep_seconds}"',
+  '  }',
+  '}',
+  '',
+  'variable "sleep_seconds" {',
+  '  default = "30"',
+  '}',
+  '',
+].join('\n'));
+
 writeFileSync(join(repo, 'main.tf'), [
   'terraform {',
   '  required_version = ">= 1.5.0"',
@@ -130,6 +154,10 @@ writeFileSync(config, [
     '        aws_profile: e2e-profile',
     '        region: us-east-1',
   ]),
+  '      - name: slow',
+  '        directory: environments/slow',
+  '        aws_profile: e2e-profile',
+  '        region: us-east-1',
   '  - name: e2e-service',
   `    path: ${serviceRepo}`,
   '',

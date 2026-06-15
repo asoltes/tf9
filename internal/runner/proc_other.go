@@ -10,6 +10,13 @@ import (
 // setProcGroup is a no-op on non-unix platforms.
 func setProcGroup(cmd *exec.Cmd) {}
 
+// DetachSession is a no-op on non-unix platforms (the supervisor model is not
+// used there; runs fall back to in-process execution).
+func DetachSession(cmd *exec.Cmd) {}
+
+// ProcessAlive is unsupported on non-unix platforms.
+func ProcessAlive(pid int) bool { return false }
+
 // setForegroundTTY is a no-op on non-unix platforms.
 func setForegroundTTY(cmd *exec.Cmd, ttyFd int) {}
 

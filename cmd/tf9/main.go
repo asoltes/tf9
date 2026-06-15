@@ -157,8 +157,23 @@ func newRootCmd() *cobra.Command {
 	root.Flags().StringVar(&lockIDs, "lock-ids", "", "Per-target lock ids for force-unlock (e.g. dev:abc,staging:def)")
 	root.Flags().BoolVar(&cost, "cost", false, "Estimate infrastructure cost with Infracost (needs an API key in infracost.yaml or INFRACOST_API_KEY)")
 
-	root.AddCommand(newConfigCmd(), newServeCmd(), newVersionCmd())
+	root.AddCommand(newConfigCmd(), newServeCmd(), newVersionCmd(), newSuperviseCmd())
 	return root
+}
+
+// newSuperviseCmd is the hidden entry point for a detached run supervisor. The
+// web server re-execs `tf9 __supervise <run-id>` in its own session so the
+// terraform run survives the server being killed or restarted. It is not meant
+// to be invoked by users directly.
+func newSuperviseCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:    "__supervise <run-id>",
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return api.RunSupervisor(args[0])
+		},
+	}
 }
 
 func runTerraform(cmd *cobra.Command, args []string) error {
