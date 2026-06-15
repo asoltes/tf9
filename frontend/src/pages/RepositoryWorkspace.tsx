@@ -5,10 +5,10 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import Shell from '../Shell';
-import { api, ApiError, repoGit, workspaceApi, workspaceChatApi } from '../api';
+import { aiModelsApi, api, ApiError, repoGit, workspaceApi, workspaceChatApi } from '../api';
 import type {
-  ActiveBranches, GitChangedFile, GitCommit, Paginated, ReconcileStatus, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
-  WebSettings, WorkspaceChatMode, WorkspaceChatModel, WorkspaceEntry, WorkspaceFile,
+  ActiveBranches, AIModel, GitChangedFile, GitCommit, Paginated, ReconcileStatus, Repo, WorkspaceChatEvent, WorkspaceChatMessage,
+  WebSettings, WorkspaceChatMode, WorkspaceChatModelId, WorkspaceEntry, WorkspaceFile,
 } from '../types';
 import { buildReconcilePrompt } from '../lib/reconcilePrompt';
 import { takePendingReconcileChat } from '../lib/pendingChat';
@@ -514,8 +514,9 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
   onSeedConsumed?: () => void;
 }) {
   const [messages, setMessages] = useState<WorkspaceChatMessage[]>([]);
-  const [mode, setMode] = useState<WorkspaceChatMode>('review');
-  const [model, setModel] = useState<WorkspaceChatModel>('sonnet');
+  const [mode, setMode] = useState<WorkspaceChatMode>('autoApply');
+  const [model, setModel] = useState<WorkspaceChatModelId>('');
+  const [models, setModels] = useState<AIModel[]>([]);
   const [available, setAvailable] = useState(false);
   const [authError, setAuthError] = useState('');
   const [running, setRunning] = useState(false);
@@ -592,6 +593,9 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
       .catch(err => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load AI chat.');
       });
+    aiModelsApi.get()
+      .then(result => { if (!cancelled) setModels(result.models ?? []); })
+      .catch(() => { /* fall back to the selected id only; non-fatal */ });
     return () => {
       cancelled = true;
       streamRef.current?.close();
@@ -634,7 +638,7 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
     }
   }
 
-  async function changeModel(next: WorkspaceChatModel) {
+  async function changeModel(next: WorkspaceChatModelId) {
     try {
       await workspaceChatApi.setModel(repo, next);
       setModel(next);
@@ -670,11 +674,12 @@ function WorkspaceChat({ repo, active, seed, seedLoading, onSeedConsumed }: {
             value={model}
             disabled={running}
             aria-label="Claude model"
-            onChange={event => void changeModel(event.target.value as WorkspaceChatModel)}
+            onChange={event => void changeModel(event.target.value)}
           >
-            <option value="sonnet">Sonnet</option>
-            <option value="opus">Opus</option>
-            <option value="haiku">Haiku</option>
+            {model && !models.some(m => m.id === model) && (
+              <option value={model}>{model}</option>
+            )}
+            {models.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
         </label>
         <label className="rw-chat-mode" title="Review plans changes. Auto apply lets Claude edit workspace files.">

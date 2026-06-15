@@ -56,14 +56,14 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 		t.Fatalf("chat state status = %d body=%s", res.Code, res.Body.String())
 	}
 	var initial struct {
-		Available bool               `json:"available"`
-		Mode      workspaceChatMode  `json:"mode"`
-		Model     workspaceChatModel `json:"model"`
+		Available bool              `json:"available"`
+		Mode      workspaceChatMode `json:"mode"`
+		Model     string            `json:"model"`
 	}
 	if err := json.Unmarshal(res.Body.Bytes(), &initial); err != nil {
 		t.Fatal(err)
 	}
-	if !initial.Available || initial.Mode != workspaceChatReview || initial.Model != workspaceChatSonnet {
+	if !initial.Available || initial.Mode != workspaceChatAutoApply || initial.Model != "sonnet" {
 		t.Fatalf("initial chat state = %#v", initial)
 	}
 
@@ -74,7 +74,7 @@ func TestWorkspaceChatStreamsPersistsAndResumes(t *testing.T) {
 		t.Fatalf("mode status = %d body=%s", res.Code, res.Body.String())
 	}
 	res = workspaceRequest(t, handler, http.MethodPut, "/api/repos/infra/workspace/chat/model", map[string]string{
-		"model": string(workspaceChatOpus),
+		"model": "opus",
 	})
 	if res.Code != http.StatusOK {
 		t.Fatalf("model status = %d body=%s", res.Code, res.Body.String())

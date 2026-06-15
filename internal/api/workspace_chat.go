@@ -22,15 +22,10 @@ import (
 const workspaceChatHistoryLimit = 100
 
 type workspaceChatMode string
-type workspaceChatModel string
 
 const (
 	workspaceChatReview    workspaceChatMode = "review"
 	workspaceChatAutoApply workspaceChatMode = "autoApply"
-
-	workspaceChatSonnet workspaceChatModel = "sonnet"
-	workspaceChatOpus   workspaceChatModel = "opus"
-	workspaceChatHaiku  workspaceChatModel = "haiku"
 )
 
 type workspaceChatMessage struct {
@@ -43,7 +38,7 @@ type workspaceChatMessage struct {
 type workspaceChatRepoState struct {
 	SessionID string                 `json:"sessionId,omitempty"`
 	Mode      workspaceChatMode      `json:"mode"`
-	Model     workspaceChatModel     `json:"model"`
+	Model     string                 `json:"model"`
 	Messages  []workspaceChatMessage `json:"messages"`
 }
 
@@ -163,19 +158,32 @@ func (m *workspaceChatManager) saveLocked() error {
 	return os.Rename(tmpName, m.statePath)
 }
 
+// webConfig loads the web configuration for AI model resolution. On a config
+// read error it returns a zero WebConfig, whose EffectiveAIModels falls back to
+// the built-in aliases so chat never breaks on a transient load failure.
+func webConfig() config.WebConfig {
+	cfg, err := config.Load()
+	if err != nil {
+		slog.Warn("workspace chat: load config for AI models failed", "err", err)
+		return config.WebConfig{}
+	}
+	return cfg.Web
+}
+
 func (m *workspaceChatManager) repoStateLocked(repo string) *workspaceChatRepoState {
+	web := webConfig()
 	state := m.store.Repositories[repo]
 	if state == nil {
 		state = &workspaceChatRepoState{
-			Mode: workspaceChatReview, Model: workspaceChatSonnet, Messages: []workspaceChatMessage{},
+			Mode: workspaceChatAutoApply, Model: web.DefaultAIModelID(), Messages: []workspaceChatMessage{},
 		}
 		m.store.Repositories[repo] = state
 	}
-	if state.Mode != workspaceChatAutoApply {
-		state.Mode = workspaceChatReview
+	if state.Mode != workspaceChatReview {
+		state.Mode = workspaceChatAutoApply
 	}
-	if state.Model != workspaceChatOpus && state.Model != workspaceChatHaiku {
-		state.Model = workspaceChatSonnet
+	if state.Model == "" || !web.IsValidAIModelID(state.Model) {
+		state.Model = web.DefaultAIModelID()
 	}
 	return state
 }
@@ -238,9 +246,9 @@ func (m *workspaceChatManager) setMode(repo string, mode workspaceChatMode) erro
 	return m.saveLocked()
 }
 
-func (m *workspaceChatManager) setModel(repo string, model workspaceChatModel) error {
-	if model != workspaceChatSonnet && model != workspaceChatOpus && model != workspaceChatHaiku {
-		return fmt.Errorf("model must be sonnet, opus, or haiku")
+func (m *workspaceChatManager) setModel(repo string, model string) error {
+	if !webConfig().IsValidAIModelID(model) {
+		return fmt.Errorf("unknown model %q", model)
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -336,7 +344,7 @@ func (m *workspaceChatManager) runTurn(
 	turn *workspaceChatTurn,
 	root, prompt, sessionID string,
 	mode workspaceChatMode,
-	model workspaceChatModel,
+	model string,
 	claudePath string,
 ) {
 	status := "success"
@@ -346,7 +354,7 @@ func (m *workspaceChatManager) runTurn(
 	} else {
 		args := []string{
 			"-p", prompt,
-			"--model", string(model),
+			"--model", model,
 			"--output-format", "stream-json",
 			"--verbose",
 			"--include-partial-messages",
@@ -590,7 +598,7 @@ func handleRepoWorkspaceChat(w http.ResponseWriter, r *http.Request, name, actio
 			return
 		}
 		var body struct {
-			Model workspaceChatModel `json:"model"`
+			Model string `json:"model"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			jsonErr(w, "bad_request", "invalid JSON body", http.StatusBadRequest)
@@ -600,7 +608,7 @@ func handleRepoWorkspaceChat(w http.ResponseWriter, r *http.Request, name, actio
 			jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
 			return
 		}
-		jsonOK(w, map[string]workspaceChatModel{"model": body.Model})
+		jsonOK(w, map[string]string{"model": body.Model})
 	case "cancel":
 		if r.Method != http.MethodPost {
 			methodNotAllowed(w)
