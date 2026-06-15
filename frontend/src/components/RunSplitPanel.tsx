@@ -168,6 +168,7 @@ const I = {
   warn: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
   arrow: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
   git: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M18 9a9 9 0 0 1-9 9" /></svg>,
+  link: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>,
   dockSide: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><line x1="15" y1="4" x2="15" y2="20" /></svg>,
   dockBottom: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><line x1="3" y1="14" x2="21" y2="14" /></svg>,
   retry: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
@@ -257,11 +258,12 @@ interface Props {
   onDockChange: (d: Dock) => void;
   onStatusChange?: () => void;
   onRerun?: (run: Run) => void;
-  onApplyPlan?: (run: Run) => void;
+  onApplyPlan?: (run: Run, parallel: boolean) => void;
+  onSelectRun?: (id: string) => void;
   ticketingUrl?: string | null;
 }
 
-export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatusChange, onRerun, onApplyPlan, ticketingUrl }: Props) {
+export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatusChange, onRerun, onApplyPlan, onSelectRun, ticketingUrl }: Props) {
   const { navigate } = useNav();
   const toast = useToast();
   const [parallelView, setParallelView] = useState<ParallelView>('grid');
@@ -284,6 +286,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const spSearchInputRef = useRef<HTMLInputElement>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmApplyPlan, setConfirmApplyPlan] = useState(false);
+  const [applyMode, setApplyMode] = useState<'promotion' | 'parallel'>('parallel');
   const [confirmKill, setConfirmKill] = useState(false);
   const [retryOpen, setRetryOpen] = useState(false);
   const [approvalPending, setApprovalPending] = useState(false);
@@ -1260,9 +1263,22 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
         onCancel={() => setConfirmApplyPlan(false)}
         onConfirm={() => {
           setConfirmApplyPlan(false);
-          if (run && onApplyPlan) onApplyPlan(run);
+          if (run && onApplyPlan) onApplyPlan(run, applyMode === 'parallel');
         }}
       >
+        <div className="apply-mode-section">
+          <div className="apply-mode-label">Run mode</div>
+          <div className="apply-mode-tiles">
+            <div className={`apply-mode-tile${applyMode === 'promotion' ? ' on' : ''}`} onClick={() => setApplyMode('promotion')}>
+              <span className="ti-ic">{I.seq}</span>
+              <span><span className="ti-t">Promotion</span><span className="ti-d">Sequential — applies saved plans in order, stops on first failure.</span></span>
+            </div>
+            <div className={`apply-mode-tile${applyMode === 'parallel' ? ' on' : ''}`} onClick={() => setApplyMode('parallel')}>
+              <span className="ti-ic">{I.par}</span>
+              <span><span className="ti-t">Parallel</span><span className="ti-d">Up to four targets at once.</span></span>
+            </div>
+          </div>
+        </div>
         Apply the exact Terraform plan saved by {run?.id}? Target selection and plan arguments are locked to the reviewed run.
       </ConfirmModal>
 
@@ -1331,7 +1347,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                     ) : (
                       <>
                         {onApplyPlan && reviewedPlanAvailable && (
-                          <button className="btn btn-primary btn-sm" onClick={() => setConfirmApplyPlan(true)}>
+                          <button className="btn btn-primary btn-sm" onClick={() => { setApplyMode('parallel'); setConfirmApplyPlan(true); }}>
                             {I.check}Apply reviewed plan
                             {savedPlanDeadline !== null && <small className="reviewed-plan-countdown">{countdownLabel(savedPlanDeadline, clock)}</small>}
                           </button>
@@ -1380,6 +1396,20 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                     </span>
                   </MetaItem>
                   <MetaItem k="Repo" mono>{run.request?.repo || run.repo || '—'}</MetaItem>
+                  {run.request?.planRunId && (
+                    <MetaItem k="From plan">
+                      <button type="button" className="trace-link" onClick={() => onSelectRun?.(run.request.planRunId!)} title="Open the reviewed plan this apply ran from">
+                        {I.link}<span className="mono">{run.request.planRunId}</span>
+                      </button>
+                    </MetaItem>
+                  )}
+                  {run.appliedByRunId && (
+                    <MetaItem k="Applied by">
+                      <button type="button" className="trace-link" onClick={() => onSelectRun?.(run.appliedByRunId!)} title="Open the apply run that consumed this plan">
+                        {I.link}<span className="mono">{run.appliedByRunId}</span>
+                      </button>
+                    </MetaItem>
+                  )}
                   {run.request?.ticket && (
                     <MetaItem k="Ticket">
                       {ticketURL(ticketingUrl, run.request.ticket)

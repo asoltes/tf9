@@ -372,6 +372,54 @@ func TestPlanSavesAndApplyUsesReviewedPlan(t *testing.T) {
 	}
 }
 
+func TestParallelReviewedApplyUsesSavedPlan(t *testing.T) {
+	argsFile := filepath.Join(t.TempDir(), "args.txt")
+	t.Setenv("TF_TEST_ARGS", argsFile)
+	setupFakeBins(t, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$TF_TEST_ARGS\"\n")
+	tfDir := makeTfDir(t)
+	planFile := filepath.Join(t.TempDir(), "saved.tfplan")
+	if err := os.WriteFile(planFile, []byte("plan"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err := Run(Options{
+		SearchRoot:      tfDir,
+		TfCommand:       "apply",
+		ReportDir:       "-",
+		ProfileOverride: "test-profile",
+		Output:          io.Discard,
+		Parallel:        true,
+		ApplyPlanFiles:  map[string]string{filepath.Base(tfDir): planFile},
+	})
+	if err != nil {
+		t.Fatalf("parallel reviewed apply should be permitted: %v", err)
+	}
+	got, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "apply\n-input=false\n" + planFile + "\n"
+	if string(got) != want {
+		t.Fatalf("terraform args = %q, want %q", string(got), want)
+	}
+}
+
+func TestParallelApplyWithoutReviewedPlanIsRejected(t *testing.T) {
+	setupFakeBins(t, "#!/bin/sh\nexit 0\n")
+	tfDir := makeTfDir(t)
+	_, _, err := Run(Options{
+		SearchRoot:      tfDir,
+		TfCommand:       "apply",
+		ReportDir:       "-",
+		ProfileOverride: "test-profile",
+		Output:          io.Discard,
+		Parallel:        true,
+	})
+	if err == nil {
+		t.Fatal("parallel apply without reviewed plan files should be rejected")
+	}
+}
+
 func TestDeniedApplyIsNotReportedAsFailure(t *testing.T) {
 	setupFakeBins(t, "#!/bin/sh\necho 'Apply cancelled.'\nexit 1\n")
 	tfDir := makeTfDir(t)

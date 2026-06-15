@@ -107,6 +107,9 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .tgt-more{font-size:11px;color:var(--link);font-weight:600}
 .runs-page .mode-cell{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}
 .runs-page .mode-cell svg{width:14px;height:14px;color:var(--text-3)}
+.runs-page .trace-link{display:inline-flex;align-items:center;gap:5px;background:none;border:none;padding:0;cursor:pointer;font-size:12px;color:var(--blue)}
+.runs-page .trace-link:hover{text-decoration:underline}
+.runs-page .trace-link svg{width:13px;height:13px;flex-shrink:0}
 /* Both modes share one consistent text + icon color (no purple for parallel). */
 /* result mini bar */
 .runs-page .ts-cell{font-family:var(--sans);font-size:12.5px;color:var(--text-2);white-space:nowrap}
@@ -309,6 +312,18 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
   background:color-mix(in srgb,var(--command-color) 8%,var(--surface-raised));
 }
 .runs-page .reviewed-plan-countdown{font-family:var(--mono);font-size:10px;opacity:.82;margin-left:2px}
+/* run-mode selector inside the Apply reviewed plan confirm modal */
+.apply-mode-section{margin-bottom:14px}
+.apply-mode-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-2);margin-bottom:8px}
+.apply-mode-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.apply-mode-tile{display:flex;gap:10px;padding:11px 13px;border:2px solid var(--border);border-radius:10px;cursor:pointer;background:var(--surface-1);transition:all .12s}
+.apply-mode-tile:hover{border-color:var(--border-strong)}
+.apply-mode-tile.on{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 8%,var(--surface-1))}
+.apply-mode-tile .ti-ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;background:var(--surface-3);color:var(--text-2)}
+.apply-mode-tile.on .ti-ic{background:color-mix(in srgb,var(--blue) 18%,var(--surface-1));color:var(--blue)}
+.apply-mode-tile .ti-ic svg{width:16px;height:16px}
+.apply-mode-tile .ti-t{font-size:13px;font-weight:700;color:var(--text-1);display:block}
+.apply-mode-tile .ti-d{font-size:11px;color:var(--text-2);margin-top:2px;line-height:1.4;display:block}
 .runs-page .sp-approval-cmd{
   font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
   padding:2px 8px;border-radius:999px;

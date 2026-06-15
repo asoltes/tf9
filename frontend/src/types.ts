@@ -59,6 +59,7 @@ export interface Run {
   destroy?: number;
   savedPlanReady?: boolean;
   savedPlanExpiresAt?: string;
+  appliedByRunId?: string;
   hasGraph?: boolean;
 }
 

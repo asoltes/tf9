@@ -109,6 +109,71 @@ func TestPrepareReviewedApplyUsesPlanMetadata(t *testing.T) {
 	}
 }
 
+func TestPrepareReviewedApplyHonorsRequestedMode(t *testing.T) {
+	config.SetPath(filepath.Join(t.TempDir(), "config.yaml"))
+	t.Cleanup(func() { config.SetPath("") })
+
+	plan := &Run{
+		ID:             "run-0099",
+		Status:         StatusSuccess,
+		SavedPlanReady: true,
+		StartedAt:      time.Now(),
+		Request:        RunRequest{Command: "plan", Repo: "platform"},
+		Results:        []report.EnvResult{{Env: "dev"}, {Env: "prod"}},
+	}
+	m := &RunManager{runs: []*Run{plan}}
+	for _, target := range []string{"dev", "prod"} {
+		path := savedPlanPath(plan.ID, target)
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("plan"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	parallel, err := m.PrepareReviewedApply(RunRequest{Command: "apply", PlanRunID: plan.ID, Parallel: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !parallel.Parallel {
+		t.Fatalf("reviewed apply with Parallel=true should stay parallel: %#v", parallel)
+	}
+
+	seq, err := m.PrepareReviewedApply(RunRequest{Command: "apply", PlanRunID: plan.ID, Parallel: false})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if seq.Parallel {
+		t.Fatalf("reviewed apply with Parallel=false should stay sequential: %#v", seq)
+	}
+}
+
+func TestMarkPlanConsumedClearsSavedPlan(t *testing.T) {
+	config.SetPath(filepath.Join(t.TempDir(), "config.yaml"))
+	t.Cleanup(func() { config.SetPath("") })
+
+	expires := time.Now().Add(time.Hour)
+	plan := &Run{
+		ID:                 "run-0123",
+		Status:             StatusSuccess,
+		SavedPlanReady:     true,
+		SavedPlanExpiresAt: &expires,
+		Request:            RunRequest{Command: "plan", Repo: "platform"},
+	}
+	m := &RunManager{runs: []*Run{plan}}
+
+	m.MarkPlanConsumed(plan.ID, "run-0124")
+
+	got, _ := m.Get(plan.ID)
+	if got.SavedPlanReady || got.SavedPlanExpiresAt != nil {
+		t.Fatalf("MarkPlanConsumed should clear saved-plan availability: %#v", got)
+	}
+	if got.AppliedByRunID != "run-0124" {
+		t.Fatalf("MarkPlanConsumed should record apply run id: %#v", got)
+	}
+}
+
 func TestPrepareReviewedApplyRejectsMissingPlanID(t *testing.T) {
 	if _, err := (&RunManager{}).PrepareReviewedApply(RunRequest{Command: "apply"}); err == nil {
 		t.Fatal("expected missing planRunId to be rejected")

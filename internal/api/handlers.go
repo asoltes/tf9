@@ -848,6 +848,12 @@ func startRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, reportDir
 		jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// A reviewed-plan apply consumes its source plan: clear its saved-plan
+	// availability so the "Apply reviewed plan" action disappears and the same
+	// plan cannot be applied twice.
+	if req.Command == "apply" && req.PlanRunID != "" {
+		mgr.MarkPlanConsumed(req.PlanRunID, run.ID)
+	}
 	w.WriteHeader(http.StatusCreated)
 	jsonOK(w, map[string]string{"id": run.ID})
 }
@@ -1045,6 +1051,7 @@ func getRun(w http.ResponseWriter, _ *http.Request, mgr *RunManager, id string) 
 		Lines              []string           `json:"lines"`
 		SavedPlanReady     bool               `json:"savedPlanReady,omitempty"`
 		SavedPlanExpiresAt *time.Time         `json:"savedPlanExpiresAt,omitempty"`
+		AppliedByRunID     string             `json:"appliedByRunId,omitempty"`
 		AwaitingInput      bool               `json:"awaitingInput"`
 		ApprovalExpiresAt  *time.Time         `json:"approvalExpiresAt,omitempty"`
 		HasGraph           bool               `json:"hasGraph,omitempty"`
@@ -1061,6 +1068,7 @@ func getRun(w http.ResponseWriter, _ *http.Request, mgr *RunManager, id string) 
 		Lines:              run.lines,
 		SavedPlanReady:     run.SavedPlanReady,
 		SavedPlanExpiresAt: run.SavedPlanExpiresAt,
+		AppliedByRunID:     run.AppliedByRunID,
 		AwaitingInput:      run.AwaitingInput,
 		ApprovalExpiresAt:  run.ApprovalExpiresAt,
 		HasGraph:           graphExists(run.ID),

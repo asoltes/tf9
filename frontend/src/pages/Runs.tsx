@@ -411,11 +411,12 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
     setSelectedId(res.id);
   }
 
-  async function onApplyPlan(r: Run) {
+  async function onApplyPlan(r: Run, parallel: boolean) {
     const res = await api.post<{ id: string }>('/api/runs', {
       command: 'apply',
       repo: r.request.repo,
       planRunId: r.id,
+      parallel,
     });
     setPage(1);
     await loadRuns();
@@ -678,6 +679,7 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
               onStatusChange={() => { loadRuns(); if (selectedId) loadRunDetail(selectedId); }}
               onRerun={onRerun}
               onApplyPlan={onApplyPlan}
+              onSelectRun={selectRun}
               ticketingUrl={ticketingUrl}
             />
           )}

@@ -380,7 +380,12 @@ func Run(opts Options) ([]report.EnvResult, string, error) {
 		dirs = reorderDirs(dirs, labelFor, opts.PromotionOrder)
 	}
 
-	if opts.Parallel && (opts.TfCommand == "apply" || opts.TfCommand == "destroy") {
+	// Parallel is permitted for a reviewed apply (saved plan files supplied):
+	// each target replays its own pre-approved plan with no interactive prompt,
+	// so the promotion stop-on-first-failure safety does not apply. A normal
+	// apply (no reviewed plan) and any destroy still run sequentially.
+	reviewedApply := opts.TfCommand == "apply" && len(opts.ApplyPlanFiles) > 0
+	if opts.Parallel && (opts.TfCommand == "destroy" || (opts.TfCommand == "apply" && !reviewedApply)) {
 		return nil, "", fmt.Errorf("parallel execution is not allowed for %q — apply/destroy must run sequentially in promotion order", opts.TfCommand)
 	}
 
@@ -1101,6 +1106,15 @@ func runParallel(
 						return
 					}
 					args = append(args, "-out="+savedPlanFile)
+				}
+			} else if opts.TfCommand == "apply" {
+				if pf := opts.ApplyPlanFiles[env]; pf != "" {
+					if _, err := os.Stat(pf); err != nil {
+						fmt.Fprintf(prefixedOut, "[FAILED] reviewed plan for %s is unavailable: %v\n", env, err)
+						ch <- slot{idx: idx, result: envResult{env: env, profile: meta.profile, failed: true}}
+						return
+					}
+					args = []string{"apply", "-input=false", pf}
 				}
 			}
 			costPlanFile := ""

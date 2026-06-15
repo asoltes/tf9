@@ -90,6 +90,7 @@ type Run struct {
 	GitBranch          string             `json:"gitBranch,omitempty"`
 	SavedPlanReady     bool               `json:"savedPlanReady,omitempty"`
 	SavedPlanExpiresAt *time.Time         `json:"savedPlanExpiresAt,omitempty"`
+	AppliedByRunID     string             `json:"appliedByRunId,omitempty"` // apply run that consumed this plan's saved plan
 
 	AwaitingInput     bool       `json:"awaitingInput"` // true while terraform is blocked on the approval prompt
 	ApprovalExpiresAt *time.Time `json:"approvalExpiresAt,omitempty"`
@@ -225,6 +226,7 @@ type runRecord struct {
 	GitBranch          string             `json:"gitBranch,omitempty"`
 	SavedPlanReady     bool               `json:"savedPlanReady,omitempty"`
 	SavedPlanExpiresAt *time.Time         `json:"savedPlanExpiresAt,omitempty"`
+	AppliedByRunID     string             `json:"appliedByRunId,omitempty"`
 }
 
 const (
@@ -285,6 +287,7 @@ func (m *RunManager) loadFromDisk() {
 			GitBranch:          rec.GitBranch,
 			SavedPlanReady:     rec.SavedPlanReady,
 			SavedPlanExpiresAt: rec.SavedPlanExpiresAt,
+			AppliedByRunID:     rec.AppliedByRunID,
 			lines:              rec.Lines,
 			cancel:             func() {}, // no-op for restored runs
 		}
@@ -322,6 +325,7 @@ func (m *RunManager) persist() {
 			GitBranch:          r.GitBranch,
 			SavedPlanReady:     r.SavedPlanReady,
 			SavedPlanExpiresAt: r.SavedPlanExpiresAt,
+			AppliedByRunID:     r.AppliedByRunID,
 			Lines:              lines,
 		}
 		r.mu.RUnlock()
@@ -661,10 +665,27 @@ func (m *RunManager) PrepareReviewedApply(req RunRequest) (RunRequest, error) {
 	prepared.EnvFilter = strings.Join(targets, ",")
 	prepared.PromotionOrder = targets
 	prepared.ExtraArgs = nil
-	prepared.Parallel = false
+	prepared.Parallel = req.Parallel
 	prepared.AutoApprove = true
 	prepared.Cost = false
 	return prepared, nil
+}
+
+// MarkPlanConsumed clears the saved-plan availability on a reviewed plan run
+// once its plan has been applied, so the "Apply reviewed plan" action no longer
+// appears for it and the same plan cannot be applied twice. It records the apply
+// run id on the plan for bidirectional traceability.
+func (m *RunManager) MarkPlanConsumed(planRunID, applyRunID string) {
+	run, ok := m.Get(planRunID)
+	if !ok {
+		return
+	}
+	run.mu.Lock()
+	run.SavedPlanReady = false
+	run.SavedPlanExpiresAt = nil
+	run.AppliedByRunID = applyRunID
+	run.mu.Unlock()
+	m.persist()
 }
 
 // errString renders err for logging, empty when nil.
