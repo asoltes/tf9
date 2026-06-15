@@ -62,6 +62,26 @@ server yourself for the suite.
 Prereqs (once): `npm install` in `frontend/`, plus a Go toolchain. Override the
 Go binary with `GO_BINARY=/path/to/go` if it isn't at `/usr/local/go/bin/go`.
 
+## Recording test evidence — video proof
+
+Every e2e test run captures **video and screenshots** as evidence (enabled in
+`playwright.config.ts`). When verifying a bug fix or testing a feature with e2e:
+
+1. **Capture a run video** — drive the localtest or run a spec, Playwright records.
+2. **Save under `docs/e2e/recording/<bug-name>/`** — e.g.
+   `docs/e2e/recording/approval-gate-refresh/run-001.webm`.
+3. **Include in commit message or PR description** — reference the video so
+   reviewers can see the fix in action without reproducing it locally.
+
+Playwright saves videos to `frontend/test-results/` by default (git-ignored). Copy
+the relevant ones to `docs/e2e/recording/<bug-name>/` before committing. Name them
+descriptively (e.g. `before-fix.webm`, `after-fix.webm`, `happy-path.webm`) so
+the sequence is clear.
+
+This is the "proof of correct behavior" that pairs with the code review — video
+evidence that the UI behaves as intended, live-streamed over the real SSE path,
+with real Terraform state changes, on the real web server, no mocks.
+
 ## B. Create a localtest by hand (interactive / MCP browser driving)
 
 Use this when you want to click through the real UI yourself or drive it with the
@@ -112,6 +132,10 @@ Playwright MCP tools (e.g. reproducing a live-terminal bug). **Reuse the harness
    (`terraform_data` only).
 7. Runs are sequential (`workers: 1`). Order-sensitive flows (e.g. Deny before
    Approve so state is still dirty) are fine — see `run-apply-approval.spec.ts`.
+8. **Save test evidence** — after the suite runs, copy the video recordings from
+   `frontend/test-results/` to `docs/e2e/recording/<bug-name>/` with descriptive
+   names (e.g. `approval-gate-refresh/before-fix.webm`, `after-fix.webm`). These
+   are proof that the fix works in the real web UI.
 
 ## Troubleshooting
 
