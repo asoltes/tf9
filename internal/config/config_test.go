@@ -321,3 +321,74 @@ func TestLegacyMigration(t *testing.T) {
 		t.Fatalf("legacy backup not created: %v %v", backups, err)
 	}
 }
+
+func TestAIModelsValidateAndRoundTrip(t *testing.T) {
+	useTestConfig(t)
+	// A row that has a label but an empty id must be rejected.
+	if err := Save(Config{Version: 1, Web: WebConfig{AIModels: []AIModel{{Label: "blank", ID: ""}}}}); err == nil {
+		t.Fatal("expected error for ai_models row with empty id")
+	}
+
+	want := Config{Version: 1, Web: WebConfig{AIModels: []AIModel{
+		{Label: "  Sonnet 4.6 ", ID: " sonnet-id "},
+		{Label: "", ID: "opus-id", Default: true},
+	}}}
+	if err := Save(want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	models := got.Web.AIModels
+	if len(models) != 2 {
+		t.Fatalf("ai_models = %#v", models)
+	}
+	if models[0].Label != "Sonnet 4.6" || models[0].ID != "sonnet-id" {
+		t.Fatalf("first model not trimmed: %#v", models[0])
+	}
+	if models[1].Label != "opus-id" { // blank label defaults to id
+		t.Fatalf("blank label should default to id: %#v", models[1])
+	}
+	if got.Web.DefaultAIModelID() != "opus-id" {
+		t.Fatalf("DefaultAIModelID() = %q, want opus-id", got.Web.DefaultAIModelID())
+	}
+	if !got.Web.IsValidAIModelID("sonnet-id") || got.Web.IsValidAIModelID("missing") {
+		t.Fatal("IsValidAIModelID did not match the configured list")
+	}
+}
+
+func TestAIModelsRejectDuplicateID(t *testing.T) {
+	useTestConfig(t)
+	err := Save(Config{Version: 1, Web: WebConfig{AIModels: []AIModel{
+		{Label: "A", ID: "dupe"},
+		{Label: "B", ID: "dupe"},
+	}}})
+	if err == nil || !strings.Contains(err.Error(), "duplicate id") {
+		t.Fatalf("expected duplicate id error, got %v", err)
+	}
+}
+
+func TestAIModelsRejectMultipleDefaults(t *testing.T) {
+	useTestConfig(t)
+	err := Save(Config{Version: 1, Web: WebConfig{AIModels: []AIModel{
+		{Label: "A", ID: "a", Default: true},
+		{Label: "B", ID: "b", Default: true},
+	}}})
+	if err == nil || !strings.Contains(err.Error(), "at most one") {
+		t.Fatalf("expected single-default error, got %v", err)
+	}
+}
+
+func TestEffectiveAIModelsFallsBackToBuiltins(t *testing.T) {
+	web := WebConfig{}
+	if len(web.EffectiveAIModels()) != len(BuiltinAIModels) {
+		t.Fatal("empty list should fall back to builtins")
+	}
+	if web.DefaultAIModelID() != "sonnet" {
+		t.Fatalf("builtin default = %q, want sonnet", web.DefaultAIModelID())
+	}
+	if !web.IsValidAIModelID("haiku") {
+		t.Fatal("builtin haiku should be valid")
+	}
+}

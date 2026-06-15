@@ -1,6 +1,6 @@
 import type {
-  CostScanHistoryItem, CostScanResult, GitCommit, Identity, InfracostSettings,
-  LogLevel, LogsResponse, WorkspaceChatMode, WorkspaceChatModel, WorkspaceChatState, WorkspaceEntry, WorkspaceFile,
+  AIModel, CostScanHistoryItem, CostScanResult, GitCommit, Identity, InfracostSettings,
+  LogLevel, LogsResponse, WorkspaceChatMode, WorkspaceChatModelId, WorkspaceChatState, WorkspaceEntry, WorkspaceFile,
 } from './types';
 
 export class ApiError extends Error {
@@ -50,6 +50,11 @@ export const configApi = {
 export const reconcilePromptApi = {
   get: () => api.get<{ prompt: string }>('/api/web/reconcile-prompt'),
   save: (prompt: string) => api.put<{ prompt: string }>('/api/web/reconcile-prompt', { prompt }),
+};
+
+export const aiModelsApi = {
+  get: () => api.get<{ models: AIModel[] }>('/api/web/ai-models'),
+  save: (models: AIModel[]) => api.put<{ models: AIModel[] }>('/api/web/ai-models', { models }),
 };
 
 // ── Profile mappings ──────────────────────────────────────────────
@@ -190,8 +195,8 @@ export const workspaceChatApi = {
       `/api/repos/${encodeURIComponent(name)}/workspace/chat/mode`,
       { mode },
     ),
-  setModel: (name: string, model: WorkspaceChatModel) =>
-    api.put<{ model: WorkspaceChatModel }>(
+  setModel: (name: string, model: WorkspaceChatModelId) =>
+    api.put<{ model: WorkspaceChatModelId }>(
       `/api/repos/${encodeURIComponent(name)}/workspace/chat/model`,
       { model },
     ),

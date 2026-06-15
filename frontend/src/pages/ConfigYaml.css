@@ -145,5 +145,12 @@
 .config-prompt-editor textarea{display:block;width:100%;min-height:280px;padding:14px 15px;resize:vertical;border:0;outline:0;background:transparent;color:var(--text);font:12px/1.6 var(--mono)}
 .config-prompt-editor:focus-within{border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 18%,transparent)}
 .config-prompt-group>small{display:block;margin-top:8px;color:var(--text-3);font-size:10.5px}
+.config-models-list{display:flex;flex-direction:column;gap:10px}
+.config-models-empty{margin:0 0 4px;color:var(--text-2);font-size:12px}
+.config-model-row{display:flex;align-items:center;gap:10px}
+.config-model-row .inp{flex:1 1 0;min-width:0}
+.config-model-default{display:flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11px;color:var(--text-2);white-space:nowrap}
+.config-model-add{margin-top:12px}
+.config-model-add svg{width:14px;height:14px;margin-right:5px;vertical-align:-2px}
 .config-global-error{margin:14px 20px 0;padding:9px 11px;border:1px solid var(--red);border-radius:8px;background:var(--red-bg);color:var(--red);font-size:12px}
 @media(max-width:900px){.config-settings-fields{grid-template-columns:1fr}.config-settings-group-head{align-items:flex-start;flex-wrap:wrap}.config-settings-group-head .btn,.config-prompt-state{margin-left:0}}

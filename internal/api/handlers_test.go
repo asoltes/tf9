@@ -150,6 +150,76 @@ func TestReconcilePromptAPIUpdatesGlobalConfig(t *testing.T) {
 	}
 }
 
+func TestWebSettingsExposeAIModelsFallbackToBuiltins(t *testing.T) {
+	handler := testHandler(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/web/settings", nil)
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("GET /api/web/settings status = %d body=%s", res.Code, res.Body.String())
+	}
+	var got struct {
+		AIModels []config.AIModel `json:"aiModels"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got.AIModels, config.BuiltinAIModels) {
+		t.Fatalf("aiModels = %#v, want builtins", got.AIModels)
+	}
+}
+
+func TestAIModelsAPIUpdatesGlobalConfig(t *testing.T) {
+	handler := testHandler(t)
+
+	body, _ := json.Marshal(map[string]any{"models": []map[string]any{
+		{"label": "  Sonnet 4.6  ", "id": "  eu.anthropic.claude-sonnet-4-6  ", "default": true},
+		{"label": "", "id": "eu.anthropic.claude-opus-4-8"},
+	}})
+	req := httptest.NewRequest(http.MethodPut, "/api/web/ai-models", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("PUT /api/web/ai-models status = %d body=%s", res.Code, res.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/web/ai-models", nil)
+	res = httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK {
+		t.Fatalf("GET /api/web/ai-models status = %d body=%s", res.Code, res.Body.String())
+	}
+	var got struct {
+		Models []config.AIModel `json:"models"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	want := []config.AIModel{
+		{Label: "Sonnet 4.6", ID: "eu.anthropic.claude-sonnet-4-6", Default: true},
+		{Label: "eu.anthropic.claude-opus-4-8", ID: "eu.anthropic.claude-opus-4-8"},
+	}
+	if !reflect.DeepEqual(got.Models, want) {
+		t.Fatalf("models = %#v, want %#v", got.Models, want)
+	}
+}
+
+func TestAIModelsAPIRejectsDuplicateID(t *testing.T) {
+	handler := testHandler(t)
+
+	body, _ := json.Marshal(map[string]any{"models": []map[string]any{
+		{"label": "A", "id": "dupe"},
+		{"label": "B", "id": "dupe"},
+	}})
+	req := httptest.NewRequest(http.MethodPut, "/api/web/ai-models", bytes.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusBadRequest {
+		t.Fatalf("PUT /api/web/ai-models duplicate status = %d body=%s", res.Code, res.Body.String())
+	}
+}
+
 func TestConfigAPIFormatsYAMLWithoutSaving(t *testing.T) {
 	handler := testHandler(t)
 	body, _ := json.Marshal(map[string]string{

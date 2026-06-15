@@ -102,6 +102,13 @@ export interface WebSettings {
   reviewedPlanTimeoutSeconds: number;
   ticketingUrl: string | null;
   reconcilePrompt: string;
+  aiModels?: AIModel[];
+}
+
+export interface AIModel {
+  label: string;
+  id: string;
+  default?: boolean;
 }
 
 export type GitProvider = 'github' | 'gitlab' | 'git';
@@ -379,7 +386,8 @@ export interface WorkspaceFile {
 }
 
 export type WorkspaceChatMode = 'review' | 'autoApply';
-export type WorkspaceChatModel = 'sonnet' | 'opus' | 'haiku';
+// A model id drawn from the configurable web.ai_models list (see AIModel).
+export type WorkspaceChatModelId = string;
 
 export interface WorkspaceChatMessage {
   id: string;
@@ -392,7 +400,7 @@ export interface WorkspaceChatState {
   available: boolean;
   authError?: string;
   mode: WorkspaceChatMode;
-  model: WorkspaceChatModel;
+  model: WorkspaceChatModelId;
   messages: WorkspaceChatMessage[];
   running: boolean;
   activeTurnId?: string;

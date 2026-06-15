@@ -89,6 +89,60 @@ type WebConfig struct {
 	ReviewedPlanTimeoutSeconds int     `yaml:"reviewed_plan_timeout_seconds,omitempty" json:"reviewed_plan_timeout_seconds,omitempty"`
 	TicketingURL               *string `yaml:"ticketing_url" json:"ticketing_url"`
 	ReconcilePrompt            string  `yaml:"reconcile_prompt,omitempty" json:"reconcile_prompt,omitempty"`
+	// AIModels is the user-extensible list of models offered to the workspace AI
+	// chat. Empty means use BuiltinAIModels (the historical sonnet/opus/haiku
+	// aliases). Anthropic/Bedrock add and retire models frequently, so this list
+	// is editable in Global settings rather than a fixed enum.
+	AIModels []AIModel `yaml:"ai_models,omitempty" json:"ai_models,omitempty"`
+}
+
+// AIModel is one selectable model for the workspace AI chat. ID is passed to
+// `claude --model`; Label is the human-friendly name shown in the dropdown.
+type AIModel struct {
+	Label   string `yaml:"label" json:"label"`
+	ID      string `yaml:"id" json:"id"`
+	Default bool   `yaml:"default,omitempty" json:"default,omitempty"`
+}
+
+// BuiltinAIModels is the fallback list used when web.ai_models is empty: the
+// historical Sonnet/Opus/Haiku aliases passed verbatim to `claude --model`.
+var BuiltinAIModels = []AIModel{
+	{Label: "Sonnet", ID: "sonnet", Default: true},
+	{Label: "Opus", ID: "opus"},
+	{Label: "Haiku", ID: "haiku"},
+}
+
+// EffectiveAIModels returns the configured list, or BuiltinAIModels when empty.
+func (w WebConfig) EffectiveAIModels() []AIModel {
+	if len(w.AIModels) == 0 {
+		return BuiltinAIModels
+	}
+	return w.AIModels
+}
+
+// DefaultAIModelID returns the id of the entry flagged default, falling back to
+// the first entry in the effective list.
+func (w WebConfig) DefaultAIModelID() string {
+	models := w.EffectiveAIModels()
+	for _, m := range models {
+		if m.Default {
+			return m.ID
+		}
+	}
+	if len(models) > 0 {
+		return models[0].ID
+	}
+	return ""
+}
+
+// IsValidAIModelID reports whether id is present in the effective list.
+func (w WebConfig) IsValidAIModelID(id string) bool {
+	for _, m := range w.EffectiveAIModels() {
+		if m.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (w WebConfig) ApprovalTimeout() time.Duration {
@@ -564,6 +618,9 @@ func validate(cfg *Config) error {
 		}
 	}
 	cfg.Web.ReconcilePrompt = strings.TrimSpace(cfg.Web.ReconcilePrompt)
+	if err := validateAIModels(&cfg.Web); err != nil {
+		return err
+	}
 	repoNames := map[string]bool{}
 	for ri := range cfg.Repositories {
 		repo := &cfg.Repositories[ri]
@@ -620,6 +677,50 @@ func validate(cfg *Config) error {
 	}
 	if cfg.Repositories == nil {
 		cfg.Repositories = []Repository{}
+	}
+	return nil
+}
+
+// validateAIModels normalizes the AI model list: trims fields, drops fully
+// blank rows, requires a non-empty id, defaults a blank label to the id, rejects
+// duplicate ids, and allows at most one entry flagged default.
+func validateAIModels(web *WebConfig) error {
+	if len(web.AIModels) == 0 {
+		web.AIModels = nil
+		return nil
+	}
+	seen := map[string]bool{}
+	defaults := 0
+	cleaned := make([]AIModel, 0, len(web.AIModels))
+	for i := range web.AIModels {
+		model := &web.AIModels[i]
+		model.Label = strings.TrimSpace(model.Label)
+		model.ID = strings.TrimSpace(model.ID)
+		if model.Label == "" && model.ID == "" {
+			continue // drop a fully blank row
+		}
+		if model.ID == "" {
+			return fmt.Errorf("web.ai_models[%d].id is required", i)
+		}
+		if model.Label == "" {
+			model.Label = model.ID
+		}
+		if seen[model.ID] {
+			return fmt.Errorf("web.ai_models has duplicate id %q", model.ID)
+		}
+		seen[model.ID] = true
+		if model.Default {
+			defaults++
+		}
+		cleaned = append(cleaned, *model)
+	}
+	if defaults > 1 {
+		return fmt.Errorf("web.ai_models may flag at most one model as default")
+	}
+	if len(cleaned) == 0 {
+		web.AIModels = nil
+	} else {
+		web.AIModels = cleaned
 	}
 	return nil
 }

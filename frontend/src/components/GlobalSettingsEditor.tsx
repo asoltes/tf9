@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { api, awsApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
-import type { Paginated, Repo, RepoConfig } from '../types';
+import { aiModelsApi, api, awsApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
+import type { AIModel, Paginated, Repo, RepoConfig } from '../types';
 import { DEFAULT_RECONCILE_PROMPT } from '../lib/reconcilePrompt';
-import { IconFlow, IconKey } from './repos/icons';
+import { IconFlow, IconKey, IconList, IconPlus, IconTrash } from './repos/icons';
 
 type RepoDefaults = Pick<RepoConfig,
   'default_aws_profile' | 'default_account_id' | 'default_region'
@@ -31,8 +31,10 @@ export default function GlobalSettingsEditor({
   const [awsProfiles, setAwsProfiles] = useState<string[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, AWSProfileDetail>>({});
   const [prompt, setPrompt] = useState(DEFAULT_RECONCILE_PROMPT);
+  const [aiModels, setAiModels] = useState<AIModel[]>([]);
   const [saving, setSaving] = useState(false);
   const [promptSaving, setPromptSaving] = useState(false);
+  const [modelsSaving, setModelsSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -41,13 +43,15 @@ export default function GlobalSettingsEditor({
       awsApi.profiles().catch(() => []),
       awsApi.profileDetails().catch(() => ({})),
       reconcilePromptApi.get().catch(() => ({ prompt: '' })),
-    ]).then(([repoResult, profiles, details, promptResult]) => {
+      aiModelsApi.get().catch(() => ({ models: [] })),
+    ]).then(([repoResult, profiles, details, promptResult, modelsResult]) => {
       const enabled = repoResult.items.filter(repo => !repo.disabled);
       setRepos(enabled);
       setRepoName(enabled[0]?.name ?? '');
       setAwsProfiles(profiles);
       setProfileDetails(details);
       setPrompt(promptResult.prompt || DEFAULT_RECONCILE_PROMPT);
+      setAiModels(modelsResult.models ?? []);
     }).catch(err => setError(err instanceof Error ? err.message : 'Could not load global settings.'));
   }, []);
 
@@ -123,6 +127,37 @@ export default function GlobalSettingsEditor({
       setError(err instanceof Error ? err.message : 'Could not save the global reconcile prompt.');
     } finally {
       setPromptSaving(false);
+    }
+  }
+
+  function updateModel(index: number, patch: Partial<AIModel>) {
+    setAiModels(current => current.map((model, i) => (i === index ? { ...model, ...patch } : model)));
+  }
+
+  function setDefaultModel(index: number) {
+    setAiModels(current => current.map((model, i) => ({ ...model, default: i === index })));
+  }
+
+  function addModel() {
+    setAiModels(current => [...current, { label: '', id: '', default: current.length === 0 }]);
+  }
+
+  function removeModel(index: number) {
+    setAiModels(current => current.filter((_, i) => i !== index));
+  }
+
+  async function saveAiModels(models: AIModel[]) {
+    setModelsSaving(true);
+    try {
+      const saved = await aiModelsApi.save(models);
+      setAiModels(saved.models ?? []);
+      await onSaved();
+      setError('');
+      notify('AI models saved');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save AI models.');
+    } finally {
+      setModelsSaving(false);
     }
   }
 
@@ -207,6 +242,60 @@ export default function GlobalSettingsEditor({
             <textarea value={prompt} onChange={event => setPrompt(event.target.value)} aria-label="Global reconcile with AI prompt" spellCheck={false} />
           </div>
           <small>{disabled ? 'Save or reload the YAML changes before editing global settings.' : 'Saving the built-in text clears the YAML override.'}</small>
+        </div>
+
+        <div className="config-settings-group config-models-group">
+          <div className="config-settings-group-head">
+            <span className="config-settings-icon ai"><IconList /></span>
+            <div>
+              <strong>AI models</strong>
+              <span>Models offered in the workspace AI chat. The ID is passed to <code>claude --model</code> (e.g. a Bedrock inference-profile ID).</span>
+            </div>
+            <button className="btn btn-normal btn-sm" disabled={disabled || modelsSaving || aiModels.length === 0} onClick={() => void saveAiModels([])}>
+              Reset to built-in
+            </button>
+            <button className="btn btn-primary btn-sm" disabled={disabled || modelsSaving} onClick={() => void saveAiModels(aiModels)}>
+              {modelsSaving ? 'Saving…' : 'Save AI models'}
+            </button>
+          </div>
+          <div className="config-models-list">
+            {aiModels.length === 0 && (
+              <p className="config-models-empty">Using built-in models (Sonnet, Opus, Haiku). Add a model to override the list.</p>
+            )}
+            {aiModels.map((model, index) => (
+              <div className="config-model-row" key={index}>
+                <label className="config-model-default" title="Default model for new chats">
+                  <input
+                    type="radio"
+                    name="config-default-ai-model"
+                    checked={!!model.default}
+                    onChange={() => setDefaultModel(index)}
+                  />
+                  <span>Default</span>
+                </label>
+                <input
+                  className="inp"
+                  value={model.label}
+                  onChange={event => updateModel(index, { label: event.target.value })}
+                  placeholder="Label (e.g. Sonnet 4.6)"
+                  aria-label="Model label"
+                />
+                <input
+                  className="inp mono"
+                  value={model.id}
+                  onChange={event => updateModel(index, { id: event.target.value })}
+                  placeholder="Model ID / inference profile"
+                  aria-label="Model ID"
+                />
+                <button className="btn btn-icon btn-sm" onClick={() => removeModel(index)} aria-label="Remove model" title="Remove model">
+                  <IconTrash />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-normal btn-sm config-model-add" onClick={addModel}>
+            <IconPlus /> Add model
+          </button>
         </div>
       </div>
     </section>

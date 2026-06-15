@@ -62,7 +62,42 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			"reviewedPlanTimeoutSeconds": int(cfg.Web.ReviewedPlanTimeout() / time.Second),
 			"ticketingUrl":               cfg.Web.TicketingURL,
 			"reconcilePrompt":            cfg.Web.ReconcilePrompt,
+			"aiModels":                   cfg.Web.EffectiveAIModels(),
 		})
+	})
+	mux.HandleFunc("/api/web/ai-models", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]any{"models": cfg.Web.EffectiveAIModels()})
+		case http.MethodPut:
+			var body struct {
+				Models []config.AIModel `json:"models"`
+			}
+			if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&body); err != nil {
+				jsonErr(w, "bad_request", "invalid ai models payload", http.StatusBadRequest)
+				return
+			}
+			if err := config.Update(func(cfg *config.Config) error {
+				cfg.Web.AIModels = body.Models
+				return nil
+			}); err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]any{"models": cfg.Web.EffectiveAIModels()})
+		default:
+			methodNotAllowed(w)
+		}
 	})
 	mux.HandleFunc("/api/web/reconcile-prompt", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
