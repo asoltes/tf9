@@ -7,13 +7,14 @@ type AuthState = 'checking' | 'ok' | 'fail';
 type ActionState = 'idle' | 'running' | 'done' | 'error' | 'logging-out';
 
 const MIN_CHECK_MS = 900;
+const STS_PROFILE_KEY = 'tf9-sts-profile';
 
 export default function StsBadge() {
   const [state, setState] = useState<AuthState>('checking');
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [popover, setPopover] = useState(false);
   const [profiles, setProfiles] = useState<string[]>([]);
-  const [selectedProfile, setSelectedProfile] = useState('');
+  const [selectedProfile, setSelectedProfile] = useState(() => localStorage.getItem(STS_PROFILE_KEY) ?? '');
   const [actionState, setActionState] = useState<ActionState>('idle');
   const [loginLines, setLoginLines] = useState<string[]>([]);
   const termRef = useRef<HTMLDivElement>(null);
@@ -36,10 +37,19 @@ export default function StsBadge() {
   }
 
   useEffect(() => {
-    runCheck();
+    runCheck(selectedProfile || undefined);
     awsApi.profiles().then(p => setProfiles(p ?? [])).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Selecting a profile re-checks identity against it and persists the choice
+  // so the badge reflects the chosen profile on subsequent loads.
+  function handleProfileChange(profile: string) {
+    setSelectedProfile(profile);
+    if (profile) localStorage.setItem(STS_PROFILE_KEY, profile);
+    else localStorage.removeItem(STS_PROFILE_KEY);
+    runCheck(profile || undefined);
+  }
 
   // Auto-scroll terminal output.
   useEffect(() => {
@@ -189,7 +199,7 @@ export default function StsBadge() {
             <select
               className="ssp-sel"
               value={selectedProfile || identity?.profile || ''}
-              onChange={e => setSelectedProfile(e.target.value)}
+              onChange={e => handleProfileChange(e.target.value)}
               disabled={busy}
             >
               {profiles.length === 0 && <option value="">default</option>}

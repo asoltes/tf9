@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -348,6 +349,51 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 		}
 		formatConfigSource(w, r)
 	})
+	mux.HandleFunc("/api/config/backups", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			jsonOK(w, map[string]any{"backups": config.ListBackups()})
+		case http.MethodPost:
+			backups, err := config.BackupNow()
+			if err != nil {
+				jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]any{"backups": backups})
+		default:
+			methodNotAllowed(w)
+		}
+	})
+	mux.HandleFunc("/api/config/backups/", func(w http.ResponseWriter, r *http.Request) {
+		rest := strings.TrimPrefix(r.URL.Path, "/api/config/backups/")
+		name, action, found := strings.Cut(rest, "/")
+		decoded, err := url.PathUnescape(name)
+		if err != nil {
+			jsonErr(w, "bad_request", "invalid backup name", http.StatusBadRequest)
+			return
+		}
+		switch {
+		case r.Method == http.MethodDelete && !found:
+			if err := config.DeleteBackup(decoded); err != nil {
+				jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
+				return
+			}
+			jsonOK(w, map[string]any{"backups": config.ListBackups()})
+		case r.Method == http.MethodPost && found && action == "restore":
+			if err := config.RestoreBackup(decoded); err != nil {
+				jsonErr(w, "bad_request", err.Error(), http.StatusBadRequest)
+				return
+			}
+			path, content, revision, err := config.ReadRaw()
+			if err != nil {
+				jsonErr(w, "internal", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]string{"path": path, "content": content, "revision": revision})
+		default:
+			jsonErr(w, "not_found", "unknown backup action", http.StatusNotFound)
+		}
+	})
 
 	// Profile mappings
 	mux.HandleFunc("/api/profile-mappings", func(w http.ResponseWriter, r *http.Request) {
@@ -454,7 +500,7 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			args = append(args, "--profile", profile)
 		}
 		cmd := exec.CommandContext(r.Context(), "aws", args...)
-		cmd.Env = os.Environ()
+		cmd.Env = aws.ProfileEnv(os.Environ(), profile, "")
 
 		pr, pw, err := os.Pipe()
 		if err != nil {
@@ -535,7 +581,7 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			args = append(args, "--profile", profile)
 		}
 		cmd := exec.CommandContext(r.Context(), "aws", args...)
-		cmd.Env = os.Environ()
+		cmd.Env = aws.ProfileEnv(os.Environ(), profile, "")
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			msg := strings.TrimSpace(string(out))

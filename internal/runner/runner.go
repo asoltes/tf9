@@ -1169,7 +1169,10 @@ func resolvedMeta(meta targetMeta, override string) targetMeta {
 		meta.accountID = ""
 	}
 	if meta.profile == "" {
-		meta.profile = os.Getenv("AWS_PROFILE")
+		if ambient := os.Getenv("AWS_PROFILE"); ambient != "" {
+			slog.Warn("no profile configured for target; falling back to ambient AWS_PROFILE", "profile", ambient)
+			meta.profile = ambient
+		}
 	}
 	return meta
 }
@@ -1196,11 +1199,10 @@ func ensureSessions(ctx context.Context, dirs []string, metaFor map[string]targe
 }
 
 func terraformEnv(meta targetMeta) []string {
-	env := append(os.Environ(), "AWS_PROFILE="+meta.profile)
-	if meta.region != "" {
-		env = append(env, "AWS_REGION="+meta.region, "AWS_DEFAULT_REGION="+meta.region)
-	}
-	return env
+	// Strip any inherited AWS credential vars so the resolved profile is the
+	// ONLY credential source — otherwise static env credentials outrank
+	// AWS_PROFILE and terraform silently runs against the wrong account.
+	return aws.ProfileEnv(os.Environ(), meta.profile, meta.region)
 }
 
 type prefixWriter struct {

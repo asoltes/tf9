@@ -47,6 +47,18 @@ export const configApi = {
     api.post<{ content: string }>('/api/config/format', { content }),
 };
 
+export type ConfigBackup = { name: string; modTime: string; size: number };
+
+export const backupsApi = {
+  list:    () => api.get<{ backups: ConfigBackup[] }>('/api/config/backups'),
+  create:  () => api.post<{ backups: ConfigBackup[] }>('/api/config/backups', {}),
+  restore: (name: string) =>
+    api.post<{ path: string; content: string; revision: string }>(
+      `/api/config/backups/${encodeURIComponent(name)}/restore`, {}),
+  remove: (name: string) =>
+    api.delete<{ backups: ConfigBackup[] }>(`/api/config/backups/${encodeURIComponent(name)}`),
+};
+
 export const reconcilePromptApi = {
   get: () => api.get<{ prompt: string }>('/api/web/reconcile-prompt'),
   save: (prompt: string) => api.put<{ prompt: string }>('/api/web/reconcile-prompt', { prompt }),

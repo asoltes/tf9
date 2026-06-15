@@ -13,7 +13,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Shell from '../Shell';
-import { api, awsApi } from '../api';
+import { api, awsApi, profileMappingsApi } from '../api';
+import type { ProfileMapping, AWSProfileDetail } from '../api';
 import type { Repo, RepoConfig, RepoTarget, BrowseResult, Paginated } from '../types';
 import {
   IconRepo, IconKey, IconGlobe, IconId, IconArrow, IconPlus, IconEdit,
@@ -21,7 +22,7 @@ import {
   IconTrash, IconUp, IconDown, IconFile,
 } from '../components/repos/icons';
 import {
-  stageColor, groupKeyOf, deriveGroups, reorderWithinGroup, leafDir,
+  stageColor, groupKeyOf, deriveGroups, reorderWithinGroup, leafDir, autoStageName,
 } from '../components/repos/repoModel';
 import EditStageModal from '../components/repos/EditStageModal';
 
@@ -809,6 +810,8 @@ export default function Repos() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [repoTargets, setRepoTargets] = useState<Record<string, RepoTarget[]>>({});
   const [awsProfiles, setAwsProfiles] = useState<string[]>([]);
+  const [profileMappings, setProfileMappings] = useState<ProfileMapping[]>([]);
+  const [profileDetails, setProfileDetails] = useState<Record<string, AWSProfileDetail>>({});
 
   const [cfgRepo, setCfgRepo] = useState<Repo | null>(null);
   const [cfgTargets, setCfgTargets] = useState<RepoTarget[]>([]);
@@ -832,6 +835,8 @@ export default function Repos() {
 
   useEffect(() => {
     awsApi.profiles().then(setAwsProfiles).catch(() => setAwsProfiles([]));
+    profileMappingsApi.get().then(m => setProfileMappings(m ?? [])).catch(() => {});
+    awsApi.profileDetails().then(d => setProfileDetails(d ?? {})).catch(() => {});
   }, []);
 
   const loadRepos = useCallback(() => {
@@ -997,18 +1002,30 @@ export default function Repos() {
 
   function addTarget(directory: string) {
     if (cfgTargets.some(t => t.directory === directory)) return;
-    const name = directory.split('/').pop() || directory;
-    const matchingProfile = cfgDefaults.default_aws_profile
-      || awsProfiles.find(p => p === name)
+
+    const name = autoStageName(directory);
+    const leaf = directory.split('/').pop() || directory;
+
+    // profile: profile_mappings(leaf) -> repo default -> single-profile fallback
+    const mapped = profileMappings.find(m => m.dir === leaf)?.profile;
+    const profile = mapped || cfgDefaults.default_aws_profile
       || (awsProfiles.length === 1 ? awsProfiles[0] : '');
-    const next = [...cfgTargets, {
-      name,
-      directory,
-      aws_profile: matchingProfile,
-      account_id: cfgDefaults.default_account_id || undefined,
-      region: cfgDefaults.default_region || undefined,
-    } as RepoTarget];
-    persistTargets(next, `Added ${name} to the ${groupKeyOf({ name, directory, aws_profile: '' })}/ pipeline`);
+
+    // region/account: ~/.aws/config for the resolved profile -> repo defaults
+    const detail = profile ? profileDetails[profile] : undefined;
+    const region     = detail?.region     || cfgDefaults.default_region     || undefined;
+    const account_id = detail?.account_id || cfgDefaults.default_account_id || undefined;
+
+    const target = { name, directory, aws_profile: profile, account_id, region } as RepoTarget;
+    const next = [...cfgTargets, target];
+
+    // collision -> add, then open the Edit modal pre-filled to disambiguate
+    if (cfgTargets.some(t => t.name === name)) {
+      persistTargets(next, `Added ${name} — name clash, please adjust`);
+      setEditIdx(next.length - 1);
+      return;
+    }
+    persistTargets(next, `Added ${name} to the ${groupKeyOf(target)}/ pipeline`);
   }
 
   function deleteTarget(idx: number) {

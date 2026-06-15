@@ -306,7 +306,7 @@ export default function GlobalSettingsEditor({
                   placeholder="Model ID / inference profile"
                   aria-label="Model ID"
                 />
-                <button className="btn btn-icon btn-sm" onClick={() => removeModel(index)} aria-label="Remove model" title="Remove model">
+                <button className="btn btn-icon config-model-remove" onClick={() => removeModel(index)} aria-label="Remove model" title="Remove model">
                   <IconTrash />
                 </button>
               </div>

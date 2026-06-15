@@ -754,6 +754,11 @@ func writeRawLocked(data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
+	// Snapshot the existing config before overwriting it. Best-effort: a backup
+	// failure must never block the write, so log and continue.
+	if err := backupCurrentLocked(); err != nil {
+		slog.Warn("could not back up config before write", "err", err)
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".config-*.yaml")
 	if err != nil {
 		return err

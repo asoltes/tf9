@@ -15,6 +15,68 @@ import (
 
 const identityCacheTTL = 5 * time.Minute
 
+// conflictingCredVars are AWS environment variables that take precedence over
+// AWS_PROFILE in the AWS credential-resolution chain. If any survive in a
+// subprocess environment, they silently override the profile we resolved and
+// terraform/STS authenticate to the wrong account. ProfileEnv strips them.
+var conflictingCredVars = []string{
+	"AWS_ACCESS_KEY_ID",
+	"AWS_SECRET_ACCESS_KEY",
+	"AWS_SESSION_TOKEN",
+	"AWS_SECURITY_TOKEN",
+	"AWS_PROFILE",
+	"AWS_DEFAULT_PROFILE",
+}
+
+// ProfileEnv builds a subprocess environment from base (typically os.Environ())
+// in which the given profile is the ONLY AWS credential source. When profile is
+// non-empty it removes any inherited static credentials and stale profile vars,
+// then sets AWS_PROFILE — so a leftover AWS_ACCESS_KEY_ID cannot outrank the
+// profile and silently authenticate to the wrong account. When region is
+// non-empty it also pins AWS_REGION/AWS_DEFAULT_REGION (replacing any inherited
+// values).
+//
+// A BLANK profile means "use the ambient default credential chain" (e.g. the
+// STS identity badge when no profile is configured). In that case the inherited
+// environment is left untouched — stripping it would leave the subprocess with
+// no credentials and make a valid default session look expired.
+func ProfileEnv(base []string, profile, region string) []string {
+	if profile == "" && region == "" {
+		return base
+	}
+
+	drop := make(map[string]struct{}, len(conflictingCredVars)+2)
+	if profile != "" {
+		for _, k := range conflictingCredVars {
+			drop[k] = struct{}{}
+		}
+	}
+	if region != "" {
+		drop["AWS_REGION"] = struct{}{}
+		drop["AWS_DEFAULT_REGION"] = struct{}{}
+	}
+
+	out := make([]string, 0, len(base)+3)
+	for _, kv := range base {
+		eq := strings.IndexByte(kv, '=')
+		if eq < 0 {
+			out = append(out, kv)
+			continue
+		}
+		if _, skip := drop[kv[:eq]]; skip {
+			continue
+		}
+		out = append(out, kv)
+	}
+	if profile != "" {
+		out = append(out, "AWS_PROFILE="+profile)
+	}
+	if region != "" {
+		out = append(out, "AWS_REGION="+region, "AWS_DEFAULT_REGION="+region)
+	}
+	return out
+}
+
 type cachedIdentity struct {
 	id       Identity
 	cachedAt time.Time
@@ -76,11 +138,7 @@ func GetIdentity(ctx context.Context, profile string) (Identity, error) {
 
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, "aws", "sts", "get-caller-identity", "--output", "json")
-	env := os.Environ()
-	if profile != "" {
-		env = append(env, "AWS_PROFILE="+profile)
-	}
-	cmd.Env = env
+	cmd.Env = ProfileEnv(os.Environ(), profile, "")
 	out, err := cmd.Output()
 	elapsed := time.Since(start)
 	if err != nil {
@@ -151,6 +209,7 @@ func EnsureSession(ctx context.Context, profile, expectedAccount string, interac
 	fmt.Printf("  Session expired for %s — logging in...\n", profile)
 	slog.Info("aws sso login starting", "profile", profile)
 	login := exec.Command("aws", "sso", "login", "--profile", profile)
+	login.Env = ProfileEnv(os.Environ(), profile, "")
 	login.Stdin = os.Stdin
 	login.Stdout = os.Stdout
 	login.Stderr = os.Stderr
@@ -174,7 +233,7 @@ func callerAccount(ctx context.Context, profile string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, identityTimeout)
 	defer cancel()
 	check := exec.CommandContext(ctx, "aws", "sts", "get-caller-identity", "--query", "Account", "--output", "text")
-	check.Env = append(os.Environ(), "AWS_PROFILE="+profile)
+	check.Env = ProfileEnv(os.Environ(), profile, "")
 	out, err := check.Output()
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {

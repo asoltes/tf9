@@ -150,7 +150,37 @@
 .config-model-row{display:flex;align-items:center;gap:10px}
 .config-model-row .inp{flex:1 1 0;min-width:0}
 .config-model-default{display:flex;align-items:center;gap:6px;flex:0 0 auto;font-size:11px;color:var(--text-2);white-space:nowrap}
+/* Delete button: square, row-aligned, with a clear danger affordance on hover.
+   Overrides the round 32px .btn-icon padding/shape so the trash icon is visible. */
+.config-model-remove{flex:0 0 auto;width:32px;height:32px;padding:0;border-radius:8px;border:1px solid var(--divider);background:var(--surface-1);color:var(--text-2)}
+.config-model-remove svg{width:17px;height:17px}
+.config-model-remove:hover{background:var(--red-bg);border-color:var(--red);color:var(--red)}
 .config-model-add{margin-top:12px}
 .config-model-add svg{width:14px;height:14px;margin-right:5px;vertical-align:-2px}
 .config-global-error{margin:14px 20px 0;padding:9px 11px;border:1px solid var(--red);border-radius:8px;background:var(--red-bg);color:var(--red);font-size:12px}
+
+/* ── Backups panel ─────────────────────────────────────────────────────── */
+.config-backups{margin-bottom:20px}
+.config-backups-body{padding:0 20px 18px}
+.config-backups-empty{display:flex;align-items:center;gap:9px;margin:0;padding:14px 0;color:var(--text-2);font-size:13px}
+.config-backups-icon{display:inline-flex;color:var(--text-3)}
+.config-backups-icon svg{width:16px;height:16px}
+.config-backups-toggle{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border:1px solid var(--divider);border-radius:9px;background:var(--surface-2);color:var(--text);font-size:13px;cursor:pointer;text-align:left;transition:background .1s,border-color .1s}
+.config-backups-toggle:hover{background:var(--surface-3);border-color:var(--border)}
+.config-backups-toggle[aria-expanded="true"]{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.config-backups-chevron{display:inline-flex;color:var(--text-2);transition:transform .15s}
+.config-backups-chevron svg{width:16px;height:16px}
+.config-backups-chevron.open{transform:rotate(180deg)}
+.config-backups-summary{font-weight:700}
+.config-backups-latest{margin-left:auto;color:var(--text-2);font-size:12px}
+.config-backups-list{list-style:none;margin:0;padding:10px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--divider);border-top:none;border-radius:0 0 9px 9px;background:var(--surface-1)}
+.config-backup-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--divider);border-radius:9px;background:var(--surface-2)}
+.config-backup-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto}
+.config-backup-name{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.config-backup-sub{font-size:11.5px;color:var(--text-2)}
+.config-backup-row .btn{flex:0 0 auto}
+.config-backup-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.config-backup-delete{width:30px;height:30px;padding:0;border-radius:7px;border:1px solid var(--divider);background:var(--surface-1);color:var(--text-2)}
+.config-backup-delete svg{width:16px;height:16px}
+.config-backup-delete:hover{background:var(--red-bg);border-color:var(--red);color:var(--red)}
 @media(max-width:900px){.config-settings-fields{grid-template-columns:1fr}.config-settings-group-head{align-items:flex-start;flex-wrap:wrap}.config-settings-group-head .btn,.config-prompt-state{margin-left:0}}

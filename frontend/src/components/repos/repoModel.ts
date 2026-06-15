@@ -73,3 +73,8 @@ export function reorderWithinGroup(
 export function leafDir(directory: string): string {
   return directory.split('/').slice(1).join('/') || directory;
 }
+
+/** Auto stage name: all path segments joined with '-'. */
+export function autoStageName(directory: string): string {
+  return directory.split('/').filter(Boolean).join('-') || directory;
+}

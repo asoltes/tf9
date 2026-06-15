@@ -84,6 +84,29 @@ writeFileSync(join(repo, 'environments', 'slow', 'main.tf'), [
   '',
 ].join('\n'));
 
+// Nested, *unregistered* environments under apps/* and bootstrap/*. These are
+// NOT pre-listed as targets, so they appear only in the directory browser and
+// can be added to a pipeline — exercising auto stage-naming (join all path
+// segments with '-') + profile resolution from profile_mappings (leaf dir).
+const nestedDirs = [
+  'apps/fix/dev-euw2', 'apps/fix/qa-euw2',
+  'apps/gui/dev-euw2',
+  'bootstrap/dev-euw2',
+];
+for (const dir of nestedDirs) {
+  mkdirSync(join(repo, dir), { recursive: true });
+  writeFileSync(join(repo, dir, 'main.tf'), [
+    'terraform {',
+    '  required_version = ">= 1.5.0"',
+    '}',
+    '',
+    'resource "terraform_data" "demo" {',
+    `  input = "${dir}"`,
+    '}',
+    '',
+  ].join('\n'));
+}
+
 writeFileSync(join(repo, 'main.tf'), [
   'terraform {',
   '  required_version = ">= 1.5.0"',
@@ -160,6 +183,13 @@ writeFileSync(config, [
   '        region: us-east-1',
   '  - name: e2e-service',
   `    path: ${serviceRepo}`,
+  // Leaf-dir → profile mappings drive auto-fill when a nested dir is added to a
+  // pipeline from the browser (see addTarget in Repos.tsx).
+  'profile_mappings:',
+  '  - dir: dev-euw2',
+  '    profile: ctp-dev-euw2',
+  '  - dir: qa-euw2',
+  '    profile: ctp-qa-euw2',
   '',
 ].join('\n'));
 
@@ -183,6 +213,8 @@ writeFileSync(fakeAws, [
   '    ;;',
   '  "configure list-profiles")',
   '    echo "e2e-profile"',
+  '    echo "ctp-dev-euw2"',
+  '    echo "ctp-qa-euw2"',
   '    ;;',
   '  *)',
   '    echo "fake-aws: unhandled $*" >&2',

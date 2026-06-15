@@ -3,6 +3,7 @@ import Shell from '../Shell';
 import { configApi } from '../api';
 import { useNav } from '../nav';
 import GlobalSettingsEditor from '../components/GlobalSettingsEditor';
+import ConfigBackups from '../components/ConfigBackups';
 import './ConfigYaml.css';
 
 /* =========================================================================
@@ -345,6 +346,8 @@ export default function ConfigYaml() {
         )}
 
         <GlobalSettingsEditor disabled={dirty} notify={toast} onSaved={refreshSource} />
+
+        <ConfigBackups notify={toast} onRestored={refreshSource} />
 
         <div className="container flush">
           <div className="c-head">
