@@ -269,13 +269,13 @@ export default function Overview(_props: OverviewProps) {
             <section className="container dash-card" aria-label="Execution mode analysis">
               <div className="c-head noborder"><div className="c-title">Execution modes</div></div>
               <div className="c-body tight dash-mode-body">
-                <div className="dash-mode-chart" aria-label={`${analysis.promotion} promotion runs and ${analysis.parallel} parallel runs`}>
+                <div className="dash-mode-chart" aria-label={`${analysis.promotion} sequential runs and ${analysis.parallel} parallel runs`}>
                   <div className="dash-mode-bar promotion" style={{ flexGrow: analysis.promotion || 0 }} />
                   <div className="dash-mode-bar parallel" style={{ flexGrow: analysis.parallel || 0 }} />
                   {runs.length === 0 && <div className="dash-mode-bar empty" />}
                 </div>
                 <div className="dash-mode-legend">
-                  <span><i className="promotion" />Promotion <strong>{analysis.promotion}</strong></span>
+                  <span><i className="promotion" />Sequential <strong>{analysis.promotion}</strong></span>
                   <span><i className="parallel" />Parallel <strong>{analysis.parallel}</strong></span>
                 </div>
                 <div className="dash-analysis-grid">

@@ -94,6 +94,9 @@ type WebConfig struct {
 	// aliases). Anthropic/Bedrock add and retire models frequently, so this list
 	// is editable in Global settings rather than a fixed enum.
 	AIModels []AIModel `yaml:"ai_models,omitempty" json:"ai_models,omitempty"`
+	// ParallelWorkers sets the maximum number of targets run concurrently in
+	// parallel mode. Zero or unset means 4.
+	ParallelWorkers int `yaml:"parallel_workers,omitempty" json:"parallel_workers,omitempty"`
 }
 
 // AIModel is one selectable model for the workspace AI chat. ID is passed to
@@ -118,6 +121,12 @@ func (w WebConfig) EffectiveAIModels() []AIModel {
 		return BuiltinAIModels
 	}
 	return w.AIModels
+}
+
+// EffectiveParallelWorkers returns the configured parallel worker limit.
+// 0 means unlimited; any positive value caps concurrent targets.
+func (w WebConfig) EffectiveParallelWorkers() int {
+	return w.ParallelWorkers
 }
 
 // DefaultAIModelID returns the id of the entry flagged default, falling back to

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { aiModelsApi, api, awsApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
+import { aiModelsApi, api, awsApi, parallelWorkersApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
 import type { AIModel, Paginated, Repo, RepoConfig } from '../types';
 import { DEFAULT_RECONCILE_PROMPT } from '../lib/reconcilePrompt';
 import { IconFlow, IconKey, IconList, IconPlus, IconTrash } from './repos/icons';
@@ -32,9 +32,11 @@ export default function GlobalSettingsEditor({
   const [profileDetails, setProfileDetails] = useState<Record<string, AWSProfileDetail>>({});
   const [prompt, setPrompt] = useState(DEFAULT_RECONCILE_PROMPT);
   const [aiModels, setAiModels] = useState<AIModel[]>([]);
+  const [parallelWorkers, setParallelWorkers] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [promptSaving, setPromptSaving] = useState(false);
   const [modelsSaving, setModelsSaving] = useState(false);
+  const [workersSaving, setWorkersSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -44,7 +46,8 @@ export default function GlobalSettingsEditor({
       awsApi.profileDetails().catch(() => ({})),
       reconcilePromptApi.get().catch(() => ({ prompt: '' })),
       aiModelsApi.get().catch(() => ({ models: [] })),
-    ]).then(([repoResult, profiles, details, promptResult, modelsResult]) => {
+      parallelWorkersApi.get().catch(() => ({ workers: 0 })),
+    ]).then(([repoResult, profiles, details, promptResult, modelsResult, workersResult]) => {
       const enabled = repoResult.items.filter(repo => !repo.disabled);
       setRepos(enabled);
       setRepoName(enabled[0]?.name ?? '');
@@ -52,6 +55,7 @@ export default function GlobalSettingsEditor({
       setProfileDetails(details);
       setPrompt(promptResult.prompt || DEFAULT_RECONCILE_PROMPT);
       setAiModels(modelsResult.models ?? []);
+      setParallelWorkers(workersResult.workers ?? 0);
     }).catch(err => setError(err instanceof Error ? err.message : 'Could not load global settings.'));
   }, []);
 
@@ -144,6 +148,21 @@ export default function GlobalSettingsEditor({
 
   function removeModel(index: number) {
     setAiModels(current => current.filter((_, i) => i !== index));
+  }
+
+  async function saveParallelWorkers() {
+    setWorkersSaving(true);
+    try {
+      const saved = await parallelWorkersApi.save(parallelWorkers);
+      setParallelWorkers(saved.workers ?? 0);
+      await onSaved();
+      setError('');
+      notify('Parallel workers saved');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save parallel workers.');
+    } finally {
+      setWorkersSaving(false);
+    }
   }
 
   async function saveAiModels(models: AIModel[]) {
@@ -296,6 +315,33 @@ export default function GlobalSettingsEditor({
           <button className="btn btn-normal btn-sm config-model-add" onClick={addModel}>
             <IconPlus /> Add model
           </button>
+        </div>
+
+        <div className="config-settings-group">
+          <div className="config-settings-group-head">
+            <span className="config-settings-icon"><IconList /></span>
+            <div>
+              <strong>Parallel workers</strong>
+              <span>Maximum targets run concurrently in parallel mode. Set to 0 for unlimited.</span>
+            </div>
+            <button className="btn btn-primary btn-sm" disabled={disabled || workersSaving} onClick={() => void saveParallelWorkers()}>
+              {workersSaving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          <div className="config-settings-fields">
+            <label>
+              <span>Concurrent targets</span>
+              <input
+                className="inp mono"
+                type="number"
+                min={0}
+                value={parallelWorkers}
+                onChange={event => setParallelWorkers(Math.max(0, Number(event.target.value)))}
+                placeholder="0 = unlimited"
+              />
+            </label>
+          </div>
+          <small>Stored as <code>web.parallel_workers</code> in config.yaml. Default (unset) is 4.</small>
         </div>
       </div>
     </section>

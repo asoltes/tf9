@@ -57,6 +57,11 @@ export const aiModelsApi = {
   save: (models: AIModel[]) => api.put<{ models: AIModel[] }>('/api/web/ai-models', { models }),
 };
 
+export const parallelWorkersApi = {
+  get: () => api.get<{ workers: number }>('/api/web/parallel-workers'),
+  save: (workers: number) => api.put<{ workers: number }>('/api/web/parallel-workers', { workers }),
+};
+
 // ── Profile mappings ──────────────────────────────────────────────
 
 export type ProfileMapping = { dir: string; profile: string };

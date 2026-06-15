@@ -54,6 +54,7 @@ type Options struct {
 	Ctx               context.Context       // nil → context.Background()
 	ExplicitTargets   []config.RepoTarget   // if set, bypass collectDirs; SearchRoot is repo root
 	Parallel          bool                  // run all envs concurrently
+	ParallelWorkers   int                   // max concurrent targets; 0 → 4
 	PromotionOrder    []string              // if set, execute envs in this order (sequential only)
 	LockIDs           map[string]string     // target name → lock id, used by force-unlock
 	ImportAddrs       map[string]ImportSpec // target name → import spec, used by import
@@ -1013,7 +1014,13 @@ func runParallel(
 	}
 
 	ch := make(chan slot, len(dirs))
-	jobs := make(chan struct{}, 4)
+	// ParallelWorkers == 0 means unlimited: use a buffer as wide as the dir
+	// list so no goroutine ever blocks on the semaphore.
+	workerLimit := opts.ParallelWorkers
+	if workerLimit <= 0 {
+		workerLimit = len(dirs)
+	}
+	jobs := make(chan struct{}, workerLimit)
 	safeOut := &lockedWriter{out: out}
 	var wg sync.WaitGroup
 

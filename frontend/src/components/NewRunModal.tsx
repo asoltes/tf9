@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { api, repoGit } from '../api';
+import { api, parallelWorkersApi, repoGit } from '../api';
 import type { Repo, Paginated, GitChangedFile, ReconcileStatus, WebSettings } from '../types';
 import { useToast } from './ToastProvider';
 import { useNav } from '../nav';
@@ -175,6 +175,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [savedPlanApply, setSavedPlanApply] = useState(false);
+  const [parallelWorkers, setParallelWorkers] = useState(0);
   const [ticket, setTicket] = useState('');
   const [ticketingUrl, setTicketingUrl] = useState<string | null>(null);
 
@@ -249,12 +250,13 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
         const enabled = !!s.savedPlanApply;
         setSavedPlanApply(enabled);
         setTicketingUrl(s.ticketingUrl);
-        if (enabled) setCmd(current => current === 'apply' || current === 'auto' ? 'plan' : current);
+        if (enabled) setCmd(current => current === 'apply' ? 'plan' : current);
       })
       .catch(() => {
         setSavedPlanApply(false);
         setTicketingUrl(null);
       });
+    parallelWorkersApi.get().then(r => setParallelWorkers(r.workers ?? 0)).catch(() => setParallelWorkers(0));
   }, [visible]);
 
   if (!visible) return null;
@@ -269,7 +271,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
 
   // ── mutators ────────────────────────────────────────────────────────────
   function onSetCmd(id: string) {
-    if (savedPlanApply && (id === 'apply' || id === 'auto')) {
+    if (savedPlanApply && id === 'apply') {
       setError('Saved-plan apply is enabled. Run Plan, review its output, then use Apply reviewed plan from the run details.');
       return;
     }
@@ -678,24 +680,61 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
 
         <div className="rm-body">
           <div className="rm-main">
+            {/* tracking */}
+            <div className="rm-section">
+              <label className="field-label" htmlFor="run-ticket">Ticket number <span className="rm-sublabel">— optional</span></label>
+              <input
+                id="run-ticket"
+                className="inp mono"
+                maxLength={128}
+                placeholder="e.g. OPS-1234"
+                value={ticket}
+                onChange={e => setTicket(e.target.value)}
+              />
+              <div className="field-hint">
+                Stored with the run for history search and tracking.
+                {ticketHref && <> <a href={ticketHref} target="_blank" rel="noreferrer">Open ticket</a></>}
+              </div>
+            </div>
+
             {/* command */}
             <div className="rm-section">
               <div className="rm-label">Command</div>
               <div className="cmd-row">
-                {COMMON.map(c => (
-                  <button
-                    key={c.id}
-                    className={`cmd-chip ${c.icon} command-style ${commandStyleClass(c.id)}${cmd === c.id ? ' on' : ''}`}
-                    onClick={() => onSetCmd(c.id)}
-                    aria-describedby={`command-description-${c.id}`}
-                  >
-                    <span className="ic">{I[c.icon]}</span>
-                    <span>
-                      <span className="cc-t">{RUN_COMMAND_INFO[c.id].label}</span>
-                      <span className="cc-d" id={`command-description-${c.id}`}>{RUN_COMMAND_INFO[c.id].short}</span>
-                    </span>
-                  </button>
-                ))}
+                {COMMON.map(c => {
+                  const blockedBySavedPlan = savedPlanApply && c.id === 'apply';
+                  if (blockedBySavedPlan) {
+                    return (
+                      <div key={c.id} className="cmd-chip-wrap">
+                        <button
+                          className={`cmd-chip ${c.icon} command-style ${commandStyleClass(c.id)} disabled`}
+                          aria-describedby={`command-description-${c.id}`}
+                          disabled
+                        >
+                          <span className="ic">{I[c.icon]}</span>
+                          <span>
+                            <span className="cc-t">{RUN_COMMAND_INFO[c.id].label}</span>
+                            <span className="cc-d" id={`command-description-${c.id}`}>{RUN_COMMAND_INFO[c.id].short}</span>
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={c.id}
+                      className={`cmd-chip ${c.icon} command-style ${commandStyleClass(c.id)}${cmd === c.id ? ' on' : ''}`}
+                      onClick={() => onSetCmd(c.id)}
+                      aria-describedby={`command-description-${c.id}`}
+                    >
+                      <span className="ic">{I[c.icon]}</span>
+                      <span>
+                        <span className="cc-t">{RUN_COMMAND_INFO[c.id].label}</span>
+                        <span className="cc-d" id={`command-description-${c.id}`}>{RUN_COMMAND_INFO[c.id].short}</span>
+                      </span>
+                    </button>
+                  );
+                })}
                 <div className="cmd-more">
                   <select
                     className={`sel command-select command-style${isMore ? ` selected ${commandStyleClass(cmd)}` : ''}`}
@@ -709,6 +748,12 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
                   </select>
                 </div>
               </div>
+              {savedPlanApply && (
+                <div className="saved-plan-notice">
+                  {I.warn}
+                  <span>Saved-plan apply is on — run <strong>Plan</strong> first, then use <strong>Apply reviewed plan</strong> from the run details.</span>
+                </div>
+              )}
               <div className={`command-description command-style ${commandStyleClass(cmd)}${isDestroy ? ' danger' : ''}`}>
                 <span className="command-description-icon">{isDestroy ? I.warn : I.info}</span>
                 <div>
@@ -831,37 +876,20 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
               </div>
             </div>
 
-            {/* tracking */}
-            <div className="rm-section">
-              <label className="field-label" htmlFor="run-ticket">Ticket number <span className="rm-sublabel">— optional</span></label>
-              <input
-                id="run-ticket"
-                className="inp mono"
-                maxLength={128}
-                placeholder="e.g. OPS-1234"
-                value={ticket}
-                onChange={e => setTicket(e.target.value)}
-              />
-              <div className="field-hint">
-                Stored with the run for history search and tracking.
-                {ticketHref && <> <a href={ticketHref} target="_blank" rel="noreferrer">Open ticket</a></>}
-              </div>
-            </div>
-
             {/* run mode */}
             <div className="rm-section">
               <div className="rm-label">Run mode</div>
               <div className="tiles">
                 <div className={`tile${seq ? ' on' : ''}`} onClick={() => onSetMode('promotion')}>
                   <span className="ti-ic">{I.seq}</span>
-                  <span><span className="ti-t">Promotion</span><span className="ti-d">Sequential — runs targets in order, stops on first failure.</span></span>
+                  <span><span className="ti-t">Sequential</span><span className="ti-d">Runs targets in order, stops on first failure.</span></span>
                 </div>
                 <div
                   className={`tile${mode === 'parallel' ? ' on' : ''}${lockSequential ? ' disabled' : ''}`}
                   onClick={() => onSetMode('parallel')}
                 >
                   <span className="ti-ic">{I.par}</span>
-                  <span><span className="ti-t">Parallel</span><span className="ti-d">Up to four targets at once.{lockSequential ? ` Not allowed for ${cmd}.` : ''}</span></span>
+                  <span><span className="ti-t">Parallel</span><span className="ti-d">{parallelWorkers === 0 ? 'Unlimited targets at once.' : `Up to ${parallelWorkers} target${parallelWorkers === 1 ? '' : 's'} at once.`}{lockSequential ? ` Not allowed for ${cmd}.` : ''}</span></span>
                   {lockSequential && <span className="ti-lock">sequential only</span>}
                 </div>
               </div>
@@ -1027,7 +1055,7 @@ export default function NewRunModal({ visible, onDismiss, onCreated }: Props) {
             <div className="sum-title">Run summary</div>
             <div className="sum-cmd">
               <span className={`pill command-style ${commandStyleClass(cmd)}`}>{cmd}</span>
-              <span style={{ fontSize: '12.5px', color: 'var(--text-2)' }}>{seq ? 'Promotion' : 'Parallel'}</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-2)' }}>{seq ? 'Sequential' : 'Parallel'}</span>
             </div>
             <div className="sum-row"><span className="k">Repo</span><span className="v mono">{repoName || '—'}</span></div>
             <div className="sum-row"><span className="k">Branch</span><span className="v mono">{pendingBranch || branch || '—'}</span></div>

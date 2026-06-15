@@ -63,6 +63,7 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			"ticketingUrl":               cfg.Web.TicketingURL,
 			"reconcilePrompt":            cfg.Web.ReconcilePrompt,
 			"aiModels":                   cfg.Web.EffectiveAIModels(),
+			"parallelWorkers":            cfg.Web.ParallelWorkers,
 		})
 	})
 	mux.HandleFunc("/api/web/ai-models", func(w http.ResponseWriter, r *http.Request) {
@@ -129,6 +130,44 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 				return
 			}
 			jsonOK(w, map[string]string{"prompt": cfg.Web.ReconcilePrompt})
+		default:
+			methodNotAllowed(w)
+		}
+	})
+	mux.HandleFunc("/api/web/parallel-workers", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]int{"workers": cfg.Web.ParallelWorkers})
+		case http.MethodPut:
+			var body struct {
+				Workers int `json:"workers"`
+			}
+			if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<10)).Decode(&body); err != nil {
+				jsonErr(w, "bad_request", "invalid parallel workers payload", http.StatusBadRequest)
+				return
+			}
+			if body.Workers < 0 {
+				jsonErr(w, "bad_request", "workers must be 0 (unlimited) or a positive integer", http.StatusBadRequest)
+				return
+			}
+			if err := config.Update(func(cfg *config.Config) error {
+				cfg.Web.ParallelWorkers = body.Workers
+				return nil
+			}); err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]int{"workers": cfg.Web.ParallelWorkers})
 		default:
 			methodNotAllowed(w)
 		}
@@ -834,8 +873,8 @@ func startRun(w http.ResponseWriter, r *http.Request, mgr *RunManager, reportDir
 		jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if cfg.Web.SavedPlanApply && req.Command == "auto" {
-		jsonErr(w, "bad_request", "auto is disabled while web.saved_plan_apply is enabled; run and review a plan first", http.StatusBadRequest)
+	if cfg.Web.SavedPlanApply && req.Command == "apply" && req.PlanRunID == "" {
+		jsonErr(w, "bad_request", "direct apply is disabled while web.saved_plan_apply is enabled; run and review a plan first", http.StatusBadRequest)
 		return
 	}
 	// A reviewed-plan apply (planRunId set) must always be expanded to the exact

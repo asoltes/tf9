@@ -483,6 +483,7 @@ func (m *RunManager) Start(req RunRequest, searchRoot, repoLabel, reportDir stri
 		GitBranch:           gitBranch(searchRoot),
 		ApprovalTimeout:     web.ApprovalTimeout(),
 		ReviewedPlanTimeout: web.ReviewedPlanTimeout(),
+		ParallelWorkers:     web.EffectiveParallelWorkers(),
 	}
 
 	if supervisorSupported {

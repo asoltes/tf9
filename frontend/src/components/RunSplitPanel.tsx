@@ -1218,7 +1218,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
       output = (
         <>
           <div className="out-head">
-            <div className="ot"><span className="mode-cell" style={{ fontWeight: 700 }}>{I.seq}Promotion — runs in order, stops on failure</span></div>
+            <div className="ot"><span className="mode-cell" style={{ fontWeight: 700 }}>{I.seq}Sequential — runs in order, stops on failure</span></div>
           </div>
           {envSections.map((s, i) => promoSection(s, i, s.name, s.name))}
         </>
@@ -1271,7 +1271,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
           <div className="apply-mode-tiles">
             <div className={`apply-mode-tile${applyMode === 'promotion' ? ' on' : ''}`} onClick={() => setApplyMode('promotion')}>
               <span className="ti-ic">{I.seq}</span>
-              <span><span className="ti-t">Promotion</span><span className="ti-d">Sequential — applies saved plans in order, stops on first failure.</span></span>
+              <span><span className="ti-t">Sequential</span><span className="ti-d">Applies saved plans in order, stops on first failure.</span></span>
             </div>
             <div className={`apply-mode-tile${applyMode === 'parallel' ? ' on' : ''}`} onClick={() => setApplyMode('parallel')}>
               <span className="ti-ic">{I.par}</span>
@@ -1392,7 +1392,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                   <MetaItem k="Command"><span className={`badge command-style ${commandStyleClass(command)}`}>{command}</span></MetaItem>
                   <MetaItem k="Mode">
                     <span className={`mode-cell ${mode === 'parallel' ? 'par' : ''}`} style={{ fontWeight: 600 }}>
-                      {mode === 'parallel' ? I.par : I.seq}{mode === 'parallel' ? 'Parallel' : 'Promotion'}
+                      {mode === 'parallel' ? I.par : I.seq}{mode === 'parallel' ? 'Parallel' : 'Sequential'}
                     </span>
                   </MetaItem>
                   <MetaItem k="Repo" mono>{run.request?.repo || run.repo || '—'}</MetaItem>

@@ -611,7 +611,7 @@ export default function Runs({ openNewRun, filterQuery }: { openNewRun?: boolean
                             </span>
                           </td>
                           <td style={{ width: 120 }}>
-                            <span className={`mode-cell ${parallel ? 'par' : ''}`}>{parallel ? ICON_PAR : ICON_SEQ}{parallel ? 'Parallel' : 'Promotion'}</span>
+                            <span className={`mode-cell ${parallel ? 'par' : ''}`}>{parallel ? ICON_PAR : ICON_SEQ}{parallel ? 'Parallel' : 'Sequential'}</span>
                           </td>
                           <td style={{ width: 160 }} title={ts.title}><span className="ts-cell">{ts.label}</span></td>
                           <td style={{ width: 90 }}><span className="mono-cell">{r.status === 'running' ? '—' : duration(r.startedAt, r.finishedAt)}</span></td>

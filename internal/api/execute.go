@@ -42,6 +42,8 @@ type superviseParams struct {
 	GitBranch           string        `json:"gitBranch"`
 	ApprovalTimeout     time.Duration `json:"approvalTimeout"`
 	ReviewedPlanTimeout time.Duration `json:"reviewedPlanTimeout"`
+	// ParallelWorkers caps concurrent targets in parallel mode. 0 = unlimited.
+	ParallelWorkers int `json:"parallelWorkers,omitempty"`
 }
 
 // runMeta records the live process identifiers of a supervised run so the
@@ -343,6 +345,7 @@ func executeRun(ctx context.Context, p superviseParams, out io.Writer, inputCh <
 		Output:            out,
 		Ctx:               ctx,
 		Parallel:          req.Parallel,
+		ParallelWorkers:   p.ParallelWorkers,
 		PromotionOrder:    req.PromotionOrder,
 		LockIDs:           req.LockIDs,
 		ImportAddrs:       req.ImportAddrs,
