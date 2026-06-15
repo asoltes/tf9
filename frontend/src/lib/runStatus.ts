@@ -40,34 +40,27 @@ export const APPROVAL_CLEAR_SENTINEL = '__TF9_APPROVAL_CLEAR__';
 
 /**
  * Pure reducer for the approval gate state in RunSplitPanel. Encapsulated here
- * so the reset-on-run-id-change behaviour can be unit-tested without a DOM.
+ * so the behaviour can be unit-tested without a DOM.
  *
- * Edge-triggered:
- *  - When runId changes, reset immediately (pending=false, counts=0).
- *  - A new APPROVAL_SENTINEL (show count increased) sets pending=true.
- *  - A new APPROVAL_CLEAR_SENTINEL (clear count increased) sets pending=false —
- *    this is the backend telling us terraform stopped waiting.
- *  - Otherwise keep the previous state unchanged.
+ * Level-triggered: terraform emits one APPROVAL_SENTINEL when it blocks on a
+ * prompt and one APPROVAL_CLEAR_SENTINEL once that prompt is resolved (approved,
+ * denied, timed out, or cancelled). An *unmatched* show sentinel — more shows
+ * than clears — therefore means terraform is currently blocked. Computing
+ * `pending` from the counts (rather than from edges between successive calls)
+ * makes it correct whether lines arrive one at a time over live SSE or all at
+ * once when a page refresh reloads the full buffer: on reload a prompt the user
+ * already answered carries both its show and clear sentinel, so it stays closed
+ * instead of re-opening. Whether to actually display the gate for an unanswered
+ * prompt is decided by approvalGateVisible.
  */
 export function updateApprovalGate(
   prev: { pending: boolean; seenCount: number; clearCount?: number; runId: string | undefined },
   lines: string[],
   runId: string | undefined,
 ): { pending: boolean; seenCount: number; clearCount: number; runId: string | undefined } {
-  // When the run changes, reset the counters so stale approvals from the
-  // previous run can never bleed into the new one.
-  const reset = runId !== prev.runId;
-  const baseShow = reset ? 0 : prev.seenCount;
-  const baseClear = reset ? 0 : (prev.clearCount ?? 0);
   const newShow = lines.filter(l => l === APPROVAL_SENTINEL).length;
   const newClear = lines.filter(l => l === APPROVAL_CLEAR_SENTINEL).length;
-  if (newShow > baseShow) {
-    return { pending: true, seenCount: newShow, clearCount: newClear, runId };
-  }
-  if (newClear > baseClear) {
-    return { pending: false, seenCount: newShow, clearCount: newClear, runId };
-  }
-  return { pending: reset ? false : prev.pending, seenCount: newShow, clearCount: newClear, runId };
+  return { pending: newShow > newClear, seenCount: newShow, clearCount: newClear, runId };
 }
 
 /**

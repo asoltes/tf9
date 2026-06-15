@@ -10,6 +10,7 @@ import {
   updateApprovalGate,
   approvalGateVisible,
   APPROVAL_SENTINEL,
+  APPROVAL_CLEAR_SENTINEL,
 } from './runStatus';
 
 function banner(env: string, profile = 'p'): string[] {
@@ -290,11 +291,42 @@ describe('updateApprovalGate', () => {
     expect(s.runId).toBe('run-1');
   });
 
-  it('does not re-trigger when sentinel count unchanged', () => {
+  it('stays pending while the show sentinel has no matching clear', () => {
+    // Level-triggered: an unmatched show sentinel means terraform is still
+    // blocked, so pending stays true regardless of prior state. (Whether the
+    // gate is *shown* once the user has answered is approvalGateVisible's job.)
     const s1 = updateApprovalGate(init, [APPROVAL_SENTINEL], 'run-1');
-    // Simulate user approving (pending cleared externally); no new sentinels.
     const s2 = updateApprovalGate({ ...s1, pending: false }, [APPROVAL_SENTINEL], 'run-1');
-    expect(s2.pending).toBe(false);
+    expect(s2.pending).toBe(true);
+  });
+
+  it('clears pending once the clear sentinel matches the show sentinel', () => {
+    const s = updateApprovalGate(init, [APPROVAL_SENTINEL, APPROVAL_CLEAR_SENTINEL], 'run-1');
+    expect(s.pending).toBe(false);
+  });
+
+  it('stays closed on a full-buffer reload of an already-answered prompt', () => {
+    // Regression: refreshing the page reloads every line at once. A prompt the
+    // user already approved carries both its show and clear sentinel, so the
+    // gate must NOT re-open — even though answeredSeen was reset to 0 by the
+    // remount. Reducer starts from a fresh initial state (runId undefined).
+    const reloaded = updateApprovalGate(
+      init,
+      ['Plan: 1 to add', APPROVAL_SENTINEL, 'Apply complete!', APPROVAL_CLEAR_SENTINEL],
+      'run-1',
+    );
+    expect(reloaded.pending).toBe(false);
+  });
+
+  it('stays open on reload when a later prompt is genuinely unanswered', () => {
+    // dev approved (show+clear), prod still blocked (show only) → still pending.
+    const reloaded = updateApprovalGate(
+      init,
+      [APPROVAL_SENTINEL, APPROVAL_CLEAR_SENTINEL, APPROVAL_SENTINEL],
+      'run-1',
+    );
+    expect(reloaded.pending).toBe(true);
+    expect(reloaded.seenCount).toBe(2);
   });
 
   it('resets pending=false and seenCount=0 when run id changes', () => {
