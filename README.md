@@ -25,7 +25,10 @@ local web UI share one YAML configuration file and the same binary.
 | **HTML reports** | Every run saves a self-contained HTML report under `~/.config/tf9/reports/`. Live reports update as each target finishes. |
 | **Run history** | The last 200 CLI and web runs are persisted to `~/.config/tf9/runs.json` and visible in the Runs page. |
 | **AWS SSO** | Each unique profile/account pair is validated against STS once per run; expired sessions trigger `aws sso login` automatically. |
-| **Config management** | `tf9 config repo/target` commands and the in-app YAML editor share the same config file. |
+| **Config management** | `tf9 config repo/target` commands and the in-app YAML editor share the same config file, with timestamped backups and one-click restore. |
+| **Repository Workspace** | Browse and run git operations over a repo, with an AI chat assistant that can drive Terraform runs and apply changes (auto-apply by default, configurable AI model list). |
+| **Cost analysis** | Infracost-backed cost scans and reports surfaced in the Cost Analysis page. |
+| **Graph view** | Successful plan/apply/destroy runs render an interactive clustered graph of repos, targets, modules, and resources. |
 
 ## Screenshots
 
@@ -229,7 +232,8 @@ tf9 config target remove --repo infrastructure dev
 
 The web UI edits the same repository targets. Settings also includes a raw
 Config YAML editor for direct changes to this file. The editor validates the
-schema before saving and preserves comments and ordering.
+schema before saving and preserves comments and ordering. Each save writes a
+timestamped backup, and previous versions can be restored from the UI.
 
 An example repo and matching config live under `examples/`:
 
@@ -335,9 +339,14 @@ so a second `tf9 serve` kills the first before starting.
 |---|---|
 | **Overview** | Hub cards — quick links to all sections |
 | **Runs** | Run history with status badges and live split panel |
+| **Repository Workspace** | Git operations over a repo plus an AI chat assistant that can run Terraform and apply changes |
 | **Repositories** | Manage repos and pipeline stages; drag-and-drop reorder |
-| **Config** | Raw YAML editor with schema validation |
+| **AWS Profile Mappings** | Map directories to AWS profiles |
+| **Config** | Raw YAML editor with schema validation, plus timestamped backup and restore |
 | **Reports** | Browse and view saved HTML plan reports |
+| **Graph View** | Interactive clustered graph of repos, targets, modules, and resources for a run |
+| **Cost Analysis** | Infracost-backed cost scans and reports |
+| **System Logs** | View the application log and adjust the runtime log level |
 | **Help** | In-app documentation |
 
 ### New Run Modal

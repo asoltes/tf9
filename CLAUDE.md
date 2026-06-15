@@ -134,6 +134,9 @@ To try plan runs manually with the example config:
 | `internal/aws` | AWS SSO session management: checks `aws sts get-caller-identity`, triggers `aws sso login` when expired. |
 | `internal/report` | Generates self-contained HTML plan reports; parses report filenames for the UI. |
 | `internal/server` | `http.ServeMux` wiring, PID-file management for single-server-per-user, SSE for live report updates. |
+| `internal/graph` | Builds the sanitized repository/target/module/resource graph (`/api/runs/{id}/graph`) from saved plans or post-run state. |
+| `internal/cost` | Infracost-backed cost analysis: scans, reports, and `/api/cost/*` + `/api/infracost/settings` handlers. |
+| `internal/applog` | `log/slog` setup — writes to `~/.config/tf9/tf9.log`; backs `/api/logs` and runtime log-level changes. |
 
 ### Key design constraints
 
@@ -249,9 +252,25 @@ exit code sets `StatusDenied` instead of `StatusFailed` when `denied` is true.
 | `PUT` | `/api/repos/{name}/config` | Save repo-specific run config |
 | `GET` | `/api/config` | Get raw YAML config |
 | `PUT` | `/api/config` | Save raw YAML config |
+| `POST` | `/api/config/format` | Validate + format YAML without saving |
+| `GET` | `/api/config/backups` | List timestamped config backups |
+| `POST` | `/api/config/backups/{name}` | Restore a config backup |
+| `GET`/`PUT` | `/api/web/settings` | Read/write web UI settings (auto-apply, theme defaults) |
+| `GET`/`PUT` | `/api/web/ai-models` | User-configurable AI model list for workspace chat |
+| `GET`/`PUT` | `/api/web/parallel-workers` | Default parallel worker count for new runs |
+| `GET`/`PUT` | `/api/web/reconcile-prompt` | Saved reconcile prompt for workspace chat |
 | `GET` | `/api/aws/profiles` | List AWS CLI profiles |
 | `GET` | `/api/aws/identity` | Get current AWS caller identity |
+| `GET` | `/api/aws/profile-details` | Per-profile account/region detail |
 | `POST` | `/api/aws/sso-login` | Trigger `aws sso login` (SSE stream) |
+| `POST` | `/api/aws/sso-logout` | Trigger `aws sso logout` |
+| `GET`/`PUT` | `/api/profile-mappings` | Directory → AWS profile mappings |
+| `GET` | `/api/cost/scans` | List cost scans |
+| `POST` | `/api/cost/scan` | Run an Infracost scan (SSE stream) |
+| `GET` | `/api/cost/report` | Get a cost report |
+| `GET`/`PUT` | `/api/infracost/settings` | Infracost API token + enablement settings |
+| `GET` | `/api/logs` | Tail the application log (`tf9.log`) |
+| `GET`/`PUT` | `/api/logs/level` | Read/set runtime slog level |
 | `GET` | `/api/reports` | List HTML plan reports |
 | `GET` | `/api/reports/{name}` | Get report data |
 | `DELETE` | `/api/reports` | Delete a report |
@@ -294,9 +313,13 @@ component imports have been removed.
 | `#runs/new` | Opens New Run Modal over the run history |
 | `#repos` | Repositories |
 | `#config` | Configuration (YAML editor) |
+| `#workspace` | Repository Workspace (git ops + AI chat over a repo) |
+| `#profile-mappings` | AWS Profile Mappings editor |
 | `#reports` | Terraform Reports list |
 | `#report/<name>` | Report viewer |
 | `#graph?run=<id>` | Interactive Terraform relationship graph |
+| `#cost` | Cost Analysis (Infracost) |
+| `#logs` | System Logs viewer |
 | `#help` | Documentation |
 
 Visible navigation labels: Dashboard, Run History,
