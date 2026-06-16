@@ -1,0 +1,10 @@
+/* =====================================================================
+   TF9 Design System — global entry point
+   Import this one file to get all tokens, fonts, and base styles.
+   ===================================================================== */
+
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/commands.css";
+@import "./tokens/animations.css";

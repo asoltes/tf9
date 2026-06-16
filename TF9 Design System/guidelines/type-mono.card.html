@@ -1,0 +1,21 @@
+<!-- @dsCard group="Type" viewport="700x200" name="Mono & Code Type" subtitle="Monaco/Menlo stack for IDs, paths, terminal output" -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px 24px; background: var(--bg-layout); font-family: var(--sans); color: var(--text); }
+  .row { display: flex; align-items: center; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--divider); }
+  .row:last-child { border-bottom: none; }
+  .meta { width: 150px; flex-shrink: 0; font-size: 11px; color: var(--text-3); }
+  .sample { font-family: var(--mono); }
+</style>
+</head>
+<body>
+  <div class="row"><div class="meta">15px 700 — Run ID</div><div class="sample" style="font-size:15px;font-weight:700">run_b4f2a19c3d</div></div>
+  <div class="row"><div class="meta">13px 400 — Terminal</div><div class="sample" style="font-size:13px">Plan: 3 to add, 1 to change, 0 to destroy.</div></div>
+  <div class="row"><div class="meta">12.5px 700 — ID cell</div><div class="sample" style="font-size:12.5px;font-weight:700">i-0a2b3c4d5e6f7g8h9</div></div>
+  <div class="row"><div class="meta">12px 400 — Path/Repo</div><div class="sample" style="font-size:12px">aws-platform/infra-live/us-east-1/prod/vpc</div></div>
+  <div class="row"><div class="meta">11.5px — Branch</div><div class="sample" style="font-size:11.5px">main · feature/vpc-peering</div></div>
+  <div class="row"><div class="meta">11px — Badge/Status</div><div class="sample" style="font-size:11px;background:#e9ebed;padding:2px 8px;border-radius:4px;font-weight:700">RUNNING</div></div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+/* =====================================================================
+   TF9 Typography Tokens — REDESIGN
+   IBM Plex Sans (UI) + IBM Plex Mono (code). Enterprise, technical,
+   distinct from generic SaaS Inter. Scale per redesign brief.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ── Font stacks ───────────────────────────────────────────────── */
+  --sans:   "IBM Plex Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* @kind font */
+  --mono:   "IBM Plex Mono", "SF Mono", "Menlo", "Consolas", ui-monospace, monospace; /* @kind font */
+
+  /* ── Font sizes (redesign brief) ───────────────────────────────── */
+  --text-xs:    12px;   /* caption  */
+  --text-sm:    13px;
+  --text-base:  14px;
+  --text-md:    16px;   /* body     */
+  --text-lg:    20px;   /* H3       */
+  --text-xl:    24px;   /* H2       */
+  --text-2xl:   28px;
+  --text-3xl:   32px;   /* H1       */
+  --text-4xl:   40px;
+
+  /* ── Font weights ──────────────────────────────────────────────── */
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+
+  /* ── Line heights ──────────────────────────────────────────────── */
+  --leading-tight:    1.15;
+  --leading-snug:     1.3;
+  --leading-normal:   1.5;
+  --leading-relaxed:  1.65;
+
+  /* ── Letter spacing ────────────────────────────────────────────── */
+  --tracking-tight:   -0.4px;
+  --tracking-normal:  0;
+  --tracking-wide:    0.3px;
+  --tracking-wider:   0.6px;
+
+  /* ── Semantic type roles ───────────────────────────────────────── */
+  --font-h1:        var(--weight-bold)     var(--text-3xl) / var(--leading-tight)  var(--sans);
+  --font-h2:        var(--weight-semibold) var(--text-xl)  / var(--leading-snug)   var(--sans);
+  --font-h3:        var(--weight-semibold) var(--text-lg)  / var(--leading-snug)   var(--sans);
+  --font-body:      var(--weight-regular)  var(--text-md)  / var(--leading-normal) var(--sans);
+  --font-label:     var(--weight-semibold) var(--text-sm)  / var(--leading-snug)   var(--sans);
+  --font-caption:   var(--weight-regular)  var(--text-xs)  / var(--leading-normal) var(--sans);
+  --font-code:      var(--weight-regular)  0.9em           / inherit               var(--mono);
+}

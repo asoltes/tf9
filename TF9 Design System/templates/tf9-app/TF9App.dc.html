@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="TF9 App Prototype" description="Full interactive TF9 platform prototype — Dashboard, Run History, shell with nav" -->
+<helmet>
+  <script src="./ds-base.js"></script>
+  <script src="./data.js"></script>
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('tf9-color-mode');
+        var preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        var mode = stored || preferred;
+        document.documentElement.setAttribute('data-theme', mode === 'light' ? 'light' : 'dark');
+        if (mode === 'dim') document.documentElement.setAttribute('data-variant', 'dim');
+      } catch(e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();
+  </script>
+  <style>
+    @keyframes tf9-pulse { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.78)} }
+    @keyframes tf9-spin { to{transform:rotate(360deg)} }
+    @keyframes tf9-blink { 50%{opacity:0} }
+    @keyframes tf9-skeleton { 0%,100%{opacity:.55}50%{opacity:1} }
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
+  </style>
+</helmet>
+<x-import component-from-global-scope="TF9App" from="./App.jsx" hint-size="100%,100vh"></x-import>
+
+</x-dc>
+</body>
+</html>

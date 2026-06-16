@@ -1,0 +1,29 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Spacing Scale" subtitle="8px base grid — all spacing tokens" -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px 24px; background: var(--bg-layout); font-family: var(--sans); }
+  .scale { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bar { background: var(--blue); border-radius: 3px; width: 20px; }
+  .label { font-size: 10px; font-weight: 700; color: var(--text-3); font-family: var(--mono); }
+  .val { font-size: 9px; color: var(--text-3); font-family: var(--mono); }
+</style>
+</head>
+<body>
+  <div class="scale">
+    <div class="step"><div class="bar" style="height:4px"></div><div class="label">1</div><div class="val">4px</div></div>
+    <div class="step"><div class="bar" style="height:8px"></div><div class="label">2</div><div class="val">8px</div></div>
+    <div class="step"><div class="bar" style="height:12px"></div><div class="label">3</div><div class="val">12px</div></div>
+    <div class="step"><div class="bar" style="height:16px"></div><div class="label">4</div><div class="val">16px</div></div>
+    <div class="step"><div class="bar" style="height:20px"></div><div class="label">5</div><div class="val">20px</div></div>
+    <div class="step"><div class="bar" style="height:24px"></div><div class="label">6</div><div class="val">24px</div></div>
+    <div class="step"><div class="bar" style="height:28px"></div><div class="label">7</div><div class="val">28px</div></div>
+    <div class="step"><div class="bar" style="height:32px"></div><div class="label">8</div><div class="val">32px</div></div>
+    <div class="step"><div class="bar" style="height:40px"></div><div class="label">10</div><div class="val">40px</div></div>
+    <div class="step"><div class="bar" style="height:48px"></div><div class="label">12</div><div class="val">48px</div></div>
+    <div class="step"><div class="bar" style="height:64px"></div><div class="label">16</div><div class="val">64px</div></div>
+  </div>
+</body>
+</html>

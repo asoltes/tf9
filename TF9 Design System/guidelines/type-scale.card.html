@@ -1,0 +1,26 @@
+<!-- @dsCard group="Type" viewport="700x320" name="Type Scale" subtitle="Open Sans — all sizes from caption to page title" -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px 24px; background: var(--bg-layout); font-family: var(--sans); color: var(--text); }
+  .row { display: flex; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--divider); }
+  .row:last-child { border-bottom: none; }
+  .meta { width: 120px; flex-shrink: 0; }
+  .meta-size { font-size: 11px; font-weight: 700; color: var(--text-3); font-family: var(--mono); }
+  .meta-role { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+  .sample { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+  <div class="row"><div class="meta"><div class="meta-size">32px 800</div><div class="meta-role">Display</div></div><div class="sample" style="font-size:32px;font-weight:800;letter-spacing:-0.3px">Terraform Run History</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">28px 700</div><div class="meta-role">Page Title</div></div><div class="sample" style="font-size:28px;font-weight:700;letter-spacing:-0.3px">Dashboard</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">24px 700</div><div class="meta-role">H2</div></div><div class="sample" style="font-size:24px;font-weight:700">Repository Workspace</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">18px 700</div><div class="meta-role">Section Title</div></div><div class="sample" style="font-size:18px;font-weight:700">Recent Runs</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">16px 600</div><div class="meta-role">Subheading</div></div><div class="sample" style="font-size:16px;font-weight:600">Execution Modes</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">14px 400</div><div class="meta-role">Body</div></div><div class="sample" style="font-size:14px;font-weight:400">Operational summary for tf9 — Terraform runs across your ordered repository targets.</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">13px 400</div><div class="meta-role">Body Small</div></div><div class="sample" style="font-size:13px;font-weight:400;color:#5f6b7a">No repositories configured yet. Add a repository to start running Terraform.</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">12px 700</div><div class="meta-role">Label / Badge</div></div><div class="sample" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">PLAN · APPLY · DESTROY</div></div>
+  <div class="row"><div class="meta"><div class="meta-size">11px 400</div><div class="meta-role">Caption</div></div><div class="sample" style="font-size:11px;font-weight:400;color:#6d7884">Last 100 runs · 2 hours ago · andres@company</div></div>
+</body>
+</html>

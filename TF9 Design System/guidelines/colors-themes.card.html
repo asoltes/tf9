@@ -1,0 +1,66 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Theme Surfaces" subtitle="Container and surface hierarchy across light, dark, and dim themes" -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 18px 22px; background: #e8eaec; font-family: var(--sans); }
+  .themes { display: flex; gap: 16px; }
+  .theme { flex: 1; border-radius: 10px; overflow: hidden; border: 1px solid rgba(0,0,0,.12); }
+  .theme-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 6px 10px; }
+  .surfaces { display: flex; flex-direction: column; }
+  .surf { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid rgba(128,128,128,.12); }
+  .surf:last-child { border-bottom: none; }
+  .surf-name { font-size: 10px; }
+  .surf-val { font-size: 9px; font-family: monospace; opacity: .7; }
+  /* Light */
+  .l { background: #f2f3f3; color: #0f141a; }
+  .l .theme-label { background: #0f1b2a; color: #fff; }
+  .l .s1 { background: #ffffff; }
+  .l .s2 { background: #f3f6f9; }
+  .l .s3 { background: #e9ebed; }
+  /* Dark */
+  .d { background: #0d1117; color: #e6edf3; }
+  .d .theme-label { background: #010409; color: #e6edf3; }
+  .d .s1 { background: #161b22; color: #e6edf3; }
+  .d .s2 { background: #1b222c; color: #e6edf3; }
+  .d .s3 { background: #21262d; color: #e6edf3; }
+  /* Dim */
+  .m { background: #22272e; color: #adbac7; }
+  .m .theme-label { background: #1c2128; color: #adbac7; }
+  .m .s1 { background: #2d333b; color: #adbac7; }
+  .m .s2 { background: #323942; color: #adbac7; }
+  .m .s3 { background: #373e47; color: #adbac7; }
+</style>
+</head>
+<body>
+  <div class="themes">
+    <div class="theme l">
+      <div class="theme-label">☀ Light</div>
+      <div class="surfaces">
+        <div class="surf s1"><span class="surf-name">Canvas</span><span class="surf-val">#f2f3f3</span></div>
+        <div class="surf s1"><span class="surf-name">Container</span><span class="surf-val">#ffffff</span></div>
+        <div class="surf s2"><span class="surf-name">Surface 2</span><span class="surf-val">#f3f6f9</span></div>
+        <div class="surf s3"><span class="surf-name">Surface 3</span><span class="surf-val">#e9ebed</span></div>
+      </div>
+    </div>
+    <div class="theme d">
+      <div class="theme-label">🌑 Dark</div>
+      <div class="surfaces">
+        <div class="surf"><span class="surf-name">Canvas</span><span class="surf-val">#0d1117</span></div>
+        <div class="surf s1"><span class="surf-name">Container</span><span class="surf-val">#161b22</span></div>
+        <div class="surf s2"><span class="surf-name">Surface 2</span><span class="surf-val">#1b222c</span></div>
+        <div class="surf s3"><span class="surf-name">Surface 3</span><span class="surf-val">#21262d</span></div>
+      </div>
+    </div>
+    <div class="theme m">
+      <div class="theme-label">🌗 Dim</div>
+      <div class="surfaces">
+        <div class="surf"><span class="surf-name">Canvas</span><span class="surf-val">#22272e</span></div>
+        <div class="surf s1"><span class="surf-name">Container</span><span class="surf-val">#2d333b</span></div>
+        <div class="surf s2"><span class="surf-name">Surface 2</span><span class="surf-val">#323942</span></div>
+        <div class="surf s3"><span class="surf-name">Surface 3</span><span class="surf-val">#373e47</span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

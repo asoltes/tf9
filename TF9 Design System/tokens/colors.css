@@ -1,0 +1,175 @@
+/* =====================================================================
+   TF9 Color Tokens — REDESIGN identity
+   Terraform purple primary + AWS orange accent + Terraform lime highlight,
+   on a modern slate neutral scale. Light defaults; dark overrides below.
+   ===================================================================== */
+
+:root {
+  /* ── Brand ──────────────────────────────────────────────────────── */
+  --primary:        #7B42BC;   /* Terraform purple   */
+  --primary-dark:   #5C2D91;   /* deep purple        */
+  --primary-bg:     #F4EEFC;   /* purple tint surface*/
+  --accent:         #FF9900;   /* AWS orange         */
+  --accent-bg:      #FFF6E9;
+  --highlight:      #C2F970;   /* Terraform lime     */
+  --highlight-ink:  #3D6B00;   /* readable lime text */
+  --secondary:      #98A6D4;   /* muted periwinkle   */
+
+  /* ── Canvas & surfaces (slate) ─────────────────────────────────── */
+  --bg-layout:      #F8FAFC;
+  --container:      #FFFFFF;
+  --surface-1:      #FFFFFF;
+  --surface-2:      #F1F5F9;
+  --surface-3:      #E2E8F0;
+  --surface-canvas: var(--bg-layout);
+  --surface-raised: var(--container);
+  --surface-sunken: var(--surface-2);
+
+  /* ── Navigation chrome ─────────────────────────────────────────── */
+  --nav-bg:         #0F172A;   /* slate-900 header   */
+  --nav-bg-2:       #1E293B;
+  --nav-text:       #CBD5E1;
+  --squid:          #0F172A;
+
+  /* ── Text ──────────────────────────────────────────────────────── */
+  --text:           #0F172A;
+  --text-1:         #0F172A;
+  --text-2:         #475569;
+  --text-3:         #64748B;
+  --text-muted:     var(--text-3);
+
+  /* ── Borders & dividers ─────────────────────────────────────────── */
+  --border:         #E2E8F0;
+  --border-strong:  #CBD5E1;
+  --divider:        #E2E8F0;
+  --input-border:   #CBD5E1;
+
+  /* ── Links & interactive ────────────────────────────────────────── */
+  --link:           #7B42BC;
+  --link-hover:     #5C2D91;
+  --focus-ring:     #7B42BC;
+
+  /* ── Info blue ──────────────────────────────────────────────────── */
+  --blue:           #0284C7;
+  --blue-bg:        #EFF6FF;
+
+  /* ── Purple alias (legacy token name → primary) ────────────────── */
+  --purple:         #7B42BC;
+  --purple-bg:      var(--primary-bg);
+
+  /* ── Semantic status colors ─────────────────────────────────────── */
+  --green:          #16A34A;
+  --green-bg:       #F0FDF4;
+  --amber:          #D97706;
+  --amber-bg:       #FFFBEB;
+  --red:            #DC2626;
+  --red-bg:         #FEF2F2;
+
+  --status-info:    var(--blue);
+  --status-success: var(--green);
+  --status-warning: var(--amber);
+  --status-danger:  var(--red);
+  --status-running: var(--primary);
+  --status-neutral: var(--text-3);
+
+  /* ── Table header ───────────────────────────────────────────────── */
+  --th:             #F8FAFC;
+  --grey-badge:     #F1F5F9;
+
+  /* ── Terraform resource change colors ──────────────────────────── */
+  --tf-add:         var(--green);
+  --tf-change:      var(--amber);
+  --tf-destroy:     var(--red);
+  --tf-replace:     var(--primary);
+
+  /* ── Graph view ─────────────────────────────────────────────────── */
+  --gv-canvas:      #EEF2F7;
+  --gv-neutral:     #94A3B8;
+  --gv-highlight:   var(--accent);
+  --gv-link:        rgba(71, 85, 105, 0.40);
+  --gv-link-dep:    rgba(123, 66, 188, 0.55);
+  --gv-link-muted:  rgba(100, 116, 139, 0.20);
+}
+
+/* ── Dark theme ─────────────────────────────────────────────────────── */
+html[data-theme="dark"] {
+  --primary:        #A472E8;   /* lightened purple for dark surfaces */
+  --primary-dark:   #7B42BC;
+  --primary-bg:     #241934;
+  --accent:         #FFAA33;
+  --accent-bg:      #2E2410;
+  --highlight:      #C2F970;
+  --highlight-ink:  #C2F970;
+  --secondary:      #98A6D4;
+
+  --bg-layout:      #0F172A;
+  --container:      #1E293B;
+  --surface-1:      #1E293B;
+  --surface-2:      #334155;
+  --surface-3:      #475569;
+  --squid:          #F8FAFC;
+
+  --nav-bg:         #0B1120;
+  --nav-bg-2:       #1E293B;
+  --nav-text:       #CBD5E1;
+
+  --text:           #F8FAFC;
+  --text-1:         #F8FAFC;
+  --text-2:         #CBD5E1;
+  --text-3:         #94A3B8;
+
+  --border:         #475569;
+  --border-strong:  #64748B;
+  --divider:        #334155;
+  --input-border:   #475569;
+
+  --link:           #C4A4F2;
+  --link-hover:     #D8C4F7;
+  --focus-ring:     #A472E8;
+
+  --blue:           #38BDF8;
+  --blue-bg:        #0C2A3D;
+  --purple:         #A472E8;
+  --purple-bg:      #241934;
+
+  --green:          #34D399;
+  --green-bg:       #0C2C1F;
+  --amber:          #FBBF24;
+  --amber-bg:       #2E2410;
+  --red:            #F87171;
+  --red-bg:         #2E1616;
+
+  --th:             #1B2638;
+  --grey-badge:     #334155;
+
+  --gv-canvas:      #0B1120;
+  --gv-neutral:     #94A3B8;
+  --gv-highlight:   #FFAA33;
+  --gv-link:        rgba(148, 163, 184, 0.42);
+  --gv-link-dep:    rgba(164, 114, 232, 0.58);
+  --gv-link-muted:  rgba(148, 163, 184, 0.18);
+}
+
+/* ── Dim theme (rides on data-theme="dark") ─────────────────────────── */
+html[data-variant="dim"] {
+  --bg-layout:      #1A2233;
+  --container:      #232E42;
+  --surface-1:      #232E42;
+  --surface-2:      #2E3A52;
+  --surface-3:      #3B4866;
+  --nav-bg:         #141C2C;
+  --nav-bg-2:       #232E42;
+
+  --text:           #E2E8F0;
+  --text-1:         #E2E8F0;
+  --text-2:         #B6C2D4;
+  --text-3:         #8C9BB3;
+
+  --border:         #3B4866;
+  --border-strong:  #56658A;
+  --divider:        #2E3A52;
+  --input-border:   #3B4866;
+
+  --th:             #232E42;
+  --grey-badge:     #2E3A52;
+}

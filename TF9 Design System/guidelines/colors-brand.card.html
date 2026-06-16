@@ -1,0 +1,52 @@
+<!-- @dsCard group="Colors" viewport="700x220" name="Brand & Primary Colors" subtitle="Core brand palette — blue, purple, nav" -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px 24px; background: var(--bg-layout); font-family: var(--sans); }
+  .swatches { display: flex; gap: 12px; flex-wrap: wrap; }
+  .swatch { display: flex; flex-direction: column; gap: 6px; }
+  .color-block { width: 80px; height: 56px; border-radius: 8px; border: 1px solid rgba(0,0,0,.08); }
+  .label { font-size: 11px; font-weight: 700; color: var(--text); }
+  .value { font-size: 10px; font-family: var(--mono); color: var(--text-3); }
+  h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-3); font-weight: 700; margin: 0 0 12px; }
+</style>
+</head>
+<body>
+  <h3>Brand & Primary</h3>
+  <div class="swatches">
+    <div class="swatch">
+      <div class="color-block" style="background:#0f1b2a"></div>
+      <div class="label">Nav BG</div><div class="value">#0f1b2a</div>
+    </div>
+    <div class="swatch">
+      <div class="color-block" style="background:#0972d3"></div>
+      <div class="label">Blue (Light)</div><div class="value">#0972d3</div>
+    </div>
+    <div class="swatch">
+      <div class="color-block" style="background:#58a6ff"></div>
+      <div class="label">Blue (Dark)</div><div class="value">#58a6ff</div>
+    </div>
+    <div class="swatch">
+      <div class="color-block" style="background:#8250df"></div>
+      <div class="label">Purple (Light)</div><div class="value">#8250df</div>
+    </div>
+    <div class="swatch">
+      <div class="color-block" style="background:#bc8cff"></div>
+      <div class="label">Purple (Dark)</div><div class="value">#bc8cff</div>
+    </div>
+    <div class="swatch">
+      <div class="color-block" style="background:#f2f3f3; border-color:#d0d0d5"></div>
+      <div class="label">Canvas (Light)</div><div class="value">#f2f3f3</div>
+    </div>
+    <div class="swatch">
+      <div class="color-block" style="background:#0d1117"></div>
+      <div class="label">Canvas (Dark)</div><div class="value">#0d1117</div>
+    </div>
+    <div class="swatch">
+      <div class="color-block" style="background:#ffffff; border-color:#e0e0e5"></div>
+      <div class="label">Container</div><div class="value">#ffffff</div>
+    </div>
+  </div>
+</body>
+</html>

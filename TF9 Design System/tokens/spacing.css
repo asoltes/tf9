@@ -1,0 +1,52 @@
+/* =====================================================================
+   TF9 Spacing, Radius & Shadow Tokens — REDESIGN
+   8px base grid. Modern enterprise radii (8/10/12px) and soft shadows.
+   ===================================================================== */
+
+:root {
+  /* ── 8px spacing scale ─────────────────────────────────────────── */
+  --space-0:    0px;
+  --space-1:    4px;
+  --space-2:    8px;
+  --space-3:    12px;
+  --space-4:    16px;
+  --space-5:    20px;
+  --space-6:    24px;
+  --space-7:    28px;
+  --space-8:    32px;
+  --space-10:   40px;
+  --space-12:   48px;
+  --space-16:   64px;
+
+  /* ── Corner radii ──────────────────────────────────────────────── */
+  --radius-sm:    6px;
+  --radius-i:     8px;    /* inputs, buttons, chips */
+  --radius-md:    10px;
+  --radius-c:     12px;   /* containers / panel cards */
+  --radius-lg:    16px;
+  --radius-pill:  9999px; /* full pills, avatars, status dots */
+  --radius-full:  9999px;
+
+  /* ── Shadows (soft, modern) ────────────────────────────────────── */
+  --shadow-sm:    0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-c:     0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.08), 0 0 0 1px var(--border);
+  --shadow-pop:   0 4px 6px -2px rgba(15, 23, 42, 0.08), 0 12px 28px -6px rgba(15, 23, 42, 0.20), 0 0 0 1px var(--border);
+  --shadow-drag:  0 12px 28px -6px rgba(15, 23, 42, 0.30), 0 0 0 1px var(--primary);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--primary) 24%, transparent);
+
+  /* ── Layout constants ──────────────────────────────────────────── */
+  --topnav-height:     64px;
+  --sidenav-width:     248px;
+  --sidenav-collapsed: 60px;
+  --context-width:     360px;
+  --content-max:       1440px;
+  --content-pad:       32px;
+}
+
+/* Dark / dim shadow overrides */
+html[data-theme="dark"] {
+  --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-c:   0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border);
+  --shadow-pop: 0 12px 32px -6px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--primary) 36%, transparent);
+}

@@ -1,0 +1,77 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Status Colors" subtitle="Success, warning, error, info — light and dark" -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px 24px; background: var(--bg-layout); font-family: var(--sans); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .swatch { display: flex; flex-direction: column; gap: 5px; }
+  .pair { display: flex; gap: 3px; }
+  .color-block { width: 60px; height: 40px; border-radius: 6px; border: 1px solid rgba(0,0,0,.07); }
+  .label { font-size: 10px; font-weight: 700; color: var(--text); }
+  .value { font-size: 9px; font-family: var(--mono); color: var(--text-3); }
+  h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-3); font-weight: 700; margin: 0 0 10px; }
+</style>
+</head>
+<body>
+  <h3>Status Colors — Light / Dark</h3>
+  <div class="row">
+    <div class="swatch">
+      <div class="pair">
+        <div class="color-block" style="background:#037f0c"></div>
+        <div class="color-block" style="background:#3fb950"></div>
+      </div>
+      <div class="label">Success</div>
+      <div class="value">#037f0c / #3fb950</div>
+    </div>
+    <div class="swatch">
+      <div class="pair">
+        <div class="color-block" style="background:#8d6605"></div>
+        <div class="color-block" style="background:#d29922"></div>
+      </div>
+      <div class="label">Warning</div>
+      <div class="value">#8d6605 / #d29922</div>
+    </div>
+    <div class="swatch">
+      <div class="pair">
+        <div class="color-block" style="background:#d91515"></div>
+        <div class="color-block" style="background:#f85149"></div>
+      </div>
+      <div class="label">Error/Danger</div>
+      <div class="value">#d91515 / #f85149</div>
+    </div>
+    <div class="swatch">
+      <div class="pair">
+        <div class="color-block" style="background:#0972d3"></div>
+        <div class="color-block" style="background:#58a6ff"></div>
+      </div>
+      <div class="label">Info/Running</div>
+      <div class="value">#0972d3 / #58a6ff</div>
+    </div>
+    <div class="swatch">
+      <div class="pair">
+        <div class="color-block" style="background:#effff1; border-color:#c0e8c5"></div>
+        <div class="color-block" style="background:#102619"></div>
+      </div>
+      <div class="label">Success BG</div>
+      <div class="value">#effff1 / #102619</div>
+    </div>
+    <div class="swatch">
+      <div class="pair">
+        <div class="color-block" style="background:#fff7f7; border-color:#f5c5c5"></div>
+        <div class="color-block" style="background:#2b1618"></div>
+      </div>
+      <div class="label">Error BG</div>
+      <div class="value">#fff7f7 / #2b1618</div>
+    </div>
+    <div class="swatch">
+      <div class="pair">
+        <div class="color-block" style="background:#fffef0; border-color:#e8d9a0"></div>
+        <div class="color-block" style="background:#27220f"></div>
+      </div>
+      <div class="label">Warning BG</div>
+      <div class="value">#fffef0 / #27220f</div>
+    </div>
+  </div>
+</body>
+</html>

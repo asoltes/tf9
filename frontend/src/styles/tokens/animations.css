@@ -1,0 +1,77 @@
+/* =====================================================================
+   TF9 Animation & Motion Tokens
+   Source: frontend/src/index.css + Runs.css
+   ===================================================================== */
+
+:root {
+  /* ── Duration ──────────────────────────────────────────────────── */
+  --duration-instant:  80ms; /* @kind other */
+  --duration-fast:     120ms; /* @kind other */
+  --duration-normal:   200ms; /* @kind other */
+  --duration-slow:     300ms; /* @kind other */
+
+  /* ── Easing ────────────────────────────────────────────────────── */
+  --ease-default:  ease; /* @kind other */
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1); /* @kind other */
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1); /* @kind other */
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+}
+
+/* ── Pulse dot (running state indicator) ───────────────────────── */
+@keyframes tf9-pulse {
+  0%   { opacity: 1;    transform: scale(1); }
+  50%  { opacity: 0.35; transform: scale(0.78); }
+  100% { opacity: 1;    transform: scale(1); }
+}
+
+.tf9-pulse-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: tf9-pulse 1.1s ease-in-out infinite;
+}
+
+/* ── Striped progress bar (running) ────────────────────────────── */
+@keyframes tf9-stripe {
+  0%   { background-position: 0 0; }
+  100% { background-position: 28px 0; }
+}
+
+.tf9-progress-running {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.28) 25%, transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.28) 50%, rgba(255, 255, 255, 0.28) 75%,
+    transparent 75%, transparent
+  );
+  background-size: 28px 28px;
+  animation: tf9-stripe 0.8s linear infinite;
+}
+
+/* ── Skeleton shimmer ──────────────────────────────────────────── */
+@keyframes tf9-skeleton {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 1; }
+}
+
+.tf9-skeleton {
+  background: var(--surface-3);
+  border-radius: 6px;
+  animation: tf9-skeleton 1.4s ease-in-out infinite;
+}
+
+/* ── Spin ──────────────────────────────────────────────────────── */
+@keyframes tf9-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Reduced motion: disable all animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

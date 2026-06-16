@@ -1,0 +1,84 @@
+/* =====================================================================
+   TF9 Terraform Command Color Tokens
+   Each command maps to a unique color for badges, terminal headers,
+   approval bars, and status indicators.
+   Source: frontend/src/styles/cloudscape.css + theme.css
+   ===================================================================== */
+
+:root {
+  /* Light theme command colors */
+  --command-init:          #0969da;
+  --command-plan:          #1a7f37;
+  --command-apply:         #bc4c00;
+  --command-destroy:       #cf222e;
+  --command-auto:          #8250df;
+  --command-validate:      #0a7c86;
+  --command-refresh:       #57606a;
+  --command-state:         #9a6700;
+  --command-output:        #6639ba;
+  --command-import:        #1f6feb;
+  --command-taint:         #b35900;
+  --command-untaint:       #218bff;
+  --command-force-unlock:  #a40e26;
+  --command-cost:          #b4690e;
+}
+
+html[data-theme="dark"] {
+  --command-init:          #58a6ff;
+  --command-plan:          #3fb950;
+  --command-apply:         #ffa657;
+  --command-destroy:       #ff7b72;
+  --command-auto:          #bc8cff;
+  --command-validate:      #39c5cf;
+  --command-refresh:       #9aa5b1;
+  --command-state:         #e3b341;
+  --command-output:        #d2a8ff;
+  --command-import:        #79c0ff;
+  --command-taint:         #f0883e;
+  --command-untaint:       #a5d6ff;
+  --command-force-unlock:  #ffa198;
+  --command-cost:          #d29922;
+}
+
+html[data-variant="dim"] {
+  --command-init:          #6cb6ff;
+  --command-plan:          #57ab5a;
+  --command-apply:         #f69d50;
+  --command-destroy:       #f47067;
+  --command-auto:          #dcbdfb;
+  --command-validate:      #45c2c9;
+  --command-refresh:       #909dab;
+  --command-state:         #daaa3f;
+  --command-output:        #b083f0;
+  --command-import:        #96d0ff;
+  --command-taint:         #e0823d;
+  --command-untaint:       #c8e1ff;
+  --command-force-unlock:  #e8958f;
+  --command-cost:          #c69026;
+}
+
+/* ── Global command-contrast token ────────────────────────────────── */
+:root {
+  --command-contrast: #ffffff; /* @kind color */
+}
+html[data-theme="dark"],
+html[data-variant="dim"] {
+  --command-contrast: #0d1117;
+}
+
+/* Per-command mappings */
+.command-init          { --command-color: var(--command-init); }
+.command-plan          { --command-color: var(--command-plan); }
+.command-apply         { --command-color: var(--command-apply); }
+.command-destroy       { --command-color: var(--command-destroy); }
+.command-auto          { --command-color: var(--command-auto); }
+.command-validate      { --command-color: var(--command-validate); }
+.command-refresh       { --command-color: var(--command-refresh); }
+.command-state         { --command-color: var(--command-state); }
+.command-output        { --command-color: var(--command-output); }
+.command-import        { --command-color: var(--command-import); }
+.command-taint         { --command-color: var(--command-taint); }
+.command-untaint       { --command-color: var(--command-untaint); }
+.command-force-unlock  { --command-color: var(--command-force-unlock); }
+.command-cost          { --command-color: var(--command-cost); }
+.command-default       { --command-color: var(--text-3); }
