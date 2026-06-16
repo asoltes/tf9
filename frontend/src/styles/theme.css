@@ -7,40 +7,23 @@
    Load AFTER cloudscape.css and any page CSS.
    ========================================================================= */
 
-/* ── DARK: re-tokenize ──────────────────────────────────────────────────── */
-html[data-theme="dark"]{
-  --bg-layout:#0d1117; --container:#161b22; --squid:#e6edf3;
-  /* Muted text meets WCAG AA on the dark container surfaces. */
-  --text:#e6edf3; --text-2:#9aa5b1; --text-3:#848d97;
-  --link:#58a6ff; --link-hover:#79c0ff; --blue:#58a6ff; --blue-bg:#132b45; --purple:#bc8cff;
-  --th:#1b222c; --divider:#30363d; --border-strong:#3d444d; --input-border:#4b545e;
-  --nav-bg:#010409; --nav-bg-2:#21262d;
-  --green:#3fb950; --green-bg:#102619; --amber:#d29922; --amber-bg:#27220f; --red:#f85149; --red-bg:#2b1618;
-  --command-init:#58a6ff; --command-plan:#3fb950; --command-apply:#ffa657; --command-destroy:#ff7b72;
-  --command-auto:#bc8cff; --command-validate:#39c5cf; --command-refresh:#9aa5b1; --command-state:#e3b341;
-  --command-output:#d2a8ff; --command-import:#79c0ff; --command-taint:#f0883e; --command-untaint:#a5d6ff;
-  --command-force-unlock:#ffa198; --command-cost:#d29922;
-  --grey-badge:#30363d;
-  --surface-1:#161b22; --surface-2:#1b222c; --surface-3:#21262d;
-  --border:#3d444d; --text-1:#e6edf3;
-  --gv-canvas:#07101d; --gv-neutral:#94a3b8; --gv-highlight:#fbbf24;
-  --gv-link:rgba(150,170,195,.42); --gv-link-dep:rgba(95,155,255,.58); --gv-link-muted:rgba(140,155,175,.18);
-  --shadow-c:0 0 0 1px #30363d, 0 1px 4px rgba(0,0,0,.4);
-  --shadow-sm:0 1px 2px rgba(0,0,0,.5);
-  --shadow-pop:0 8px 30px rgba(0,0,0,.6), 0 0 0 1px #30363d;
-}
+/* ── DARK ────────────────────────────────────────────────────────────────
+   Dark color/shadow tokens are now defined in ./tokens/colors.css and
+   ./tokens/spacing.css (TF9 Design System redesign). This sheet keeps only
+   the component-level chrome/terminal overrides that the tokens don't cover.
+   ─────────────────────────────────────────────────────────────────────── */
 html[data-theme="dark"] .command-style{--command-contrast:#0d1117}
 
 /* ── DARK: chrome surface overrides (hardcoded light values) ────────────── */
 html[data-theme="dark"] .btn-normal{background:transparent}
-html[data-theme="dark"] .btn-normal:hover{background:#132b45}
+html[data-theme="dark"] .btn-normal:hover{background:var(--blue-bg)}
 html[data-theme="dark"] .btn-icon{color:#9aa5b1}
-html[data-theme="dark"] .btn-icon:hover{background:#21262d;color:var(--text)}
-html[data-theme="dark"] .inp,html[data-theme="dark"] .sel{background:#0d1117;color:var(--text)}
-html[data-theme="dark"] .sidenav a:hover{background:#1c2128}
+html[data-theme="dark"] .btn-icon:hover{background:var(--surface-3);color:var(--text)}
+html[data-theme="dark"] .inp,html[data-theme="dark"] .sel{background:var(--bg-layout);color:var(--text)}
+html[data-theme="dark"] .sidenav a:hover{background:var(--surface-2)}
 html[data-theme="dark"] .tbl thead th{background:var(--th)}
-html[data-theme="dark"] .tbl tbody tr.selectable:hover{background:#1c2128}
-html[data-theme="dark"] .badge.blue{background:#132b45;color:#79c0ff}
+html[data-theme="dark"] .tbl tbody tr.selectable:hover{background:var(--surface-2)}
+html[data-theme="dark"] .badge.blue{background:var(--blue-bg);color:#79c0ff}
 html[data-theme="dark"] .badge.green{background:#102619;color:#56d364}
 html[data-theme="dark"] .badge.amber{background:#27220f;color:#e3b341}
 html[data-theme="dark"] .badge.orange{background:#3a230f;color:#ffa657}
@@ -48,44 +31,44 @@ html[data-theme="dark"] .badge.red{background:#2b1618;color:#ffa198}
 html[data-theme="dark"] .badge{background:#30363d;color:var(--text)}
 html[data-theme="dark"] .badge.command-style,
 html[data-variant="dim"] .badge.command-style{background:color-mix(in srgb,var(--command-color) 18%,var(--container));color:var(--command-color)}
-html[data-theme="dark"] .seq-summary .s-node{background:#0d1117}
-html[data-theme="dark"] .view-toggle button{background:#161b22;color:var(--text-2)}
+html[data-theme="dark"] .seq-summary .s-node{background:var(--bg-layout)}
+html[data-theme="dark"] .view-toggle button{background:var(--container);color:var(--text-2)}
 html[data-theme="dark"] .view-toggle button.on{background:var(--blue);color:#04101f}
-html[data-theme="dark"] .stage{background:#1c2330}
-html[data-theme="dark"] .stage.placeholder{background:#132b45}
-html[data-theme="dark"] .stage-grip:hover{background:#21262d}
-html[data-theme="dark"] .stage-dir{background:#0d1117}
-html[data-theme="dark"] .add-stage .plus{background:#21262d}
-html[data-theme="dark"] .add-stage:hover .plus{background:#161b22}
-html[data-theme="dark"] .flow-note{background:#11161d}
-html[data-theme="dark"] .group{background:#11161d}
-html[data-theme="dark"] .group-title .gfolder{background:#132b45}
-html[data-theme="dark"] .dir-row:hover{background:#1c2128}
-html[data-theme="dark"] .modal{background:#161b22}
+html[data-theme="dark"] .stage{background:var(--surface-2)}
+html[data-theme="dark"] .stage.placeholder{background:var(--blue-bg)}
+html[data-theme="dark"] .stage-grip:hover{background:var(--surface-3)}
+html[data-theme="dark"] .stage-dir{background:var(--bg-layout)}
+html[data-theme="dark"] .add-stage .plus{background:var(--surface-3)}
+html[data-theme="dark"] .add-stage:hover .plus{background:var(--container)}
+html[data-theme="dark"] .flow-note{background:var(--bg-layout)}
+html[data-theme="dark"] .group{background:var(--bg-layout)}
+html[data-theme="dark"] .group-title .gfolder{background:var(--blue-bg)}
+html[data-theme="dark"] .dir-row:hover{background:var(--surface-2)}
+html[data-theme="dark"] .modal{background:var(--container)}
 html[data-theme="dark"] .radio{border-color:#4b545e}
 
 /* runs history + split panel */
 html[data-theme="dark"] .runs-tbl thead th{background:var(--th)}
-html[data-theme="dark"] .runs-tbl tbody tr:hover td{background:#1c2128}
-html[data-theme="dark"] .runs-tbl tbody tr.is-running td{background:#102339}
+html[data-theme="dark"] .runs-tbl tbody tr:hover td{background:var(--surface-2)}
+html[data-theme="dark"] .runs-tbl tbody tr.is-running td{background:var(--blue-bg)}
 html[data-theme="dark"] .runs-tbl tbody tr.is-running.selected td,
 html[data-theme="dark"] .runs-tbl tbody tr.selected td{background:var(--blue-bg)}
-html[data-theme="dark"] .tgt-chip{background:#21262d;color:var(--text)}
-html[data-theme="dark"] .splitpanel,html[data-theme="dark"] .sp-handle,html[data-theme="dark"] .sp-head{background:#161b22}
-html[data-theme="dark"] .dock-toggle button{background:#161b22;color:var(--text-2)}
+html[data-theme="dark"] .tgt-chip{background:var(--surface-3);color:var(--text)}
+html[data-theme="dark"] .splitpanel,html[data-theme="dark"] .sp-handle,html[data-theme="dark"] .sp-head{background:var(--container)}
+html[data-theme="dark"] .dock-toggle button{background:var(--container);color:var(--text-2)}
 html[data-theme="dark"] .dock-toggle button.on{background:var(--blue);color:#04101f}
-html[data-theme="dark"] .tdot{background:#0d1117}
+html[data-theme="dark"] .tdot{background:var(--bg-layout)}
 
 /* new run modal */
-html[data-theme="dark"] .run-modal,html[data-theme="dark"] .rm-head,html[data-theme="dark"] .rm-foot{background:#161b22}
-html[data-theme="dark"] .rm-side{background:#11161d}
-html[data-theme="dark"] .rm-close:hover{background:#21262d}
-html[data-theme="dark"] .cmd-chip,html[data-theme="dark"] .tile,html[data-theme="dark"] .tgroup,html[data-theme="dark"] .aa-control{background:#1c2330}
-html[data-theme="dark"] .cmd-chip .ic,html[data-theme="dark"] .tile .ti-ic{background:#0d1117}
-html[data-theme="dark"] .tgroup-head{background:#11161d}
-html[data-theme="dark"] .tgt:hover{background:#21262d}
-html[data-theme="dark"] .exec-box,html[data-theme="dark"] .sum-cmd .pill{background:#0d1117}
-html[data-theme="dark"] .cbox{background:#0d1117;border-color:#4b545e}
+html[data-theme="dark"] .run-modal,html[data-theme="dark"] .rm-head,html[data-theme="dark"] .rm-foot{background:var(--container)}
+html[data-theme="dark"] .rm-side{background:var(--bg-layout)}
+html[data-theme="dark"] .rm-close:hover{background:var(--surface-3)}
+html[data-theme="dark"] .cmd-chip,html[data-theme="dark"] .tile,html[data-theme="dark"] .tgroup,html[data-theme="dark"] .aa-control{background:var(--surface-2)}
+html[data-theme="dark"] .cmd-chip .ic,html[data-theme="dark"] .tile .ti-ic{background:var(--bg-layout)}
+html[data-theme="dark"] .tgroup-head{background:var(--bg-layout)}
+html[data-theme="dark"] .tgt:hover{background:var(--surface-3)}
+html[data-theme="dark"] .exec-box,html[data-theme="dark"] .sum-cmd .pill{background:var(--bg-layout)}
+html[data-theme="dark"] .cbox{background:var(--bg-layout);border-color:#4b545e}
 
 /* config editor follows global theme via JS (#editor[data-theme]) */
 
@@ -201,27 +184,9 @@ html[data-theme="light"] .fs-modal .rct-row-open td,html[data-theme="light"] .fs
    of hardcoded surface backgrounds. Must come AFTER the dark rules (equal
    specificity → source order wins).
    ========================================================================= */
-html[data-variant="dim"]{
-  --bg-layout:#22272e; --container:#2d333b; --squid:#cdd9e5;
-  /* Muted text meets WCAG AA on the dim container surfaces. */
-  --text:#adbac7; --text-2:#909dab; --text-3:#8b98a5;
-  --link:#6cb6ff; --link-hover:#96d0ff; --blue:#6cb6ff; --blue-bg:#243b53; --purple:#dcbdfb;
-  --th:#2d333b; --divider:#444c56; --border-strong:#545d68; --input-border:#545d68;
-  --nav-bg:#1c2128; --nav-bg-2:#2d333b;
-  --green:#57ab5a; --green-bg:#1b3326; --amber:#c69026; --amber-bg:#302a18; --red:#e5534b; --red-bg:#3a2024;
-  --command-init:#6cb6ff; --command-plan:#57ab5a; --command-apply:#f69d50; --command-destroy:#f47067;
-  --command-auto:#dcbdfb; --command-validate:#45c2c9; --command-refresh:#909dab; --command-state:#daaa3f;
-  --command-output:#b083f0; --command-import:#96d0ff; --command-taint:#e0823d; --command-untaint:#c8e1ff;
-  --command-force-unlock:#e8958f; --command-cost:#c69026;
-  --grey-badge:#373e47;
-  --surface-1:#2d333b; --surface-2:#323942; --surface-3:#373e47;
-  --border:#545d68; --text-1:#adbac7;
-  --gv-canvas:#1c2128; --gv-neutral:#909dab; --gv-highlight:#e0a847;
-  --gv-link:rgba(174,187,201,.44); --gv-link-dep:rgba(120,190,255,.60); --gv-link-muted:rgba(160,174,190,.20);
-  --shadow-c:0 0 0 1px #444c56, 0 1px 4px rgba(0,0,0,.3);
-  --shadow-sm:0 1px 2px rgba(0,0,0,.4);
-  --shadow-pop:0 8px 30px rgba(0,0,0,.5), 0 0 0 1px #444c56;
-}
+/* Dim color/shadow tokens are defined in ./tokens/colors.css and
+   ./tokens/spacing.css (html[data-variant="dim"]). Only the component-level
+   surface overrides remain below. */
 html[data-variant="dim"] .command-style{--command-contrast:#0d1117}
 
 /* Sunken / canvas surfaces (was #0d1117 / #11161d) */
@@ -231,7 +196,7 @@ html[data-variant="dim"] .tile .ti-ic,html[data-variant="dim"] .exec-box,
 html[data-variant="dim"] .sum-cmd .pill,html[data-variant="dim"] .cbox,
 html[data-variant="dim"] .tdot,html[data-variant="dim"] .rm-side,
 html[data-variant="dim"] .flow-note,html[data-variant="dim"] .group,
-html[data-variant="dim"] .tgroup-head,html[data-variant="dim"] .seq-summary .s-node{background:#22272e}
+html[data-variant="dim"] .tgroup-head,html[data-variant="dim"] .seq-summary .s-node{background:var(--bg-layout)}
 html[data-variant="dim"] .cbox{border-color:#545d68}
 
 /* Container surfaces (was #161b22) */
@@ -239,16 +204,16 @@ html[data-variant="dim"] .modal,
 html[data-variant="dim"] .run-modal,html[data-variant="dim"] .rm-head,html[data-variant="dim"] .rm-foot,
 html[data-variant="dim"] .view-toggle button,html[data-variant="dim"] .dock-toggle button,
 html[data-variant="dim"] .splitpanel,html[data-variant="dim"] .sp-handle,html[data-variant="dim"] .sp-head,
-html[data-variant="dim"] .add-stage:hover .plus{background:#2d333b}
+html[data-variant="dim"] .add-stage:hover .plus{background:var(--container)}
 
 /* surface-2 tiles + hovers (was #1c2330 / #1c2128) */
 html[data-variant="dim"] .cmd-chip,html[data-variant="dim"] .tile,
 html[data-variant="dim"] .tgroup,html[data-variant="dim"] .aa-control,html[data-variant="dim"] .stage,
 html[data-variant="dim"] .sidenav a:hover,html[data-variant="dim"] .dir-row:hover,
 html[data-variant="dim"] .tbl tbody tr.selectable:hover,
-html[data-variant="dim"] .runs-tbl tbody tr:hover td{background:#323942}
+html[data-variant="dim"] .runs-tbl tbody tr:hover td{background:var(--surface-2)}
 
 /* surface-3 hovers / chips (was #21262d) */
 html[data-variant="dim"] .btn-icon:hover,html[data-variant="dim"] .tgt:hover,
 html[data-variant="dim"] .rm-close:hover,html[data-variant="dim"] .stage-grip:hover,
-html[data-variant="dim"] .add-stage .plus,html[data-variant="dim"] .tgt-chip{background:#373e47}
+html[data-variant="dim"] .add-stage .plus,html[data-variant="dim"] .tgt-chip{background:var(--surface-3)}
