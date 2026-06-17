@@ -134,6 +134,16 @@ func Serve(dir string, port int, openPath string, autoOpen bool, mgr *api.RunMan
 	}
 	defer os.Remove(pf)
 
+	// Record the resolved address so `tf9 mcp` can reach the REST API.
+	if err := config.WriteServeState(config.ServeState{PID: os.Getpid(), Port: port, BaseURL: base}); err != nil {
+		slog.Warn("could not write serve state file", "file", config.ServeStatePath(), "err", err)
+	}
+	defer func() {
+		if err := config.RemoveServeState(); err != nil && !os.IsNotExist(err) {
+			slog.Debug("could not remove serve state file", "file", config.ServeStatePath(), "err", err)
+		}
+	}()
+
 	target := base
 	if openPath != "" {
 		target = base + openPath

@@ -27,6 +27,8 @@ local web UI share one YAML configuration file and the same binary.
 | **AWS SSO** | Each unique profile/account pair is validated against STS once per run; expired sessions trigger `aws sso login` automatically. |
 | **Config management** | `tf9 config repo/target` commands and the in-app YAML editor share the same config file, with timestamped backups and one-click restore. |
 | **Repository Workspace** | Browse and run git operations over a repo, with an AI chat assistant that can drive Terraform runs and apply changes (auto-apply by default, configurable AI model list). |
+| **MCP server** | `tf9 mcp` exposes tf9 to external AI hosts (Claude Code/Desktop, IDEs) over the Model Context Protocol. Access is gated by `mcp.access_level` (default read-only); apply/destroy always route through the human approval gate and refuse `prod*` targets. Requires a running `tf9 serve`. |
+| **AI run insights** | On-demand advisory for any run — blast radius, impacted service groups, and a heuristic (clearly-labeled) customer-facing read. Surfaced in the web UI, `tf9 insights`, and the `tf9_analyze_run` MCP tool; only the value-free graph is sent to the model. |
 | **Cost analysis** | Infracost-backed cost scans and reports surfaced in the Cost Analysis page. |
 | **Graph view** | Successful plan/apply/destroy runs render an interactive clustered graph of repos, targets, modules, and resources. |
 
@@ -451,6 +453,66 @@ first writes a timestamped snapshot to `~/.config/tf9/backups/`. The Config
 page lists snapshots and can restore any of them; a restore validates the
 snapshot and backs up the current config first, so it can be undone. The most
 recent 20 snapshots are kept.
+
+## MCP Server
+
+`tf9 mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io)
+server over stdio so external AI hosts (Claude Code, Claude Desktop, IDEs) can
+drive tf9. It is a thin façade over a **running `tf9 serve`** — it proxies to the
+same REST API, so AI-triggered runs appear live in the web UI and `runs.json`
+stays single-writer. With no server running, every tool returns
+`serve_not_running`.
+
+```bash
+tf9 serve        # in one place — the MCP server proxies to it
+tf9 mcp          # in another — speaks MCP on stdin/stdout
+```
+
+Access is gated by `mcp.access_level` in `config.yaml` (global, default
+`readonly`):
+
+| Level | Tools added |
+|---|---|
+| `readonly` | `tf9_list_repos`, `tf9_list_targets`, `tf9_list_runs`, `tf9_get_run`, `tf9_get_run_output`, `tf9_get_plan_graph`, `tf9_get_cost_report` |
+| `plan` | + `tf9_run_plan` (non-mutating) |
+| `unrestricted` | + `tf9_run_apply`, `tf9_run_destroy` |
+
+```yaml
+# config.yaml
+mcp:
+  access_level: plan
+```
+
+Even at `unrestricted`, the human stays in control: apply/destroy **trigger** a
+run but never auto-approve — the run waits on tf9's approval gate for a human to
+approve in the web UI (there is no MCP approve/deny tool), and `prod*` targets
+are always refused. No config/repo mutation tools are exposed.
+
+Register it in your AI host as a stdio MCP server whose command is the `tf9`
+binary with `args: ["mcp"]`. For Claude Code:
+
+```bash
+claude mcp add tf9 -- tf9 mcp
+```
+
+## AI Run Insights
+
+On-demand advisory for any run with a plan/apply graph: technical **blast radius**
+(what changes, what's replaced, transitive dependents), **impacted service groups**
+(by your `target.group` labels), and a **customer-facing** read that is explicitly
+labeled an inference. The result is cached per run and shared across surfaces.
+
+```bash
+tf9 insights              # advisory for the latest run
+tf9 insights run-0247     # a specific run
+tf9 insights --refresh    # regenerate (otherwise the cached one is reused)
+```
+
+Also available as a "Generate AI Insights" tab on a run in the web UI and as the
+`tf9_analyze_run` MCP tool. Only the **value-free** graph is sent to the model —
+raw terraform output and attribute values are never included. Generation shells
+out to the `claude` CLI; set `mcp`/model preferences via the AI model list. Runs
+with no changes return instantly without calling the model.
 
 ## Global CLI Flags
 

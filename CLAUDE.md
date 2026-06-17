@@ -93,6 +93,9 @@ cd frontend && npx tsc --noEmit   # TypeScript type check
 ./tf9 serve       # http://127.0.0.1:8080 (auto-opens browser)
 ./tf9 serve --port 9090 --dir ~/reports
 
+# Run the MCP server (stdio) for external AI hosts — requires a running `tf9 serve`
+./tf9 mcp         # access gated by mcp.access_level in config.yaml (default readonly)
+
 # CLI usage
 ./tf9 plan                     # run in CWD if it has .tf files, else scan subdirs
 ./tf9 plan dev                 # filter targets matching "dev"
@@ -241,6 +244,8 @@ exit code sets `StatusDenied` instead of `StatusFailed` when `denied` is true.
 | `GET` | `/api/runs/{id}` | Get a single run |
 | `GET` | `/api/runs/{id}/stream` | SSE stream of output lines |
 | `GET` | `/api/runs/{id}/graph` | Sanitized repository/target/module/resource graph for a supported Terraform run |
+| `GET` | `/api/runs/{id}/insights` | Cached AI advisory for a run (404 `not_generated` if none) |
+| `POST` | `/api/runs/{id}/insights` | Generate the AI advisory (`?refresh=true` to regenerate; `?model=` to override) |
 | `POST` | `/api/runs/{id}/cancel` | Cancel a running run |
 | `POST` | `/api/runs/{id}/input` | Send `{"value":"yes"/"no"}` to the approval gate |
 | `GET` | `/api/repos` | List configured repositories |
@@ -315,6 +320,75 @@ stream-json output is parsed into SSE `workspaceChatEvent`s (`stream_event`,
   job** (the Promote button + the terraform approval gate).
 - The configurable model list comes from `/api/web/ai-models`; the default is
   `web.DefaultAIModelID()`.
+
+---
+
+## MCP server — `internal/mcp` + `tf9 mcp`
+
+The **inverse** of the workspace chat: instead of tf9 hosting an AI, the
+`tf9 mcp` subcommand lets **external** AI hosts (Claude Code, Claude Desktop,
+IDEs) drive tf9 over the Model Context Protocol (stdio transport, official
+`github.com/modelcontextprotocol/go-sdk`).
+
+- **Thin façade, not a second engine.** `tf9 mcp` is a stdio MCP server that
+  proxies to the REST API of a **running `tf9 serve`** — it never runs terraform
+  itself. This keeps `RunManager`/`runs.json` single-writer and makes
+  AI-triggered runs appear live in the web UI. It **requires `tf9 serve` to be
+  running**; otherwise every tool returns `serve_not_running`.
+- **Discovery:** serve writes `~/.config/tf9/serve.state`
+  (`{pid, port, baseURL}`, written/removed in `internal/server.Serve` via
+  `config.WriteServeState`/`RemoveServeState`) because `serve.pid` records only
+  the PID and `freePort()` may bump the port. `tf9 mcp` reads it via
+  `config.ReadServeState`.
+- **Access tiers — `mcp.access_level` in config.yaml (global), default
+  `readonly`:** `readonly` (list/get/read), `plan` (adds `tf9_run_plan`),
+  `unrestricted` (adds `tf9_run_apply`/`tf9_run_destroy`). Enforced in
+  `mcp.NewServer` by **not registering** tools above the level. Helper:
+  `config.McpConfig.Level()` (empty → readonly).
+- **The invariant holds.** apply/destroy tools **always** send
+  `autoApprove:false` (the run blocks on the existing human approval gate — a
+  human approves in the web UI; there is **no** MCP approve/deny tool) **and**
+  `nonprodOnly:true` (refuses `prod*` targets). The AI can *trigger* a run but
+  never applies, auto-approves, or pushes. No config/repo/profile **mutation**
+  tools are exposed.
+- **Tools** (`internal/mcp/tools.go`): `tf9_list_repos`, `tf9_list_targets`,
+  `tf9_list_runs`, `tf9_get_run`, `tf9_get_run_output`, `tf9_get_plan_graph`,
+  `tf9_get_cost_report`, `tf9_analyze_run` (readonly); `tf9_run_plan` (plan);
+  `tf9_run_apply`, `tf9_run_destroy` (unrestricted). Run tools return `{runId}`;
+  the AI polls `tf9_get_run`/`tf9_get_run_output`.
+- Run/insight tool results are enriched with clickable web-UI links
+  (`reportUrl`, `runHistoryUrl`) via `Client.webURL` + `enrichRunLinks`.
+
+---
+
+## AI Run Insights — `internal/insights` + `tf9 insights`
+
+On-demand AI advisory for a run: technical blast radius, impacted service groups,
+and a heuristic customer-facing read. **One generator, three surfaces** (web UI
+panel, `tf9 insights` CLI, `tf9_analyze_run` MCP tool), all reading one cached
+artifact at `SavedPlanDir()/<run-id>/insight.json`.
+
+- **Generator** (`internal/insights/insights.go`): shells to `claude` one-shot
+  (`-p <prompt> --model <id>`, no tools/streaming — resolved via
+  `TF9_CLAUDE_PATH`/`exec.LookPath`, mirroring `workspace_chat.go`). Model from
+  `WebConfig.DefaultAIModelID()`. Result cached atomically (temp+rename).
+- **Safety:** only the **sanitized** graph is sent — `graph.Document.Sanitized()`
+  strips `Node.Result` (the one value-bearing field); raw terraform output is
+  never sent. Customer-facing impact is explicitly labelled an inference.
+- **No-changes short-circuit:** runs with no actionable nodes get a trivial
+  insight without a `claude` call (zero token cost).
+- **Shared core:** `(*api.RunManager).GenerateInsight(ctx,id,model,refresh)` is
+  used by both the HTTP handlers (`internal/api/insights.go`) and the CLI; it
+  loads the run's graph (with the apply→`PlanRunID` fallback `getRunGraph` uses),
+  builds value-free per-target summaries, and calls `insights.Generate`.
+- **Endpoints:** `GET /api/runs/{id}/insights` (cached, 404 `not_generated` if
+  none) and `POST /api/runs/{id}/insights` (generate; `?refresh=true` to
+  regenerate; returns cached otherwise). `?model=` overrides, validated by
+  `IsValidAIModelID`.
+- **UI:** an "AI Insights" tab on the completed-run split panel
+  (`RunSplitPanel.tsx`), gated on `hasGraph`, with Generate/Regenerate.
+- **Host config** (e.g. Claude Code): a stdio MCP server whose command is the
+  `tf9` binary with `args: ["mcp"]`.
 
 ---
 
@@ -431,6 +505,8 @@ Edit tool can corrupt them. Use straight ASCII quotes only.
 | `runs.json` | Persisted run history (last 200, capped at 5000 lines each) |
 | `reports/` | HTML plan report files |
 | `serve.pid` | PID of running `tf9 serve` process (killed on next `serve`) |
+| `serve.state` | JSON `{pid,port,baseURL}` of the running server; read by `tf9 mcp` to reach the REST API |
+| `plans/<run-id>/insight.json` | Cached AI run advisory (alongside that run's `graph.json`) |
 
 ### Config backup/restore — `internal/config/backup.go`
 

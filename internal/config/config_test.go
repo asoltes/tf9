@@ -153,6 +153,26 @@ func TestWebTimeoutDefaultsAndValidation(t *testing.T) {
 	}
 }
 
+func TestMcpAccessLevelDefaultsAndValidation(t *testing.T) {
+	if got := (McpConfig{}).Level(); got != MCPAccessReadonly {
+		t.Fatalf("empty access level should normalize to readonly, got %q", got)
+	}
+	if got := (McpConfig{AccessLevel: "  PLAN  "}).Level(); got != MCPAccessPlan {
+		t.Fatalf("access level should trim and lowercase, got %q", got)
+	}
+
+	useTestConfig(t)
+	for _, lvl := range []string{"", MCPAccessReadonly, MCPAccessPlan, MCPAccessUnrestricted} {
+		if err := Save(Config{Version: 1, Mcp: McpConfig{AccessLevel: lvl}}); err != nil {
+			t.Fatalf("valid access level %q rejected: %v", lvl, err)
+		}
+	}
+	err := Save(Config{Version: 1, Mcp: McpConfig{AccessLevel: "yolo"}})
+	if err == nil || !strings.Contains(err.Error(), "mcp.access_level") {
+		t.Fatalf("expected mcp.access_level validation error, got %v", err)
+	}
+}
+
 func TestRejectsInvalidDefaultAccountID(t *testing.T) {
 	useTestConfig(t)
 	err := Save(Config{

@@ -202,6 +202,17 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			getRunGraph(w, r, mgr, id)
 			return
 		}
+		if len(parts) == 2 && parts[1] == "insights" {
+			switch r.Method {
+			case http.MethodGet:
+				getRunInsight(w, r, mgr, id)
+			case http.MethodPost:
+				postRunInsight(w, r, mgr, id)
+			default:
+				methodNotAllowed(w)
+			}
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			getRun(w, r, mgr, id)

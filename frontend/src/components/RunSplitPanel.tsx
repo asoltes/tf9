@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { api, graphApi, repoGit } from '../api';
+import { api, graphApi, insightsApi, repoGit } from '../api';
+import type { RunInsight } from '../api';
 import { setPendingReconcileChat } from '../lib/pendingChat';
 import { useNav } from '../nav';
 import { useToast } from './ToastProvider';
@@ -36,6 +37,7 @@ import RetryBranchModal from './RetryBranchModal';
 import type { Run, RunStatus, WebSettings } from '../types';
 import type { GraphDocument } from '../types';
 import GraphView from './GraphView';
+import InsightMarkdown from './InsightMarkdown';
 
 type FsFilter = 'all' | 'changes' | 'errors' | 'plan';
 
@@ -276,9 +278,12 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const fsSearchInputRef = useRef<HTMLInputElement>(null);
   const [spSearch, setSpSearch] = useState('');
   const [spFilter, setSpFilter] = useState<FsFilter>('all');
-  const [panelView, setPanelView] = useState<'terminal' | 'graph'>('terminal');
+  const [panelView, setPanelView] = useState<'terminal' | 'graph' | 'insights'>('terminal');
   const [graphDoc, setGraphDoc] = useState<GraphDocument | null>(null);
   const [graphError, setGraphError] = useState('');
+  const [insight, setInsight] = useState<RunInsight | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightErr, setInsightErr] = useState('');
   // Changes-filter resource expansion, keyed per table id so it survives the
   // single→promotion/parallel branch switch that remounts ResourceChangeTable.
   const [rctExpanded, setRctExpanded] = useState<Record<string, Set<string>>>({});
@@ -408,15 +413,38 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     setPanelView('terminal');
     setGraphDoc(null);
     setGraphError('');
+    setInsight(null);
+    setInsightErr('');
     setRctExpanded({});
     setApprovalDeadline(null);
   }, [runId]);
 
   useEffect(() => {
-    if (!run?.hasGraph && panelView === 'graph') {
+    if (!run?.hasGraph && (panelView === 'graph' || panelView === 'insights')) {
       setPanelView('terminal');
     }
   }, [run?.hasGraph, panelView]);
+
+  // Load any cached insight when the AI Insights view opens.
+  useEffect(() => {
+    if (!runId || panelView !== 'insights') return;
+    let active = true;
+    setInsightErr('');
+    insightsApi.get(runId)
+      .then(ins => { if (active) setInsight(ins); })
+      .catch(e => { if (active) setInsightErr(e instanceof Error ? e.message : 'Failed to load insight.'); });
+    return () => { active = false; };
+  }, [runId, panelView]);
+
+  const generateInsight = (refresh: boolean) => {
+    if (!runId) return;
+    setInsightLoading(true);
+    setInsightErr('');
+    insightsApi.generate(runId, refresh)
+      .then(ins => setInsight(ins))
+      .catch(e => setInsightErr(e instanceof Error ? e.message : 'Failed to generate insight.'))
+      .finally(() => setInsightLoading(false));
+  };
 
   useEffect(() => {
     if (!runId || panelView !== 'graph') return;
@@ -1448,6 +1476,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                 <div className="sp-view-tabs">
                   <button className={panelView === 'terminal' ? 'active' : ''} onClick={() => setPanelView('terminal')}>Terminal</button>
                   {run.hasGraph && <button className={panelView === 'graph' ? 'active' : ''} onClick={() => setPanelView('graph')}>Graph</button>}
+                  {run.hasGraph && <button className={panelView === 'insights' ? 'active' : ''} onClick={() => setPanelView('insights')}>AI Insights</button>}
                 </div>
 
                 {panelView === 'terminal' ? (
@@ -1489,10 +1518,38 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
 
                 {approvalBar('sp')}
                   </>
-                ) : graphDoc ? (
-                  <GraphView document={graphDoc} compact onOpenFullPage={() => navigate({ id: 'graph', runId: run.id })} />
+                ) : panelView === 'graph' ? (
+                  graphDoc ? (
+                    <GraphView document={graphDoc} compact onOpenFullPage={() => navigate({ id: 'graph', runId: run.id })} />
+                  ) : (
+                    <div className="sp-graph-empty">{graphError || 'Loading graph…'}</div>
+                  )
                 ) : (
-                  <div className="sp-graph-empty">{graphError || 'Loading graph…'}</div>
+                  <div className="sp-insights">
+                    <div className="ins-head">
+                      <div className="ins-head-l">
+                        <span className="ins-title">AI Insights</span>
+                        {insight && !insight.noChanges && (
+                          <span className="ins-meta"><span className="ins-model">{insight.model}</span> · {relTime(insight.generatedAt)}</span>
+                        )}
+                      </div>
+                      <button
+                        className="btn btn-normal btn-sm ins-regen"
+                        disabled={insightLoading}
+                        onClick={() => generateInsight(!!insight)}
+                      >
+                        {insightLoading ? 'Generating…' : insight ? 'Regenerate' : 'Generate insights'}
+                      </button>
+                    </div>
+                    {insightErr && <div className="ins-error">{insightErr}</div>}
+                    {insight ? (
+                      <div className="ins-scroll"><InsightMarkdown text={insight.text} /></div>
+                    ) : insightLoading ? (
+                      <div className="sp-graph-empty">Analyzing this run…</div>
+                    ) : !insightErr ? (
+                      <div className="sp-graph-empty">No advisory yet. Generate one to see this run's blast radius, impacted service groups, and likely customer-facing impact.</div>
+                    ) : null}
+                  </div>
                 )}
               </div>
             </>

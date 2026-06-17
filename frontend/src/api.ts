@@ -37,6 +37,29 @@ export const graphApi = {
     api.get<import('./types').GraphDocument>(`/api/runs/${encodeURIComponent(runId)}/graph`),
 };
 
+export type RunInsight = {
+  runId: string;
+  model: string;
+  generatedAt: string;
+  text: string;
+  noChanges: boolean;
+};
+
+export const insightsApi = {
+  // Cached insight, or null when none has been generated yet.
+  get: async (runId: string): Promise<RunInsight | null> => {
+    try {
+      return await api.get<RunInsight>(`/api/runs/${encodeURIComponent(runId)}/insights`);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }
+  },
+  generate: (runId: string, refresh = false) =>
+    api.post<RunInsight>(
+      `/api/runs/${encodeURIComponent(runId)}/insights${refresh ? '?refresh=true' : ''}`, {}),
+};
+
 // ── Shared YAML configuration ─────────────────────────────────────
 
 export const configApi = {

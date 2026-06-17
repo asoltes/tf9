@@ -61,6 +61,21 @@ type Document struct {
 	Errors    []string  `json:"errors,omitempty"`
 }
 
+// Sanitized returns a copy of the document with every value-bearing field
+// removed, safe to hand to an external process (e.g. an LLM). The only such
+// field is Node.Result — the raw ANSI-stripped terraform resource block, which
+// can contain attribute values. All structural fields (addresses, actions,
+// change paths/flags, edges) are retained.
+func (d Document) Sanitized() Document {
+	out := d
+	out.Nodes = make([]Node, len(d.Nodes))
+	for i, n := range d.Nodes {
+		n.Result = ""
+		out.Nodes[i] = n
+	}
+	return out
+}
+
 type TargetGraph struct {
 	Nodes []Node
 	Edges []Edge

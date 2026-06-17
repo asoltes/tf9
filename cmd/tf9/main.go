@@ -20,6 +20,7 @@ import (
 	"github.com/andres/tf9/internal/api"
 	"github.com/andres/tf9/internal/applog"
 	"github.com/andres/tf9/internal/config"
+	tf9mcp "github.com/andres/tf9/internal/mcp"
 	"github.com/andres/tf9/internal/report"
 	"github.com/andres/tf9/internal/runner"
 	"github.com/andres/tf9/internal/server"
@@ -155,8 +156,72 @@ func newRootCmd() *cobra.Command {
 	root.Flags().StringArrayVar(&varFiles, "var-file", nil, "Terraform variable file (repeatable)")
 	root.Flags().StringVar(&lockIDs, "lock-ids", "", "Per-target lock ids for force-unlock (e.g. dev:abc,staging:def)")
 
-	root.AddCommand(newConfigCmd(), newServeCmd(), newVersionCmd(), newSuperviseCmd())
+	root.AddCommand(newConfigCmd(), newServeCmd(), newMcpCmd(), newInsightsCmd(), newVersionCmd(), newSuperviseCmd())
 	return root
+}
+
+// newInsightsCmd prints the AI advisory (blast radius, impacted service groups,
+// heuristic customer-facing impact) for a run. With no run id it uses the most
+// recent run. Reads run history from disk, so it works without a running server.
+func newInsightsCmd() *cobra.Command {
+	var refresh bool
+	var model string
+	cmd := &cobra.Command{
+		Use:   "insights [run-id]",
+		Short: "Show the AI advisory for a run (defaults to the latest run)",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mgr := api.NewRunManager()
+			id := ""
+			if len(args) == 1 {
+				id = args[0]
+			} else {
+				runs, _ := mgr.List(1, 1)
+				if len(runs) == 0 {
+					return fmt.Errorf("no runs found")
+				}
+				id = runs[0].ID
+			}
+			ins, err := mgr.GenerateInsight(cmd.Context(), id, model, refresh)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "AI Insights for %s (model: %s)\n\n%s\n", ins.RunID, ins.Model, ins.Text)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&refresh, "refresh", false, "Regenerate the insight even if one is cached")
+	cmd.Flags().StringVar(&model, "model", "", "Model id to use (default: configured default)")
+	return cmd
+}
+
+// newMcpCmd starts the stdio MCP server. It is a thin façade over a running
+// `tf9 serve` process: it discovers serve's address from serve.state and proxies
+// a curated, access-gated set of tools to its REST API. The protocol speaks over
+// stdin/stdout, so this command must not write to stdout.
+func newMcpCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "mcp",
+		Short: "Run the MCP server (stdio) for AI hosts; requires a running `tf9 serve`",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			applog.Init()
+			cfg, err := config.Load()
+			if err != nil {
+				return err
+			}
+			state, err := config.ReadServeState()
+			if err != nil {
+				return fmt.Errorf("tf9 serve does not appear to be running (could not read %s): %w\nStart it with `tf9 serve`", config.ServeStatePath(), err)
+			}
+			level := cfg.Mcp.Level()
+			slog.Info("starting mcp server", "access_level", level, "serve_url", state.BaseURL)
+
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			return tf9mcp.Serve(ctx, level, tf9mcp.NewClient(state.BaseURL))
+		},
+	}
 }
 
 // newSuperviseCmd is the hidden entry point for a detached run supervisor. The

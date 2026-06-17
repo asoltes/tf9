@@ -78,6 +78,7 @@ type Config struct {
 	ProfileMappings ProfileMappings `yaml:"profile_mappings,omitempty" json:"profile_mappings,omitempty"`
 	StsProfile      string          `yaml:"sts_profile,omitempty" json:"sts_profile,omitempty"`
 	Web             WebConfig       `yaml:"web,omitempty" json:"web,omitempty"`
+	Mcp             McpConfig       `yaml:"mcp,omitempty" json:"mcp,omitempty"`
 	// LogLevel sets the application log verbosity: debug, info, warn, or error.
 	// Empty means info. The TF9_LOG_LEVEL env var overrides this when set.
 	LogLevel string `yaml:"log_level,omitempty" json:"log_level,omitempty"`
@@ -97,6 +98,34 @@ type WebConfig struct {
 	// ParallelWorkers sets the maximum number of targets run concurrently in
 	// parallel mode. Zero or unset means 4.
 	ParallelWorkers int `yaml:"parallel_workers,omitempty" json:"parallel_workers,omitempty"`
+}
+
+// McpConfig controls the `tf9 mcp` server's access level — how much an external
+// AI host may do through the Model Context Protocol. It is global (not per-repo).
+type McpConfig struct {
+	// AccessLevel gates which MCP tools are exposed. Empty means readonly.
+	//   readonly     — list/get/read tools only.
+	//   plan         — adds non-mutating plan runs.
+	//   unrestricted — adds apply/destroy, but those always route through the
+	//                  human approval gate (never auto-approved) and refuse
+	//                  prod* targets.
+	AccessLevel string `yaml:"access_level,omitempty" json:"access_level,omitempty"`
+}
+
+// MCP access levels, in increasing order of capability.
+const (
+	MCPAccessReadonly     = "readonly"
+	MCPAccessPlan         = "plan"
+	MCPAccessUnrestricted = "unrestricted"
+)
+
+// Level returns the normalized access level, treating empty as readonly.
+func (m McpConfig) Level() string {
+	lvl := strings.ToLower(strings.TrimSpace(m.AccessLevel))
+	if lvl == "" {
+		return MCPAccessReadonly
+	}
+	return lvl
 }
 
 // AIModel is one selectable model for the workspace AI chat. ID is passed to
@@ -629,6 +658,12 @@ func validate(cfg *Config) error {
 	cfg.Web.ReconcilePrompt = strings.TrimSpace(cfg.Web.ReconcilePrompt)
 	if err := validateAIModels(&cfg.Web); err != nil {
 		return err
+	}
+	cfg.Mcp.AccessLevel = strings.ToLower(strings.TrimSpace(cfg.Mcp.AccessLevel))
+	switch cfg.Mcp.AccessLevel {
+	case "", MCPAccessReadonly, MCPAccessPlan, MCPAccessUnrestricted:
+	default:
+		return fmt.Errorf("invalid mcp.access_level %q (expected readonly, plan, or unrestricted)", cfg.Mcp.AccessLevel)
 	}
 	repoNames := map[string]bool{}
 	for ri := range cfg.Repositories {
