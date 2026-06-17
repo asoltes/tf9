@@ -55,9 +55,13 @@ export const insightsApi = {
       throw e;
     }
   },
-  generate: (runId: string, refresh = false) =>
-    api.post<RunInsight>(
-      `/api/runs/${encodeURIComponent(runId)}/insights${refresh ? '?refresh=true' : ''}`, {}),
+  generate: (runId: string, refresh = false, model?: string) => {
+    const params = new URLSearchParams();
+    if (refresh) params.set('refresh', 'true');
+    if (model) params.set('model', model);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return api.post<RunInsight>(`/api/runs/${encodeURIComponent(runId)}/insights${qs}`, {});
+  },
 };
 
 // ── Shared YAML configuration ─────────────────────────────────────

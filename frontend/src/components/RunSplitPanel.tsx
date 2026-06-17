@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { api, graphApi, insightsApi, repoGit } from '../api';
+import { api, graphApi, insightsApi, aiModelsApi, repoGit } from '../api';
 import type { RunInsight } from '../api';
 import { setPendingReconcileChat } from '../lib/pendingChat';
 import { useNav } from '../nav';
@@ -37,7 +37,7 @@ import RetryBranchModal from './RetryBranchModal';
 import type { Run, RunStatus, WebSettings } from '../types';
 import type { GraphDocument } from '../types';
 import GraphView from './GraphView';
-import InsightMarkdown from './InsightMarkdown';
+import InsightMarkdown, { extractRisk } from './InsightMarkdown';
 
 type FsFilter = 'all' | 'changes' | 'errors' | 'plan';
 
@@ -284,6 +284,8 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
   const [insight, setInsight] = useState<RunInsight | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [insightErr, setInsightErr] = useState('');
+  const [insightModels, setInsightModels] = useState<{ id: string; label: string }[]>([]);
+  const [insightModel, setInsightModel] = useState('');
   // Changes-filter resource expansion, keyed per table id so it survives the
   // single→promotion/parallel branch switch that remounts ResourceChangeTable.
   const [rctExpanded, setRctExpanded] = useState<Record<string, Set<string>>>({});
@@ -425,7 +427,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     }
   }, [run?.hasGraph, panelView]);
 
-  // Load any cached insight when the AI Insights view opens.
+  // Load any cached insight + available models when the AI Insights view opens.
   useEffect(() => {
     if (!runId || panelView !== 'insights') return;
     let active = true;
@@ -433,6 +435,14 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     insightsApi.get(runId)
       .then(ins => { if (active) setInsight(ins); })
       .catch(e => { if (active) setInsightErr(e instanceof Error ? e.message : 'Failed to load insight.'); });
+    aiModelsApi.get()
+      .then(res => {
+        if (!active) return;
+        const models = (res.models ?? []).map(m => ({ id: m.id, label: m.label }));
+        setInsightModels(models);
+        setInsightModel(prev => prev || (res.models.find(m => m.default)?.id ?? res.models[0]?.id ?? ''));
+      })
+      .catch(() => {});
     return () => { active = false; };
   }, [runId, panelView]);
 
@@ -440,7 +450,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
     if (!runId) return;
     setInsightLoading(true);
     setInsightErr('');
-    insightsApi.generate(runId, refresh)
+    insightsApi.generate(runId, refresh, insightModel || undefined)
       .then(ins => setInsight(ins))
       .catch(e => setInsightErr(e instanceof Error ? e.message : 'Failed to generate insight.'))
       .finally(() => setInsightLoading(false));
@@ -1529,17 +1539,35 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                     <div className="ins-head">
                       <div className="ins-head-l">
                         <span className="ins-title">AI Insights</span>
-                        {insight && !insight.noChanges && (
-                          <span className="ins-meta"><span className="ins-model">{insight.model}</span> · {relTime(insight.generatedAt)}</span>
-                        )}
+                        {insight && !insight.noChanges && (() => {
+                          const risk = extractRisk(insight.text);
+                          return <>
+                            {risk && <span className={`ins-risk-pill ins-risk-pill-${risk}`}>{risk.toUpperCase()}</span>}
+                            <span className="ins-meta"><span className="ins-model">{insight.model}</span> · {relTime(insight.generatedAt)}</span>
+                          </>;
+                        })()}
                       </div>
-                      <button
-                        className="btn btn-normal btn-sm ins-regen"
-                        disabled={insightLoading}
-                        onClick={() => generateInsight(!!insight)}
-                      >
-                        {insightLoading ? 'Generating…' : insight ? 'Regenerate' : 'Generate insights'}
-                      </button>
+                      <div className="ins-head-r">
+                        {insightModels.length > 0 && (
+                          <select
+                            className="ins-model-select"
+                            value={insightModel}
+                            onChange={e => setInsightModel(e.target.value)}
+                            disabled={insightLoading}
+                          >
+                            {insightModels.map(m => (
+                              <option key={m.id} value={m.id}>{m.label}</option>
+                            ))}
+                          </select>
+                        )}
+                        <button
+                          className="btn btn-normal btn-sm ins-regen"
+                          disabled={insightLoading}
+                          onClick={() => generateInsight(!!insight)}
+                        >
+                          {insightLoading ? 'Generating…' : insight ? 'Regenerate' : 'Generate insights'}
+                        </button>
+                      </div>
                     </div>
                     {insightErr && <div className="ins-error">{insightErr}</div>}
                     {insight ? (

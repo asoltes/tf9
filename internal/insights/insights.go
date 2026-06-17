@@ -74,10 +74,12 @@ func resolveClaude() string {
 
 // Generate builds an insight from the sanitized graph and per-target summary,
 // shelling to `claude` unless there are no changes, then caches and returns it.
-func Generate(ctx context.Context, runID, model string, doc graph.Document, targets []TargetSummary) (Insight, error) {
+// runFailed must be true when the run ended in a failed/partial status — it
+// bypasses the no-changes short-circuit so errors are still analyzed.
+func Generate(ctx context.Context, runID, model string, doc graph.Document, targets []TargetSummary, runFailed bool) (Insight, error) {
 	ins := Insight{RunID: runID, Model: model, GeneratedAt: time.Now().UTC()}
 
-	if !hasChanges(doc) {
+	if !runFailed && !hasChanges(doc) {
 		ins.NoChanges = true
 		ins.Text = "No changes — nothing to analyze. Terraform reported no differences for this run."
 		if err := save(runID, ins); err != nil {
@@ -91,15 +93,24 @@ func Generate(ctx context.Context, runID, model string, doc graph.Document, targ
 		return Insight{}, ErrClaudeUnavailable{}
 	}
 
-	prompt, err := buildPrompt(doc.Sanitized(), targets)
+	hotTargets := make(map[string]bool)
+	for _, t := range targets {
+		if t.Add > 0 || t.Change > 0 || t.Destroy > 0 {
+			hotTargets[t.Target] = true
+		}
+	}
+	prompt, err := buildPrompt(doc.Focused(hotTargets), targets)
 	if err != nil {
 		return Insight{}, err
 	}
 
-	cmd := exec.CommandContext(ctx, claudePath, "-p", prompt, "--model", model)
+	cmd := exec.CommandContext(ctx, claudePath, "-p", "-", "--model", model)
+	cmd.Stdin = strings.NewReader(prompt)
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
-		return Insight{}, fmt.Errorf("claude invocation failed: %w", err)
+		return Insight{}, fmt.Errorf("claude invocation failed: %w\nstderr: %s", err, stderr.String())
 	}
 	ins.Text = strings.TrimSpace(string(out))
 	if ins.Text == "" {
@@ -143,15 +154,34 @@ attribute paths with sensitive/computed/replacement flags, dependency edges) and
 a per-target change summary. Produce a concise markdown advisory with these
 sections:
 
-1. **Blast radius** — what changes, what gets replaced/destroyed, and which
-   resources depend (transitively, via the edges) on the changed ones. This is
-   grounded fact from the graph; be specific about addresses.
-2. **Impacted service groups** — group the changes by their "group" label.
-3. **Customer-facing impact** — INFER from resource types (load balancers, CDNs,
+1. **Verdict** — Start with exactly one of these prefixes on its own line:
+   RISK: LOW, RISK: MEDIUM, or RISK: HIGH — then one or two sentences on
+   whether this looks safe to apply. Call out any destroys, replacements, or
+   errors immediately. Factor in the environment tier of the affected targets
+   when assigning risk: prod targets are highest risk regardless of change
+   count; qa/loadtest are medium baseline; dev is lowest baseline. Escalate
+   the risk level when destroys, replacements, or errors are present in any
+   tier. This section is grounded fact.
+2. **Impacted Resources by Group** — a table with columns: Group | Target |
+   Resource Address | Type | Action | Changed Attributes. List every resource
+   node that has a non-none action, grouped by their "group" label. Use the
+   node label as the Type (e.g. aws_msk_cluster), the node address as the
+   Resource Address, the action (create/update/delete/replace), and the changed
+   attribute paths from the changes array. If a hot target has destroy counts
+   from the summary but no resource-level nodes in the graph, add a row with
+   Resource Address = "*(N resources — addresses not in graph)", Action =
+   delete, and note the count. If there are no changes at all, write a single
+   row: "No resource-level changes detected."
+3. **Blast radius** — what changes, what gets replaced/destroyed, and which
+   resources depend (transitively, via the edges) on the changed ones. Be
+   specific about addresses.
+4. **Customer-facing impact** — INFER from resource types (load balancers, CDNs,
    API gateways, DNS, public databases, etc.) which changes may affect
    customer-facing services. You MUST clearly label this section as an inference,
-   not fact — tf9 has no authoritative customer-facing signal. Prefix it with
-   "Heuristic (inferred, not authoritative):".
+   not fact — tf9 has no authoritative customer-facing signal. Start with the
+   line "Heuristic (inferred, not authoritative):" then list each impact as a
+   bullet point. If nothing is customer-facing, write a single bullet: "No
+   customer-facing resources identified."
 
 Be terse and skimmable. Do not invent attribute values; you weren't given any.
 

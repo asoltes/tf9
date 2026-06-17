@@ -76,6 +76,72 @@ func (d Document) Sanitized() Document {
 	return out
 }
 
+// Focused returns a trimmed, sanitized document suitable for AI analysis.
+// hotTargets is the set of target names that have non-zero add/change/destroy
+// counts from terraform output (used when graph node actions are absent, e.g.
+// when the plan graph was not emitted per-resource). It keeps:
+//   - nodes with action != none (graph-level changes)
+//   - all resource nodes belonging to a hot target
+//   - 1-hop edge neighbours of the above
+//   - root module nodes (one per target, structural anchors)
+//   - only edges between included nodes
+//
+// Result fields are always stripped.
+func (d Document) Focused(hotTargets map[string]bool) Document {
+	keep := make(map[string]bool)
+
+	// Index neighbours via edges.
+	neighbours := make(map[string][]string)
+	for _, e := range d.Edges {
+		neighbours[e.Source] = append(neighbours[e.Source], e.Target)
+		neighbours[e.Target] = append(neighbours[e.Target], e.Source)
+	}
+
+	// Seed: changed nodes from graph actions.
+	for _, n := range d.Nodes {
+		if n.Action != ActionNone {
+			keep[n.ID] = true
+		}
+	}
+	// Seed: all resource nodes for hot targets (destroy counts in output
+	// don't always produce action-flagged graph nodes).
+	if len(hotTargets) > 0 {
+		for _, n := range d.Nodes {
+			if hotTargets[n.Target] {
+				keep[n.ID] = true
+			}
+		}
+	}
+	// 1-hop neighbours of seeded nodes.
+	for id := range keep {
+		for _, nb := range neighbours[id] {
+			keep[nb] = true
+		}
+	}
+	// Always include root module nodes (one per target, address == "").
+	for _, n := range d.Nodes {
+		if n.Kind == "module" && n.Address == "" {
+			keep[n.ID] = true
+		}
+	}
+
+	out := d
+	out.Nodes = make([]Node, 0, len(keep))
+	for _, n := range d.Nodes {
+		if keep[n.ID] {
+			n.Result = ""
+			out.Nodes = append(out.Nodes, n)
+		}
+	}
+	out.Edges = make([]Edge, 0, len(d.Edges))
+	for _, e := range d.Edges {
+		if keep[e.Source] && keep[e.Target] {
+			out.Edges = append(out.Edges, e)
+		}
+	}
+	return out
+}
+
 type TargetGraph struct {
 	Nodes []Node
 	Edges []Edge

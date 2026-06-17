@@ -63,7 +63,7 @@ func TestNoChangesShortCircuitsWithoutClaude(t *testing.T) {
 	t.Setenv("TF9_CLAUDE_PATH", "/nonexistent/claude-binary")
 
 	doc := graph.Document{Nodes: []graph.Node{{ID: "n1", Action: graph.ActionNone}}}
-	ins, err := Generate(context.Background(), "run-x", "sonnet", doc, nil)
+	ins, err := Generate(context.Background(), "run-x", "sonnet", doc, nil, false)
 	if err != nil {
 		t.Fatalf("expected no error on no-changes, got %v", err)
 	}
@@ -85,7 +85,7 @@ func TestGenerateRequiresClaudeWhenChanges(t *testing.T) {
 	t.Setenv("PATH", "")
 
 	doc := graph.Document{Nodes: []graph.Node{{ID: "n1", Action: graph.ActionCreate}}}
-	_, err := Generate(context.Background(), "run-y", "sonnet", doc, nil)
+	_, err := Generate(context.Background(), "run-y", "sonnet", doc, nil, false)
 	if _, ok := err.(ErrClaudeUnavailable); !ok {
 		t.Fatalf("expected ErrClaudeUnavailable, got %v", err)
 	}

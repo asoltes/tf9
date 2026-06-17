@@ -52,9 +52,10 @@ func (m *RunManager) GenerateInsight(ctx context.Context, id, model string, refr
 	run, _ := m.Get(id)
 	run.mu.RLock()
 	targets := targetSummaries(run.Results, doc)
+	runFailed := run.Status == StatusFailed || run.Status == StatusPartialSuccess
 	run.mu.RUnlock()
 
-	return insights.Generate(ctx, id, model, doc, targets)
+	return insights.Generate(ctx, id, model, doc, targets, runFailed)
 }
 
 // getRunInsight returns a previously generated insight, or 404 if none exists.

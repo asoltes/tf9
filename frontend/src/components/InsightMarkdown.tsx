@@ -36,6 +36,13 @@ function splitRow(line: string): string[] {
   return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
 }
 
+// extractRisk returns 'low' | 'medium' | 'high' | null from insight text.
+export function extractRisk(text: string): 'low' | 'medium' | 'high' | null {
+  const m = /RISK:\s*(LOW|MEDIUM|HIGH)/i.exec(text);
+  if (!m) return null;
+  return m[1].toLowerCase() as 'low' | 'medium' | 'high';
+}
+
 export default function InsightMarkdown({ text }: { text: string }) {
   const lines = text.replace(/\r/g, '').split('\n');
   const blocks: React.ReactNode[] = [];
@@ -111,6 +118,20 @@ export default function InsightMarkdown({ text }: { text: string }) {
 
     const li = /^[-*]\s+(.*)$/.exec(t);
     if (li) { flushPara(); list.push(li[1]); continue; }
+
+    const risk = /^RISK:\s*(LOW|MEDIUM|HIGH)\b(.*)/i.exec(t);
+    if (risk) {
+      flush();
+      const level = risk[1].toUpperCase();
+      const rest = risk[2].trim();
+      blocks.push(
+        <div key={key++} className={`ins-risk ins-risk-${level.toLowerCase()}`}>
+          <span className="ins-risk-badge">{level}</span>
+          {rest && <span className="ins-risk-text">{renderInline(rest, `risk${key}`)}</span>}
+        </div>,
+      );
+      continue;
+    }
 
     flushList();
     para.push(t);
