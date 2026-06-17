@@ -43,6 +43,8 @@ export type RunInsight = {
   generatedAt: string;
   text: string;
   noChanges: boolean;
+  tokensIn?: number;
+  tokensOut?: number;
 };
 
 export const insightsApi = {
@@ -89,6 +91,11 @@ export const backupsApi = {
 export const reconcilePromptApi = {
   get: () => api.get<{ prompt: string }>('/api/web/reconcile-prompt'),
   save: (prompt: string) => api.put<{ prompt: string }>('/api/web/reconcile-prompt', { prompt }),
+};
+
+export const insightsPromptApi = {
+  get: () => api.get<{ prompt: string }>('/api/web/insights-prompt'),
+  save: (prompt: string) => api.put<{ prompt: string }>('/api/web/insights-prompt', { prompt }),
 };
 
 export const aiModelsApi = {

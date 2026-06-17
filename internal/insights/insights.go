@@ -26,6 +26,17 @@ type Insight struct {
 	GeneratedAt time.Time `json:"generatedAt"`
 	Text        string    `json:"text"`
 	NoChanges   bool      `json:"noChanges"`
+	TokensIn    int       `json:"tokensIn,omitempty"`
+	TokensOut   int       `json:"tokensOut,omitempty"`
+}
+
+// EffectivePrompt returns customPrompt when non-empty, else the built-in
+// promptInstructions. This allows config.yaml to override the advisory format.
+func EffectivePrompt(customPrompt string) string {
+	if strings.TrimSpace(customPrompt) != "" {
+		return customPrompt
+	}
+	return promptInstructions
 }
 
 // TargetSummary is the per-target change tally fed to the model (value-free).
@@ -76,7 +87,8 @@ func resolveClaude() string {
 // shelling to `claude` unless there are no changes, then caches and returns it.
 // runFailed must be true when the run ended in a failed/partial status — it
 // bypasses the no-changes short-circuit so errors are still analyzed.
-func Generate(ctx context.Context, runID, model string, doc graph.Document, targets []TargetSummary, runFailed bool) (Insight, error) {
+// customPrompt overrides the built-in prompt instructions when non-empty.
+func Generate(ctx context.Context, runID, model, customPrompt string, doc graph.Document, targets []TargetSummary, runFailed bool) (Insight, error) {
 	ins := Insight{RunID: runID, Model: model, GeneratedAt: time.Now().UTC()}
 
 	if !runFailed && !hasChanges(doc) {
@@ -99,12 +111,12 @@ func Generate(ctx context.Context, runID, model string, doc graph.Document, targ
 			hotTargets[t.Target] = true
 		}
 	}
-	prompt, err := buildPrompt(doc.Focused(hotTargets), targets)
+	prompt, err := buildPrompt(EffectivePrompt(customPrompt), doc.Focused(hotTargets), targets)
 	if err != nil {
 		return Insight{}, err
 	}
 
-	cmd := exec.CommandContext(ctx, claudePath, "-p", "-", "--model", model)
+	cmd := exec.CommandContext(ctx, claudePath, "-p", "-", "--model", model, "--output-format", "json")
 	cmd.Stdin = strings.NewReader(prompt)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
@@ -112,7 +124,22 @@ func Generate(ctx context.Context, runID, model string, doc graph.Document, targ
 	if err != nil {
 		return Insight{}, fmt.Errorf("claude invocation failed: %w\nstderr: %s", err, stderr.String())
 	}
-	ins.Text = strings.TrimSpace(string(out))
+
+	var claudeResp struct {
+		Result string `json:"result"`
+		Usage  struct {
+			InputTokens  int `json:"input_tokens"`
+			OutputTokens int `json:"output_tokens"`
+		} `json:"usage"`
+	}
+	if jsonErr := json.Unmarshal(out, &claudeResp); jsonErr != nil {
+		// Fallback: treat raw output as plain text (graceful degradation).
+		ins.Text = strings.TrimSpace(string(out))
+	} else {
+		ins.Text = strings.TrimSpace(claudeResp.Result)
+		ins.TokensIn = claudeResp.Usage.InputTokens
+		ins.TokensOut = claudeResp.Usage.OutputTokens
+	}
 	if ins.Text == "" {
 		return Insight{}, fmt.Errorf("claude returned empty output")
 	}
@@ -154,7 +181,7 @@ attribute paths with sensitive/computed/replacement flags, dependency edges) and
 a per-target change summary. Produce a concise markdown advisory with these
 sections:
 
-1. **Verdict** — Start with exactly one of these prefixes on its own line:
+1. **Risk Assessment** — Start with exactly one of these prefixes on its own line:
    RISK: LOW, RISK: MEDIUM, or RISK: HIGH — then one or two sentences on
    whether this looks safe to apply. Call out any destroys, replacements, or
    errors immediately. Factor in the environment tier of the affected targets
@@ -188,7 +215,7 @@ Be terse and skimmable. Do not invent attribute values; you weren't given any.
 Here is the data as JSON:
 `
 
-func buildPrompt(doc graph.Document, targets []TargetSummary) (string, error) {
+func buildPrompt(instructions string, doc graph.Document, targets []TargetSummary) (string, error) {
 	payload := struct {
 		Graph   graph.Document  `json:"graph"`
 		Targets []TargetSummary `json:"targets"`
@@ -197,5 +224,5 @@ func buildPrompt(doc graph.Document, targets []TargetSummary) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return promptInstructions + string(data), nil
+	return instructions + string(data), nil
 }

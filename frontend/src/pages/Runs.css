@@ -168,6 +168,7 @@ html[data-theme="dark"] .runs-page .tgt-chip{background:#1c2430}
 .runs-page .ins-risk-medium .ins-risk-badge{background:color-mix(in srgb,var(--amber) 25%,transparent);color:var(--amber)}
 .runs-page .ins-risk-high .ins-risk-badge{background:color-mix(in srgb,var(--red) 25%,transparent);color:var(--red)}
 .runs-page .ins-risk-text{font-size:13px;color:var(--text-1)}
+.runs-page .ins-tokens{color:var(--text-2);font-size:11px}
 .runs-page .ins-error{padding:10px 16px;color:var(--red);font-size:12.5px}
 .runs-page .ins-scroll{padding:18px 20px}
 

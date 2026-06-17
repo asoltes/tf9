@@ -98,6 +98,9 @@ type WebConfig struct {
 	// ParallelWorkers sets the maximum number of targets run concurrently in
 	// parallel mode. Zero or unset means 4.
 	ParallelWorkers int `yaml:"parallel_workers,omitempty" json:"parallel_workers,omitempty"`
+	// InsightsPrompt is an optional custom system prompt for the AI run
+	// advisory. When empty the built-in prompt is used.
+	InsightsPrompt string `yaml:"insights_prompt,omitempty" json:"insights_prompt,omitempty"`
 }
 
 // McpConfig controls the `tf9 mcp` server's access level — how much an external

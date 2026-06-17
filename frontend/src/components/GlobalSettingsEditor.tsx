@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { aiModelsApi, api, awsApi, parallelWorkersApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
+import { aiModelsApi, api, awsApi, insightsPromptApi, parallelWorkersApi, reconcilePromptApi, type AWSProfileDetail } from '../api';
 import type { AIModel, Paginated, Repo, RepoConfig } from '../types';
 import { DEFAULT_RECONCILE_PROMPT } from '../lib/reconcilePrompt';
+import { DEFAULT_INSIGHTS_PROMPT } from '../lib/insightsPrompt';
 import { IconFlow, IconKey, IconList, IconPlus, IconTrash } from './repos/icons';
 
 type RepoDefaults = Pick<RepoConfig,
@@ -31,10 +32,12 @@ export default function GlobalSettingsEditor({
   const [awsProfiles, setAwsProfiles] = useState<string[]>([]);
   const [profileDetails, setProfileDetails] = useState<Record<string, AWSProfileDetail>>({});
   const [prompt, setPrompt] = useState(DEFAULT_RECONCILE_PROMPT);
+  const [insightsPrompt, setInsightsPrompt] = useState(DEFAULT_INSIGHTS_PROMPT);
   const [aiModels, setAiModels] = useState<AIModel[]>([]);
   const [parallelWorkers, setParallelWorkers] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [promptSaving, setPromptSaving] = useState(false);
+  const [insightsPromptSaving, setInsightsPromptSaving] = useState(false);
   const [modelsSaving, setModelsSaving] = useState(false);
   const [workersSaving, setWorkersSaving] = useState(false);
   const [error, setError] = useState('');
@@ -47,7 +50,8 @@ export default function GlobalSettingsEditor({
       reconcilePromptApi.get().catch(() => ({ prompt: '' })),
       aiModelsApi.get().catch(() => ({ models: [] })),
       parallelWorkersApi.get().catch(() => ({ workers: 0 })),
-    ]).then(([repoResult, profiles, details, promptResult, modelsResult, workersResult]) => {
+      insightsPromptApi.get().catch(() => ({ prompt: '' })),
+    ]).then(([repoResult, profiles, details, promptResult, modelsResult, workersResult, insightsPromptResult]) => {
       const enabled = repoResult.items.filter(repo => !repo.disabled);
       setRepos(enabled);
       setRepoName(enabled[0]?.name ?? '');
@@ -56,6 +60,7 @@ export default function GlobalSettingsEditor({
       setPrompt(promptResult.prompt || DEFAULT_RECONCILE_PROMPT);
       setAiModels(modelsResult.models ?? []);
       setParallelWorkers(workersResult.workers ?? 0);
+      setInsightsPrompt(insightsPromptResult.prompt || DEFAULT_INSIGHTS_PROMPT);
     }).catch(err => setError(err instanceof Error ? err.message : 'Could not load global settings.'));
   }, []);
 
@@ -148,6 +153,22 @@ export default function GlobalSettingsEditor({
 
   function removeModel(index: number) {
     setAiModels(current => current.filter((_, i) => i !== index));
+  }
+
+  async function saveInsightsPrompt() {
+    const value = insightsPrompt.trim() === DEFAULT_INSIGHTS_PROMPT.trim() ? '' : insightsPrompt;
+    setInsightsPromptSaving(true);
+    try {
+      const saved = await insightsPromptApi.save(value);
+      setInsightsPrompt(saved.prompt || DEFAULT_INSIGHTS_PROMPT);
+      await onSaved();
+      setError('');
+      notify('AI insights prompt saved');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save the AI insights prompt.');
+    } finally {
+      setInsightsPromptSaving(false);
+    }
   }
 
   async function saveParallelWorkers() {
@@ -261,6 +282,30 @@ export default function GlobalSettingsEditor({
             <textarea value={prompt} onChange={event => setPrompt(event.target.value)} aria-label="Global reconcile with AI prompt" spellCheck={false} />
           </div>
           <small>{disabled ? 'Save or reload the YAML changes before editing global settings.' : 'Saving the built-in text clears the YAML override.'}</small>
+        </div>
+
+        <div className="config-settings-group config-prompt-group">
+          <div className="config-settings-group-head">
+            <span className="config-settings-icon ai"><IconFlow /></span>
+            <div>
+              <strong>AI insights prompt</strong>
+              <span>Custom instructions for the run advisory (Risk Assessment, Resources, Blast radius). Leave empty to use the built-in prompt.</span>
+            </div>
+            <span className="config-prompt-state">{insightsPrompt.trim() === DEFAULT_INSIGHTS_PROMPT.trim() ? 'Built-in default' : 'Custom override'}</span>
+          </div>
+          <div className="config-prompt-editor">
+            <div className="config-prompt-toolbar">
+              <span>web.insights_prompt</span>
+              <button className="btn btn-normal btn-sm" disabled={insightsPrompt.trim() === DEFAULT_INSIGHTS_PROMPT.trim()} onClick={() => setInsightsPrompt(DEFAULT_INSIGHTS_PROMPT)}>
+                Reset to default
+              </button>
+              <button className="btn btn-primary btn-sm" disabled={disabled || insightsPromptSaving} onClick={() => void saveInsightsPrompt()}>
+                {insightsPromptSaving ? 'Saving…' : 'Save prompt'}
+              </button>
+            </div>
+            <textarea value={insightsPrompt} onChange={event => setInsightsPrompt(event.target.value)} aria-label="AI insights prompt" spellCheck={false} />
+          </div>
+          <small>{disabled ? 'Save or reload the YAML changes before editing global settings.' : 'Stored as web.insights_prompt in config.yaml.'}</small>
         </div>
 
         <div className="config-settings-group config-models-group">

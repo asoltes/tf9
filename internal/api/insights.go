@@ -55,7 +55,7 @@ func (m *RunManager) GenerateInsight(ctx context.Context, id, model string, refr
 	runFailed := run.Status == StatusFailed || run.Status == StatusPartialSuccess
 	run.mu.RUnlock()
 
-	return insights.Generate(ctx, id, model, doc, targets, runFailed)
+	return insights.Generate(ctx, id, model, cfg.Web.InsightsPrompt, doc, targets, runFailed)
 }
 
 // getRunInsight returns a previously generated insight, or 404 if none exists.

@@ -1543,7 +1543,11 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                           const risk = extractRisk(insight.text);
                           return <>
                             {risk && <span className={`ins-risk-pill ins-risk-pill-${risk}`}>{risk.toUpperCase()}</span>}
-                            <span className="ins-meta"><span className="ins-model">{insight.model}</span> · {relTime(insight.generatedAt)}</span>
+                            <span className="ins-meta">
+                              <span className="ins-model">{insight.model}</span>
+                              {' · '}{relTime(insight.generatedAt)}
+                              {(insight.tokensIn || insight.tokensOut) ? <span className="ins-tokens"> · {((insight.tokensIn ?? 0) + (insight.tokensOut ?? 0)).toLocaleString()} tokens</span> : null}
+                            </span>
                           </>;
                         })()}
                       </div>
@@ -1575,7 +1579,7 @@ export default function RunSplitPanel({ run, lines, dock, onDockChange, onStatus
                     ) : insightLoading ? (
                       <div className="sp-graph-empty">Analyzing this run…</div>
                     ) : !insightErr ? (
-                      <div className="sp-graph-empty">No advisory yet. Generate one to see this run's blast radius, impacted service groups, and likely customer-facing impact.</div>
+                      <div className="sp-graph-empty">No advisory yet. Generate one to see the risk assessment, impacted resources by group, blast radius, and likely customer-facing impact.</div>
                     ) : null}
                   </div>
                 )}

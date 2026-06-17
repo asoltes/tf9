@@ -135,6 +135,40 @@ func Handler(mgr *RunManager, reportDir string) http.Handler {
 			methodNotAllowed(w)
 		}
 	})
+	mux.HandleFunc("/api/web/insights-prompt", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]string{"prompt": cfg.Web.InsightsPrompt})
+		case http.MethodPut:
+			var body struct {
+				Prompt string `json:"prompt"`
+			}
+			if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&body); err != nil {
+				jsonErr(w, "bad_request", "invalid prompt payload", http.StatusBadRequest)
+				return
+			}
+			if err := config.Update(func(cfg *config.Config) error {
+				cfg.Web.InsightsPrompt = body.Prompt
+				return nil
+			}); err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			cfg, err := config.Load()
+			if err != nil {
+				jsonErr(w, "config", err.Error(), http.StatusInternalServerError)
+				return
+			}
+			jsonOK(w, map[string]string{"prompt": cfg.Web.InsightsPrompt})
+		default:
+			methodNotAllowed(w)
+		}
+	})
 	mux.HandleFunc("/api/web/parallel-workers", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
